@@ -1,0 +1,17 @@
+{
+  "name": "python-learn",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "python-learn 文档站点",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  },
+  "keywords": ["python", "documentation", "vitepress"],
+  "author": "qiuweikangdev",
+  "license": "MIT"
+}

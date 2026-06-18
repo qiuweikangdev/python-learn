@@ -1,0 +1,24 @@
+venv
+.idea
+*.pyc
+__pycache__
+
+### VisualStudioCode ###
+.vscode/*
+.vscode/**
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+
+### Node.js ###
+node_modules/
+docs/.vitepress/cache
+docs/.vitepress/dist
+.vitepress/cache
+
+

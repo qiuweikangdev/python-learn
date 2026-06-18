@@ -1,0 +1,104 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build VitePress",
+			"type": "shell",
+			"command": "npm run docs:build",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build VitePress",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"vitepress",
+				"build",
+				"docs"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "Build VitePress",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"vitepress",
+				"build",
+				"docs"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "vitepress-build",
+			"type": "shell",
+			"command": "node build.mjs",
+			"problemMatcher": []
+		},
+		{
+			"label": "npm-build",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"docs:build"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "preview-server",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"docs:preview"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "preview-server",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"docs:preview"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "preview-server-2",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"docs:preview"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "preview-server-3",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"docs:preview"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "preview-server-2",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"docs:preview"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}
