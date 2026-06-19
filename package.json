@@ -11,7 +11,14 @@
   "devDependencies": {
     "vitepress": "^1.6.3"
   },
-  "keywords": ["python", "documentation", "vitepress"],
+  "keywords": [
+    "python",
+    "documentation",
+    "vitepress"
+  ],
   "author": "qiuweikangdev",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@vueuse/core": "^14.3.0"
+  }
 }
