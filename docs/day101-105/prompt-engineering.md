@@ -47,6 +47,349 @@ LLM的上下文学习能力：
 - **中间步骤**：展示推理的中间过程
 - **自我验证**：验证推理过程的正确性
 
+## 技术方案对比
+
+### 提示类型对比
+
+| 提示类型 | 原理 | 优点 | 缺点 | 适用场景 |
+|----------|------|------|------|----------|
+| **零样本提示** | 直接给出指令 | 简单快速 | 复杂任务效果差 | 简单分类、翻译 |
+| **少样本提示** | 提供示例引导 | 效果稳定 | 需要准备示例 | 特定格式输出 |
+| **思维链提示** | 引导逐步推理 | 复杂推理能力强 | 输出较长 | 数学、逻辑推理 |
+| **角色提示** | 指定角色身份 | 输出风格可控 | 角色设定需设计 | 专业领域问答 |
+
+### 如何选择提示类型？
+
+**场景判断流程：**
+```
+任务简单？ → 零样本提示
+需要特定格式？ → 少样本提示
+需要推理？ → 思维链提示
+需要特定风格？ → 角色提示
+```
+
+**示例对比：**
+
+任务：判断情感倾向
+
+```
+# 零样本提示
+"判断以下文本的情感倾向：'这个产品太棒了！'"
+效果：一般，可能输出格式不统一
+
+# 少样本提示
+"判断情感倾向：
+示例1：'质量很好' → 正面
+示例2：'太差了' → 负面
+示例3：'这个产品太棒了！' → ?"
+效果：好，输出格式统一
+
+# 角色提示
+"你是一个情感分析专家。请判断以下文本的情感倾向：'这个产品太棒了！'"
+效果：好，输出更专业
+```
+
+## 设计原理与目的
+
+### 为什么提示能影响模型行为？
+
+**核心原理：条件概率生成**
+
+大语言模型的本质是根据输入预测下一个词：
+```
+P(输出|输入) = P(词1|输入) × P(词2|输入,词1) × ...
+```
+
+提示的作用是改变这个条件概率：
+- 好的提示 → 模型更可能生成正确答案
+- 差的提示 → 模型可能生成无关内容
+
+**类比理解：**
+把模型想象成一个知识渊博的人：
+- 模糊的问题 → 得到模糊的回答
+- 具体的问题 → 得到具体的回答
+- 带有引导的问题 → 得到更有针对性的回答
+
+### 提示设计的核心思想
+
+**1. 明确任务边界**
+```
+差："帮我处理一下这个文本"
+好："请将以下中文翻译成英文，保持原文的语气和风格"
+```
+为什么？明确的指令减少了模型的"猜测空间"
+
+**2. 提供足够上下文**
+```
+差："写一篇文章"
+好："写一篇关于人工智能在医疗领域应用的文章，面向非技术读者，约500字"
+```
+为什么？上下文帮助模型理解你的具体需求
+
+**3. 约束输出格式**
+```
+差："分析一下这个数据"
+好："请用以下格式分析数据：
+- 关键发现：...
+- 趋势分析：...
+- 建议：..."
+```
+为什么？格式约束让输出更可控
+
+### 思维链为什么有效？
+
+**问题：** 小明有5个苹果，给了小红2个，又买了3个，现在有几个？
+
+**直接回答：**
+```
+问：小明现在有几个苹果？
+答：6个
+```
+模型可能直接给出答案，但容易出错
+
+**思维链回答：**
+```
+问：请一步步推理：
+1. 小明开始有5个苹果
+2. 给了小红2个，剩下 5-2=3个
+3. 又买了3个，现在有 3+3=6个
+答：6个
+```
+逐步推理减少了错误
+
+**设计目的：**
+- 将复杂问题分解为简单步骤
+- 让模型"展示工作过程"
+- 便于检查和调试
+
+## 应用场景详解
+
+### 场景一：文本分类
+
+**需求：** 将客户反馈分类为"正面"、"负面"、"中性"
+
+**提示设计：**
+```python
+from openai import OpenAI
+
+client = OpenAI(api_key="your-api-key")
+
+def classify_sentiment(text):
+    """情感分类"""
+    prompt = f"""请将以下客户反馈分类为"正面"、"负面"或"中性"。
+
+分类规则：
+- 正面：表达满意、赞扬、推荐
+- 负面：表达不满、投诉、批评
+- 中性：客观描述、无明显情感
+
+客户反馈：{text}
+
+请只输出分类结果，不要解释。"""
+
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.0  # 分类任务用低温度
+    )
+    
+    return response.choices[0].message.content
+
+# 使用示例
+print(classify_sentiment("这个产品太棒了，强烈推荐！"))  # 正面
+print(classify_sentiment("质量很差，很失望"))  # 负面
+print(classify_sentiment("产品收到了"))  # 中性
+```
+
+**设计要点：**
+- 提供明确的分类标准
+- 使用低temperature保证一致性
+- 约束输出格式（只输出分类结果）
+
+### 场景二：信息提取
+
+**需求：** 从文本中提取人名、地点、时间
+
+**提示设计：**
+```python
+from openai import OpenAI
+import json
+
+client = OpenAI(api_key="your-api-key")
+
+def extract_entities(text):
+    """实体提取"""
+    prompt = f"""请从以下文本中提取实体信息。
+
+提取规则：
+- 人名：完整姓名
+- 地点：具体地址或城市
+- 时间：具体日期或时间
+
+文本：{text}
+
+请以JSON格式输出：
+{{
+    "persons": ["人名1", "人名2"],
+    "locations": ["地点1", "地点2"],
+    "times": ["时间1", "时间2"]
+}}"""
+
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.0,
+        response_format={"type": "json_object"}
+    )
+    
+    return json.loads(response.choices[0].message.content)
+
+# 使用示例
+text = "张三和李四于2024年1月15日在北京参加了会议。"
+result = extract_entities(text)
+print(result)
+# 输出：{"persons": ["张三", "李四"], "locations": ["北京"], "times": ["2024年1月15日"]}
+```
+
+**设计要点：**
+- 明确定义要提取的实体类型
+- 指定输出格式（JSON）
+- 使用低temperature保证准确性
+
+### 场景三：内容摘要
+
+**需求：** 将长文章压缩为指定长度的摘要
+
+**提示设计：**
+```python
+from openai import OpenAI
+
+client = OpenAI(api_key="your-api-key")
+
+def summarize(text, max_words=100):
+    """生成摘要"""
+    prompt = f"""请将以下文章压缩为不超过{max_words}字的摘要。
+
+摘要要求：
+- 保留核心信息
+- 保持原文主要观点
+- 语言简洁明了
+
+文章：
+{text}
+
+摘要："""
+
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3
+    )
+    
+    return response.choices[0].message.content
+
+# 使用示例
+article = "人工智能（AI）是计算机科学的一个分支..."  # 长文章
+summary = summarize(article, max_words=50)
+print(summary)
+```
+
+**设计要点：**
+- 明确字数限制
+- 指定摘要要求（保留核心、语言简洁）
+- 使用低temperature保持准确性
+
+### 场景四：代码生成
+
+**需求：** 根据需求描述生成Python代码
+
+**提示设计：**
+```python
+from openai import OpenAI
+
+client = OpenAI(api_key="your-api-key")
+
+def generate_code(requirement):
+    """代码生成"""
+    prompt = f"""请根据以下需求生成Python代码。
+
+需求：{requirement}
+
+代码要求：
+- 添加必要的注释
+- 包含错误处理
+- 遵循PEP8规范
+- 提供使用示例
+
+请输出完整的可执行代码："""
+
+    response = client.chat.completions.create(
+        model="gpt-4",  # 代码生成建议用GPT-4
+        messages=[
+            {"role": "system", "content": "你是一个专业的Python开发者。"},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.2
+    )
+    
+    return response.choices[0].message.content
+
+# 使用示例
+code = generate_code("实现一个函数，判断一个数是否为素数")
+print(code)
+```
+
+**设计要点：**
+- 使用GPT-4获得更好的代码生成效果
+- 指定代码规范和要求
+- 使用低temperature保证代码正确性
+
+### 场景五：多轮对话
+
+**需求：** 实现一个能记住上下文的对话系统
+
+**提示设计：**
+```python
+from openai import OpenAI
+
+client = OpenAI(api_key="your-api-key")
+
+class ChatBot:
+    def __init__(self):
+        self.messages = [
+            {"role": "system", "content": """你是一个友好的AI助手。
+规则：
+1. 记住之前的对话内容
+2. 回答要简洁明了
+3. 如果不确定，诚实说不知道"""}
+        ]
+    
+    def chat(self, user_input):
+        """对话"""
+        self.messages.append({"role": "user", "content": user_input})
+        
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=self.messages,
+            temperature=0.7
+        )
+        
+        assistant_message = response.choices[0].message.content
+        self.messages.append({"role": "assistant", "content": assistant_message})
+        
+        return assistant_message
+
+# 使用示例
+bot = ChatBot()
+print(bot.chat("你好，我叫张三"))
+print(bot.chat("我叫什么名字？"))  # 能记住之前的信息
+```
+
+**设计要点：**
+- 维护完整的消息历史
+- system prompt定义助手行为
+- 使用中等temperature平衡创造性和准确性
+
 ## 提示设计技巧
 
 ### 1. 零样本提示

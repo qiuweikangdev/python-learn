@@ -63,6 +63,475 @@ RAG的文档处理流程：
 - **混合搜索**：结合多种搜索策略
 - **重排序**：对结果进行二次排序
 
+## 技术方案对比
+
+### RAG vs 微调 vs 提示工程
+
+| 对比维度 | RAG | 微调(Fine-tuning) | 提示工程(Prompt Engineering) |
+|----------|-----|-------------------|------------------------------|
+| **原理** | 检索外部知识增强生成 | 在特定数据上训练模型 | 设计提示引导模型 |
+| **知识更新** | 实时更新，修改文档即可 | 需要重新训练 | 依赖模型已有知识 |
+| **成本** | 中等（需要向量数据库） | 高（需要GPU训练） | 低（只调用API） |
+| **效果** | 知识准确，可追溯 | 特定任务效果好 | 简单任务效果好 |
+| **适用场景** | 知识库问答、文档搜索 | 特定领域任务 | 简单任务、快速原型 |
+
+### 如何选择方案？
+
+**场景一：企业知识库问答**
+- 推荐：RAG
+- 原因：知识需要实时更新，需要可追溯的来源
+
+**场景二：特定领域任务（如医疗诊断）**
+- 推荐：微调 + RAG
+- 原因：微调让模型理解领域知识，RAG提供最新信息
+
+**场景三：简单问答**
+- 推荐：提示工程
+- 原因：成本低，开发快
+
+**场景四：需要引用来源的场景**
+- 推荐：RAG
+- 原因：RAG可以提供知识来源，便于验证
+
+### RAG技术栈对比
+
+| 组件 | 方案选择 | 优点 | 缺点 |
+|------|----------|------|------|
+| **嵌入模型** | OpenAI Embeddings | 效果好，易用 | 需要API调用，有成本 |
+| | BGE/M3E | 开源免费，中文优化 | 需要自己部署 |
+| **向量数据库** | Pinecone | 全托管，易维护 | 成本较高 |
+| | Chroma | 轻量级，易上手 | 性能有限 |
+| | Milvus | 高性能，可扩展 | 部署复杂 |
+| **检索策略** | 纯向量检索 | 简单，语义理解好 | 可能漏掉关键词 |
+| | 混合检索 | 兼顾语义和关键词 | 复杂度高 |
+
+## 设计原理与目的
+
+### 为什么需要RAG？
+
+**解决的核心问题：**
+
+1. **知识时效性**
+```
+问题：模型训练数据有截止日期
+示例：问"2024年诺贝尔奖得主是谁？"
+- 无RAG：模型不知道（训练数据截止到2023年）
+- 有RAG：检索最新信息 → 准确回答
+```
+
+2. **幻觉问题**
+```
+问题：模型可能编造不存在的信息
+示例：问"张三的电话号码是多少？"
+- 无RAG：模型可能编造一个号码
+- 有RAG：检索不到 → 回答"未找到相关信息"
+```
+
+3. **私有数据**
+```
+问题：模型没有企业内部数据
+示例：问"公司的报销流程是什么？"
+- 无RAG：模型不知道
+- 有RAG：检索内部文档 → 准确回答
+```
+
+4. **可追溯性**
+```
+问题：需要知道答案来源
+示例：问"这个结论的依据是什么？"
+- 无RAG：无法提供来源
+- 有RAG：提供原始文档引用
+```
+
+### RAG的核心原理
+
+**1. 检索增强生成的流程**
+
+```
+用户问题："公司的年假政策是什么？"
+
+步骤1：查询理解
+- 识别关键词：公司、年假、政策
+- 生成查询向量
+
+步骤2：知识检索
+- 在向量数据库中搜索相似文档
+- 找到《员工手册》中关于年假的章节
+
+步骤3：上下文构建
+- 将检索到的文档片段作为上下文
+- 构建提示词
+
+步骤4：答案生成
+- LLM基于上下文生成答案
+- "根据公司员工手册，年假政策如下..."
+```
+
+**2. 为什么向量检索有效？**
+
+**语义相似性原理：**
+```
+"苹果好吃" → 向量A [0.2, 0.8, 0.1, ...]
+"水果味道好" → 向量B [0.3, 0.7, 0.2, ...]
+"今天天气" → 向量C [0.9, 0.1, 0.5, ...]
+
+计算相似度：
+sim(A, B) = 0.95  # 高相似度（语义相近）
+sim(A, C) = 0.30  # 低相似度（语义不同）
+```
+
+**3. 为什么需要文本分块？**
+
+**问题：** 文档太长，无法直接放入上下文
+
+**解决方案：** 将文档分割成小块
+```
+原始文档：10000字
+↓ 分块
+块1：500字（关于年假）
+块2：500字（关于工资）
+块3：500字（关于考勤）
+...
+
+检索时只返回相关的块，而不是整个文档
+```
+
+**分块策略对比：**
+
+| 策略 | 原理 | 优点 | 缺点 |
+|------|------|------|------|
+| **固定长度** | 按字符数分割 | 简单 | 可能切断语义 |
+| **按段落** | 按段落分割 | 保持语义完整 | 块大小不一致 |
+| **递归分割** | 先大块再小块 | 平衡语义和大小 | 复杂度高 |
+| **语义分割** | 按语义边界分割 | 语义最完整 | 实现复杂 |
+
+### 嵌入模型的工作原理
+
+**什么是嵌入（Embedding）？**
+
+嵌入是将文本转换为数值向量的过程：
+```
+文本："人工智能是未来"
+     ↓ 嵌入模型
+向量：[0.12, -0.34, 0.56, 0.78, ...] （1536维）
+```
+
+**为什么嵌入能表示语义？**
+
+训练过程中，模型学习到：
+- 语义相似的文本 → 向量距离近
+- 语义不同的文本 → 向量距离远
+
+**类比理解：**
+把嵌入想象成"语义GPS坐标"：
+- "猫"和"狗"的坐标很近（都是宠物）
+- "猫"和"汽车"的坐标很远（语义不同）
+
+## 应用场景详解
+
+### 场景一：企业知识库问答
+
+**需求背景：**
+企业有大量内部文档（员工手册、产品文档、FAQ等），员工需要快速查询。
+
+**解决方案：**
+```python
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import DirectoryLoader, TextLoader
+from langchain.chains import RetrievalQA
+
+# 1. 加载文档
+loader = DirectoryLoader(
+    "./company_docs",
+    glob="**/*.txt",
+    loader_cls=TextLoader
+)
+documents = loader.load()
+
+# 2. 文本分割
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=500,
+    chunk_overlap=50
+)
+chunks = text_splitter.split_documents(documents)
+
+# 3. 创建向量数据库
+embeddings = OpenAIEmbeddings()
+vectorstore = Chroma.from_documents(
+    chunks,
+    embeddings,
+    persist_directory="./chroma_db"
+)
+
+# 4. 创建问答链
+llm = ChatOpenAI(model="gpt-3.5-turbo")
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=vectorstore.as_retriever(search_kwargs={"k": 3})
+)
+
+# 5. 使用
+answer = qa_chain.invoke("公司的年假政策是什么？")
+print(answer["result"])
+```
+
+**实现要点：**
+- 文档需要定期更新
+- 分块大小需要根据文档特点调整
+- 返回答案时最好附带来源
+
+### 场景二：智能客服系统
+
+**需求背景：**
+客服需要回答产品相关问题，但产品信息经常更新。
+
+**解决方案：**
+```python
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain.prompts import ChatPromptTemplate
+from langchain.schema.output_parser import StrOutputParser
+from langchain.schema.runnable import RunnablePassthrough
+
+# 1. 准备产品文档
+product_docs = [
+    "产品A：价格100元，功能包括...",
+    "产品B：价格200元，功能包括...",
+    "售后政策：7天无理由退货..."
+]
+
+# 2. 创建向量数据库
+embeddings = OpenAIEmbeddings()
+vectorstore = Chroma.from_texts(product_docs, embeddings)
+
+# 3. 创建RAG提示模板
+template = """基于以下产品信息回答客户问题。
+如果信息中没有相关内容，请说"抱歉，我需要转接人工客服"。
+
+产品信息：
+{context}
+
+客户问题：
+{question}
+
+回答："""
+
+prompt = ChatPromptTemplate.from_template(template)
+
+# 4. 构建RAG链
+llm = ChatOpenAI(model="gpt-3.5-turbo")
+retriever = vectorstore.as_retriever()
+
+rag_chain = (
+    {"context": retriever, "question": RunnablePassthrough()}
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+
+# 5. 使用
+answer = rag_chain.invoke("产品A多少钱？")
+print(answer)
+```
+
+**实现要点：**
+- 产品信息需要及时更新
+- 提示模板要引导模型友好回答
+- 无法回答时要转接人工
+
+### 场景三：文档搜索与摘要
+
+**需求背景：**
+用户上传大量文档，需要快速搜索和生成摘要。
+
+**解决方案：**
+```python
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.chains.summarize import load_summarize_chain
+
+# 1. 加载和分割文档
+def process_document(file_path):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        text = f.read()
+    
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=100
+    )
+    chunks = text_splitter.create_documents([text])
+    
+    return chunks
+
+# 2. 创建向量数据库
+def create_vectorstore(chunks):
+    embeddings = OpenAIEmbeddings()
+    vectorstore = FAISS.from_documents(chunks, embeddings)
+    return vectorstore
+
+# 3. 搜索相关文档
+def search_documents(vectorstore, query, k=3):
+    results = vectorstore.similarity_search_with_score(query, k=k)
+    return results
+
+# 4. 生成摘要
+def generate_summary(chunks):
+    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    chain = load_summarize_chain(llm, chain_type="map_reduce")
+    summary = chain.invoke(chunks)
+    return summary["output_text"]
+
+# 使用示例
+chunks = process_document("report.txt")
+vectorstore = create_vectorstore(chunks)
+
+# 搜索
+results = search_documents(vectorstore, "主要结论是什么？")
+for doc, score in results:
+    print(f"相关度: {score:.2f}")
+    print(f"内容: {doc.page_content[:100]}...")
+    print()
+
+# 摘要
+summary = generate_summary(chunks)
+print(f"摘要: {summary}")
+```
+
+**实现要点：**
+- 支持多种文档格式
+- 搜索结果要排序
+- 摘要要简洁明了
+
+### 场景四：多语言知识库
+
+**需求背景：**
+企业有中英文文档，需要统一检索。
+
+**解决方案：**
+```python
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# 1. 准备多语言文档
+documents = {
+    "zh": ["人工智能是计算机科学的一个分支...", "机器学习是AI的子领域..."],
+    "en": ["Artificial intelligence is a branch of computer science...", "Machine learning is a subfield of AI..."]
+}
+
+# 2. 创建多语言向量数据库
+embeddings = OpenAIEmbeddings()  # OpenAI嵌入支持多语言
+
+all_chunks = []
+for lang, docs in documents.items():
+    for doc in docs:
+        # 添加语言元数据
+        all_chunks.append({
+            "text": doc,
+            "metadata": {"language": lang}
+        })
+
+# 3. 创建向量数据库
+vectorstore = Chroma.from_texts(
+    [c["text"] for c in all_chunks],
+    embeddings,
+    metadatas=[c["metadata"] for c in all_chunks]
+)
+
+# 4. 搜索（支持跨语言）
+results = vectorstore.similarity_search(
+    "什么是AI？",  # 中文查询
+    k=3,
+    filter={"language": "en"}  # 只返回英文结果
+)
+
+for doc in results:
+    print(f"语言: {doc.metadata['language']}")
+    print(f"内容: {doc.page_content}")
+    print()
+```
+
+**实现要点：**
+- 使用支持多语言的嵌入模型
+- 添加语言元数据便于过滤
+- 支持跨语言检索
+
+### 场景五：实时知识更新
+
+**需求背景：**
+知识库需要实时更新，如新闻、股票信息等。
+
+**解决方案：**
+```python
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import Chroma
+from datetime import datetime
+
+class RealtimeKnowledgeBase:
+    def __init__(self):
+        self.embeddings = OpenAIEmbeddings()
+        self.vectorstore = Chroma(
+            embedding_function=self.embeddings,
+            persist_directory="./realtime_kb"
+        )
+    
+    def add_document(self, text, metadata=None):
+        """添加新文档"""
+        if metadata is None:
+            metadata = {}
+        
+        metadata["timestamp"] = datetime.now().isoformat()
+        
+        self.vectorstore.add_texts(
+            [text],
+            metadatas=[metadata]
+        )
+    
+    def search(self, query, time_filter=None, k=5):
+        """搜索文档"""
+        filter_dict = {}
+        
+        if time_filter:
+            # 只搜索最近N天的文档
+            filter_dict["timestamp"] = {"$gte": time_filter}
+        
+        results = self.vectorstore.similarity_search(
+            query,
+            k=k,
+            filter=filter_dict if filter_dict else None
+        )
+        
+        return results
+    
+    def update_document(self, doc_id, new_text):
+        """更新文档"""
+        # Chroma支持更新
+        self.vectorstore.update_document(doc_id, new_text)
+
+# 使用示例
+kb = RealtimeKnowledgeBase()
+
+# 添加新闻
+kb.add_document(
+    "2024年1月15日，OpenAI发布了GPT-4 Turbo...",
+    {"category": "tech", "source": "news"}
+)
+
+# 搜索最新信息
+results = kb.search("GPT-4有什么新功能？")
+for doc in results:
+    print(doc.page_content)
+```
+
+**实现要点：**
+- 支持增量更新
+- 添加时间戳元数据
+- 支持时间范围过滤
+
 ## 架构设计
 
 ### 1. 基础架构
