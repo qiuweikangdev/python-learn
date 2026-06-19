@@ -21,4 +21,7 @@ docs/.vitepress/cache
 docs/.vitepress/dist
 .vitepress/cache
 
+### OpenCode ###
+docs/superpowers/
+
 
