@@ -94,6 +94,7 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: '学习路线', link: '/day01-20/01-python' },
+      { text: 'Agent开发', link: '/agent/' },
       { text: '番外篇', link: '/extra/' }
     ],
 
@@ -284,6 +285,23 @@ export default defineConfig({
             { text: '一个小例子助你彻底理解协程', link: '/extra/136ebce1' },
             { text: '用函数还是用复杂的表达式', link: '/extra/77627d0a' },
             { text: '知乎问题回答', link: '/extra/4b9176c2' }
+          ]
+        }
+      ],
+      '/agent/': [
+        {
+          text: 'Agent应用开发',
+          items: [
+            { text: '概述与学习路线', link: '/agent/' },
+            { text: 'LLM应用开发基础', link: '/agent/llm-basics/' },
+            { text: 'LangChain框架', link: '/agent/langchain/' },
+            { text: 'LangGraph工作流', link: '/agent/langgraph/' },
+            { text: 'RAG技术', link: '/agent/rag/' },
+            { text: '向量数据库', link: '/agent/rag/vector-databases/' },
+            { text: 'Agent框架', link: '/agent/agent-frameworks/' },
+            { text: '多Agent系统', link: '/agent/multi-agent/' },
+            { text: 'Deep-Agent开发', link: '/agent/deep-agent/' },
+            { text: 'Agent平台与服务', link: '/agent/agent-platforms/' }
           ]
         }
       ]
