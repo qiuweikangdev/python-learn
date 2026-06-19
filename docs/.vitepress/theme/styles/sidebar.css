@@ -1,0 +1,33 @@
+/* 侧边栏折叠状态样式 */
+.sidebar-collapsed .VPSidebar {
+  transform: translateX(-100%);
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* 折叠按钮动画 */
+.sidebar-collapse-button {
+  transition: all 0.2s ease;
+}
+
+.sidebar-collapse-button:hover {
+  transform: scale(1.05);
+}
+
+/* 响应式调整 */
+@media (max-width: 959px) {
+  .sidebar-collapse-button {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    z-index: 100;
+    background-color: var(--vp-c-brand-1);
+    color: white;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .sidebar-collapse-button:hover {
+    background-color: var(--vp-c-brand-2);
+  }
+}
