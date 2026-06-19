@@ -312,12 +312,7 @@ export default defineConfig({
       { icon: 'github', link: 'https://github.com/qiuweikangdev/python-learn' }
     ],
 
-    // 页脚
-    footer: {
-      message: '基于 MIT 许可发布',
-      copyright: 'Copyright © 2024 骆昊'
-    },
-
+    
     // 搜索配置 - 本地搜索
     search: {
       provider: 'local',
