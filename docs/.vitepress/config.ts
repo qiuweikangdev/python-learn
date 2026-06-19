@@ -304,6 +304,116 @@ export default defineConfig({
             { text: 'Agent平台与服务', link: '/agent/agent-platforms/' }
           ]
         }
+      ],
+      '/day101-105/': [
+        {
+          text: 'Day101-105 - LLM应用开发基础',
+          items: [
+            { text: '概述与学习路线', link: '/day101-105/' },
+            { text: 'OpenAI API详解', link: '/day101-105/openai-api' },
+            { text: '提示工程', link: '/day101-105/prompt-engineering' },
+            { text: '函数调用', link: '/day101-105/function-calling' },
+            { text: '工具使用', link: '/day101-105/tool-use' }
+          ]
+        }
+      ],
+      '/day106-110/': [
+        {
+          text: 'Day106-110 - LangChain框架',
+          items: [
+            { text: 'LangChain入门', link: '/day106-110/' },
+            { text: '核心概念详解', link: '/day106-110/core-concepts' },
+            { text: 'API参考手册', link: '/day106-110/api-reference' },
+            { text: '最佳实践指南', link: '/day106-110/best-practices' }
+          ]
+        }
+      ],
+      '/day111-115/': [
+        {
+          text: 'Day111-115 - LangGraph工作流',
+          items: [
+            { text: 'LangGraph入门', link: '/day111-115/' },
+            { text: '核心概念详解', link: '/day111-115/core-concepts' },
+            { text: 'API参考手册', link: '/day111-115/api-reference' },
+            { text: '工作流模式', link: '/day111-115/workflow-patterns' }
+          ]
+        }
+      ],
+      '/day116-120/': [
+        {
+          text: 'Day116-120 - RAG技术',
+          items: [
+            { text: 'RAG技术概述', link: '/day116-120/' },
+            { text: '核心概念详解', link: '/day116-120/core-concepts' },
+            { text: '实现与优化', link: '/day116-120/implementation' },
+            { text: '高级模式', link: '/day116-120/advanced-patterns' }
+          ]
+        }
+      ],
+      '/day121-125/': [
+        {
+          text: 'Day121-125 - 向量数据库',
+          items: [
+            { text: '向量数据库概述', link: '/day121-125/' },
+            { text: 'Pinecone详解', link: '/day121-125/pinecone' },
+            { text: 'Weaviate详解', link: '/day121-125/weaviate' },
+            { text: 'Milvus详解', link: '/day121-125/milvus' },
+            { text: 'Chroma详解', link: '/day121-125/chroma' },
+            { text: 'Qdrant详解', link: '/day121-125/qdrant' },
+            { text: 'FAISS详解', link: '/day121-125/faiss' },
+            { text: 'pgvector详解', link: '/day121-125/pgvector' },
+            { text: 'Redis详解', link: '/day121-125/redis' },
+            { text: 'Elasticsearch详解', link: '/day121-125/elasticsearch' }
+          ]
+        }
+      ],
+      '/day126-130/': [
+        {
+          text: 'Day126-130 - Agent框架',
+          items: [
+            { text: 'Agent框架概述', link: '/day126-130/' },
+            { text: 'AutoGPT详解', link: '/day126-130/autogpt' },
+            { text: 'BabyAGI详解', link: '/day126-130/babyagi' },
+            { text: 'MetaGPT详解', link: '/day126-130/metagpt' },
+            { text: 'CrewAI详解', link: '/day126-130/crewai' },
+            { text: 'Microsoft AutoGen详解', link: '/day126-130/autogen' },
+            { text: 'ChatDev详解', link: '/day126-130/chatdev' },
+            { text: 'CAMEL详解', link: '/day126-130/camel' }
+          ]
+        }
+      ],
+      '/day131-135/': [
+        {
+          text: 'Day131-135 - 多Agent系统',
+          items: [
+            { text: '多Agent系统概述', link: '/day131-135/' },
+            { text: '通信框架', link: '/day131-135/communication' },
+            { text: '协作模式', link: '/day131-135/collaboration' },
+            { text: '任务分解', link: '/day131-135/task-decomposition' }
+          ]
+        }
+      ],
+      '/day136-140/': [
+        {
+          text: 'Day136-140 - Deep-Agent开发',
+          items: [
+            { text: 'Deep-Agent入门', link: '/day136-140/' },
+            { text: '核心概念详解', link: '/day136-140/core-concepts' },
+            { text: 'API参考手册', link: '/day136-140/api-reference' },
+            { text: '架构设计', link: '/day136-140/architecture' }
+          ]
+        }
+      ],
+      '/day141-145/': [
+        {
+          text: 'Day141-145 - Agent平台与服务',
+          items: [
+            { text: 'Agent平台概述', link: '/day141-145/' },
+            { text: '云服务Agent平台', link: '/day141-145/cloud-platforms' },
+            { text: 'API服务', link: '/day141-145/api-services' },
+            { text: '部署与运维', link: '/day141-145/deployment' }
+          ]
+        }
       ]
     },
 
