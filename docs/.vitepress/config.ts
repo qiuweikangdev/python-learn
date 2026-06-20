@@ -309,6 +309,8 @@ export default defineConfig({
           text: 'Day101-105 - LLM应用开发基础',
           items: [
             { text: '概述与学习路线', link: '/day101-105/' },
+            { text: 'Transformer原理详解', link: '/day101-105/transformer' },
+            { text: '模型微调详解', link: '/day101-105/fine-tuning' },
             { text: 'OpenAI API详解', link: '/day101-105/openai-api' },
             { text: '提示工程', link: '/day101-105/prompt-engineering' },
             { text: '函数调用', link: '/day101-105/function-calling' },
@@ -371,6 +373,8 @@ export default defineConfig({
           text: 'Day126-130 - Agent框架',
           items: [
             { text: 'Agent框架概述', link: '/day126-130/' },
+            { text: '现代Agent Harness', link: '/day126-130/agent-harness' },
+            { text: 'Skills与能力打包', link: '/day126-130/skills-protocol' },
             { text: 'AutoGPT详解', link: '/day126-130/autogpt' },
             { text: 'BabyAGI详解', link: '/day126-130/babyagi' },
             { text: 'MetaGPT详解', link: '/day126-130/metagpt' },

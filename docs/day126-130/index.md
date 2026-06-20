@@ -251,6 +251,420 @@ LLM只能生成文本，无法：
 → LLM会提供更专业的建议
 ```
 
+## Agent基本循环：Observe → Think → Act
+
+### 循环原理
+
+Agent的核心是**感知-思考-行动**循环，这是Agent能够自主完成任务的基础。
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Agent 基本循环                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │                                                         │   │
+│   │   ┌─────────┐                                           │   │
+│   │   │ Observe │ ←─────────────────────────────┐           │   │
+│   │   │ (感知)  │                               │           │   │
+│   │   └────┬────┘                               │           │   │
+│   │        │                                    │           │   │
+│   │        ▼                                    │           │   │
+│   │   ┌─────────┐                               │           │   │
+│   │   │  Think  │                               │           │   │
+│   │   │ (思考)  │                               │           │   │
+│   │   └────┬────┘                               │           │   │
+│   │        │                                    │           │   │
+│   │        ▼                                    │           │   │
+│   │   ┌─────────┐                               │           │   │
+│   │   │   Act   │ ──────────────────────────────┘           │   │
+│   │   │ (行动)  │                                           │   │
+│   │   └─────────┘                                           │   │
+│   │                                                         │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│   循环条件：任务未完成 且 未达到最大迭代次数                        │
+│   终止条件：任务完成 或 达到最大迭代次数 或 用户中断               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 各阶段详解
+
+#### 1. Observe（感知）
+
+**作用**：收集当前状态信息
+
+**感知的内容**：
+- 用户输入
+- 环境状态
+- 工具返回结果
+- 记忆中的信息
+
+**代码示例**：
+
+```python
+def observe(user_input: str, tool_results: list, memory: dict) -> dict:
+    """
+    感知阶段：收集当前状态信息
+    
+    Args:
+        user_input: 用户输入
+        tool_results: 工具返回的结果
+        memory: 记忆中的信息
+    
+    Returns:
+        当前状态的完整信息
+    """
+    state = {
+        "user_input": user_input,
+        "tool_results": tool_results,
+        "memory": memory,
+        "timestamp": "2024-01-15 10:30:00"
+    }
+    return state
+```
+
+#### 2. Think（思考）
+
+**作用**：分析状态，做出决策
+
+**思考的内容**：
+- 分析用户意图
+- 评估当前状态
+- 决定下一步行动
+- 选择合适的工具
+
+**代码示例**：
+
+```python
+from openai import OpenAI
+
+client = OpenAI()
+
+def think(state: dict) -> dict:
+    """
+    思考阶段：分析状态，做出决策
+    
+    Args:
+        state: 当前状态
+    
+    Returns:
+        决策结果
+    """
+    # 构建思考提示
+    prompt = f"""
+    当前状态：
+    - 用户输入：{state['user_input']}
+    - 工具结果：{state['tool_results']}
+    - 记忆：{state['memory']}
+    
+    请分析当前状态，决定下一步行动。
+    """
+    
+    # 调用LLM进行思考
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    decision = {
+        "action": "call_tool",  # 或 "answer", "think_more"
+        "tool": "search",
+        "parameters": {"query": "人工智能"},
+        "reasoning": response.choices[0].message.content
+    }
+    
+    return decision
+```
+
+#### 3. Act（行动）
+
+**作用**：执行决策，获取结果
+
+**行动的类型**：
+- 调用工具
+- 生成回答
+- 更新记忆
+- 请求更多信息
+
+**代码示例**：
+
+```python
+def act(decision: dict, tools: dict) -> dict:
+    """
+    行动阶段：执行决策
+    
+    Args:
+        decision: 决策结果
+        tools: 可用工具
+    
+    Returns:
+        行动结果
+    """
+    if decision["action"] == "call_tool":
+        # 调用工具
+        tool_name = decision["tool"]
+        tool_params = decision["parameters"]
+        
+        if tool_name in tools:
+            result = tools[tool_name](**tool_params)
+            return {
+                "status": "success",
+                "result": result,
+                "tool": tool_name
+            }
+        else:
+            return {
+                "status": "error",
+                "error": f"工具 {tool_name} 不存在"
+            }
+    
+    elif decision["action"] == "answer":
+        # 直接回答
+        return {
+            "status": "complete",
+            "answer": decision.get("answer", "")
+        }
+    
+    else:
+        return {
+            "status": "continue",
+            "reasoning": decision.get("reasoning", "")
+        }
+```
+
+### 完整的Agent循环实现
+
+```python
+from openai import OpenAI
+from typing import Dict, List, Callable
+import json
+
+client = OpenAI()
+
+class Agent:
+    """
+    完整的Agent实现
+    
+    实现了 Observe -> Think -> Act 循环
+    """
+    
+    def __init__(self, tools: Dict[str, Callable], max_iterations: int = 5):
+        """
+        初始化Agent
+        
+        Args:
+            tools: 可用工具字典
+            max_iterations: 最大迭代次数
+        """
+        self.tools = tools
+        self.max_iterations = max_iterations
+        self.memory = {}  # 记忆
+        self.history = []  # 执行历史
+    
+    def observe(self, user_input: str, tool_results: List[Dict] = None) -> Dict:
+        """
+        感知阶段
+        
+        Args:
+            user_input: 用户输入
+            tool_results: 工具返回结果
+        
+        Returns:
+            当前状态
+        """
+        return {
+            "user_input": user_input,
+            "tool_results": tool_results or [],
+            "memory": self.memory,
+            "history": self.history
+        }
+    
+    def think(self, state: Dict) -> Dict:
+        """
+        思考阶段
+        
+        Args:
+            state: 当前状态
+        
+        Returns:
+            决策结果
+        """
+        # 构建思考提示
+        prompt = f"""你是一个智能助手。请分析当前状态，决定下一步行动。
+
+当前状态：
+- 用户输入：{state['user_input']}
+- 工具结果：{json.dumps(state['tool_results'], ensure_ascii=False)}
+- 历史记录：{json.dumps(state['history'][-3:], ensure_ascii=False) if state['history'] else '无'}
+
+可用工具：
+{json.dumps([{"name": name, "description": func.__doc__ or "无描述"} for name, func in self.tools.items()], ensure_ascii=False, indent=2)}
+
+请以JSON格式返回你的决策：
+{{
+    "action": "call_tool" 或 "answer" 或 "think_more",
+    "tool": "工具名称（如果action是call_tool）",
+    "parameters": {{}},
+    "answer": "最终答案（如果action是answer）",
+    "reasoning": "你的思考过程"
+}}"""
+        
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
+        )
+        
+        decision = json.loads(response.choices[0].message.content)
+        return decision
+    
+    def act(self, decision: Dict) -> Dict:
+        """
+        行动阶段
+        
+        Args:
+            decision: 决策结果
+        
+        Returns:
+            行动结果
+        """
+        if decision["action"] == "call_tool":
+            # 调用工具
+            tool_name = decision.get("tool")
+            tool_params = decision.get("parameters", {})
+            
+            if tool_name in self.tools:
+                try:
+                    result = self.tools[tool_name](**tool_params)
+                    return {
+                        "status": "success",
+                        "result": result,
+                        "tool": tool_name
+                    }
+                except Exception as e:
+                    return {
+                        "status": "error",
+                        "error": str(e),
+                        "tool": tool_name
+                    }
+            else:
+                return {
+                    "status": "error",
+                    "error": f"工具 {tool_name} 不存在"
+                }
+        
+        elif decision["action"] == "answer":
+            return {
+                "status": "complete",
+                "answer": decision.get("answer", "")
+            }
+        
+        else:
+            return {
+                "status": "continue",
+                "reasoning": decision.get("reasoning", "")
+            }
+    
+    def run(self, user_input: str) -> str:
+        """
+        运行Agent的主循环
+        
+        Args:
+            user_input: 用户输入
+        
+        Returns:
+            最终回答
+        """
+        print(f"用户输入：{user_input}")
+        
+        tool_results = []
+        
+        for iteration in range(self.max_iterations):
+            print(f"\n--- 迭代 {iteration + 1} ---")
+            
+            # Observe：感知当前状态
+            state = self.observe(user_input, tool_results)
+            print(f"感知状态：{json.dumps(state, ensure_ascii=False, indent=2)[:200]}...")
+            
+            # Think：思考并决策
+            decision = self.think(state)
+            print(f"决策：{json.dumps(decision, ensure_ascii=False, indent=2)}")
+            
+            # Act：执行行动
+            result = self.act(decision)
+            print(f"结果：{json.dumps(result, ensure_ascii=False, indent=2)}")
+            
+            # 更新历史
+            self.history.append({
+                "iteration": iteration + 1,
+                "decision": decision,
+                "result": result
+            })
+            
+            # 检查是否完成
+            if result["status"] == "complete":
+                return result["answer"]
+            
+            # 如果是工具调用，将结果添加到工具结果列表
+            if result["status"] == "success":
+                tool_results.append({
+                    "tool": result["tool"],
+                    "result": result["result"]
+                })
+        
+        return "达到最大迭代次数，任务未完成"
+
+# 使用示例
+def search(query: str) -> str:
+    """搜索互联网信息"""
+    return f"搜索结果：关于'{query}'的最新信息..."
+
+def calculate(expression: str) -> str:
+    """计算数学表达式"""
+    try:
+        result = eval(expression)
+        return f"计算结果：{result}"
+    except Exception as e:
+        return f"计算错误：{e}"
+
+# 创建Agent
+agent = Agent(
+    tools={
+        "search": search,
+        "calculate": calculate
+    },
+    max_iterations=5
+)
+
+# 运行Agent
+# result = agent.run("搜索人工智能的最新进展，并计算相关数据")
+# print(f"\n最终结果：{result}")
+```
+
+### 循环终止条件
+
+```
+终止条件：
+
+1. 任务完成
+   - Agent生成了最终答案
+   - 用户问题得到解决
+
+2. 达到最大迭代次数
+   - 防止无限循环
+   - 节省资源
+
+3. 用户中断
+   - 用户主动停止
+   - 超时处理
+
+4. 错误终止
+   - 发生不可恢复的错误
+   - 工具调用失败
+```
+
 ## 应用场景详解
 
 ### 场景一：自主研究Agent
