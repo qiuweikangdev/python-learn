@@ -2,8 +2,6 @@
 layout: home
 hero:
   name: Agent 应用开发
-  text: 从入门到精通的 AI Agent 开发学习路线
-  tagline: 掌握 LangChain、RAG、多Agent系统等前沿技术
   actions:
     - theme: brand
       text: 开始学习
