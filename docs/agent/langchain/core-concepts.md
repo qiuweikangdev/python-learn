@@ -75,80 +75,147 @@ LangChain的模型抽象层：
 
 ### 1. 模型调用
 ```python
+# 导入LangChain的模型封装类
+# langchain_openai.ChatOpenAI：OpenAI模型的LangChain封装
+# 安装：pip install langchain-openai
 from langchain_openai import ChatOpenAI
+
+# 导入Anthropic模型封装类
+# langchain_anthropic.ChatAnthropic：Anthropic Claude模型的LangChain封装
+# 安装：pip install langchain-anthropic
 from langchain_anthropic import ChatAnthropic
 
-# OpenAI模型
+# 创建OpenAI模型实例
+# ChatOpenAI类：封装了OpenAI API的调用逻辑
+# 参数说明：
+#   model：模型名称，如"gpt-3.5-turbo"、"gpt-4"
+#   temperature：控制输出随机性，0-2之间，越低越确定
+#   api_key：OpenAI API密钥
 llm = ChatOpenAI(
-    model="gpt-3.5-turbo",
-    temperature=0.7,
-    api_key="your-api-key"
+    model="gpt-3.5-turbo",  # 使用GPT-3.5-turbo模型
+    temperature=0.7,  # 中等随机性，平衡创造性和准确性
+    api_key="your-api-key"  # 替换为真实的API密钥
 )
 
-# Anthropic模型
+# 创建Anthropic模型实例
+# ChatAnthropic类：封装了Anthropic API的调用逻辑
+# 参数说明：
+#   model：模型名称，如"claude-3-sonnet-20240229"
+#   api_key：Anthropic API密钥
 llm = ChatAnthropic(
-    model="claude-3-sonnet-20240229",
-    api_key="your-api-key"
+    model="claude-3-sonnet-20240229",  # 使用Claude 3 Sonnet模型
+    api_key="your-api-key"  # 替换为真实的API密钥
 )
 
 # 调用模型
+# invoke()方法：发送请求并获取响应
+# 参数：用户输入的文本
+# 返回值：AIMessage对象，包含模型生成的内容
 response = llm.invoke("你好！")
+
+# 获取响应内容
+# response.content：AIMessage对象的content属性，包含文本内容
 print(response.content)
 ```
 
 ### 2. 提示模板
 ```python
+# 导入LangChain的聊天提示模板
+# langchain.prompts.ChatPromptTemplate：用于创建聊天提示模板
+# 提示模板可以包含系统消息、用户消息等
 from langchain.prompts import ChatPromptTemplate
 
 # 创建提示模板
+# ChatPromptTemplate.from_messages()：从消息列表创建提示模板
+# 参数：消息列表，每个消息是元组格式 (角色, 内容)
+# 角色类型：
+#   "system"：系统消息，定义AI助手的行为
+#   "user"：用户消息，用户的输入
+#   "assistant"：助手消息，AI的回复
+# 占位符：{input} 表示运行时会被替换的变量
 prompt = ChatPromptTemplate.from_messages([
-    ("system", "你是一个有用的助手。"),
-    ("user", "{input}")
+    ("system", "你是一个有用的助手。"),  # 系统消息：定义助手角色
+    ("user", "{input}")  # 用户消息：{input}是占位符
 ])
 
 # 格式化提示
+# format_messages()：将占位符替换为实际值
+# 参数：占位符变量名和值的映射
+# 返回值：格式化后的消息列表
 messages = prompt.format_messages(input="你好！")
 print(messages)
 ```
 
 ### 3. 链构建
 ```python
-from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.output_parser import StrOutputParser
+# 导入必要的LangChain组件
+from langchain_openai import ChatOpenAI  # OpenAI模型封装
+from langchain.prompts import ChatPromptTemplate  # 提示模板
+from langchain.schema.output_parser import StrOutputParser  # 字符串输出解析器
 
-# 创建链
+# 创建链（Chain）
+# 链是LangChain的核心抽象，将多个组件串联起来
+# 使用管道操作符 | 连接各个组件
+# 数据流向：提示模板 -> 模型 -> 输出解析器
 chain = (
+    # 第一步：创建提示模板
     ChatPromptTemplate.from_messages([
         ("system", "你是一个有用的助手。"),
         ("user", "{input}")
     ])
+    # 第二步：创建OpenAI模型
     | ChatOpenAI(model="gpt-3.5-turbo")
+    # 第三步：创建输出解析器
+    # StrOutputParser()：将模型输出转换为字符串
     | StrOutputParser()
 )
 
 # 执行链
+# invoke()方法：执行整个链
+# 参数：包含占位符变量的字典
+# 返回值：链的最终输出结果
 result = chain.invoke({"input": "你好！"})
 print(result)
 ```
 
 ### 4. 记忆管理
 ```python
+# 导入LangChain的记忆组件
+# langchain.memory.ConversationBufferMemory：对话缓冲记忆
+# 保存完整的对话历史
 from langchain.memory import ConversationBufferMemory
+
+# 导入OpenAI模型
 from langchain_openai import ChatOpenAI
+
+# 导入对话链
+# langchain.chains.ConversationChain：对话链
+# 自动管理对话历史和上下文
 from langchain.chains import ConversationChain
 
-# 创建记忆
+# 创建记忆组件
+# ConversationBufferMemory：保存完整对话历史
+# 参数：
+#   return_messages=True：以消息列表形式返回记忆
+#   如果为False，则返回字符串格式
 memory = ConversationBufferMemory(return_messages=True)
 
 # 创建对话链
+# ConversationChain：封装了对话逻辑
+# 参数：
+#   llm：语言模型实例
+#   memory：记忆组件实例
+#   verbose=True：打印详细执行过程
 conversation = ConversationChain(
-    llm=ChatOpenAI(model="gpt-3.5-turbo"),
-    memory=memory,
-    verbose=True
+    llm=ChatOpenAI(model="gpt-3.5-turbo"),  # 使用GPT-3.5-turbo模型
+    memory=memory,  # 使用对话缓冲记忆
+    verbose=True  # 打印详细执行过程，便于调试
 )
 
-# 对话
+# 进行对话
+# predict()方法：发送消息并获取响应
+# 参数：用户输入的消息
+# 返回值：模型生成的回复
 response = conversation.predict(input="你好！")
 print(response)
 ```
@@ -171,62 +238,140 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 
-# 创建简单链
+# 创建简单链的函数
 def simple_chain():
+    """
+    创建一个简单的LangChain链
+    
+    返回值：
+        chain: 可执行的链对象
+    
+    链的结构：提示模板 -> 模型 -> 输出解析器
+    """
+    # 创建提示模板
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "你是一个有用的助手。"),
-        ("user", "{input}")
+        ("system", "你是一个有用的助手。"),  # 系统消息
+        ("user", "{input}")  # 用户消息占位符
     ])
     
+    # 创建OpenAI模型
     llm = ChatOpenAI(model="gpt-3.5-turbo")
+    
+    # 创建输出解析器
+    # StrOutputParser()：将模型输出转换为纯字符串
     output_parser = StrOutputParser()
     
+    # 使用管道操作符连接组件
+    # 数据流向：prompt -> llm -> output_parser
     chain = prompt | llm | output_parser
     return chain
 
 # 使用示例
+# 创建链实例
 chain = simple_chain()
+
+# 执行链
+# invoke()方法：执行整个链
+# 参数：包含输入变量的字典
 result = chain.invoke({"input": "解释什么是Python"})
 print(result)
 ```
 
 ### 3. 工具集成示例
 ```python
-from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_tools_agent
-from langchain.tools import tool
+# 导入必要的LangChain组件
+from langchain_openai import ChatOpenAI  # OpenAI模型
+from langchain.agents import AgentExecutor, create_openai_tools_agent  # Agent执行器和创建函数
+from langchain.tools import tool  # 工具装饰器
 
+# 使用@tool装饰器定义工具
+# @tool装饰器：将函数转换为LangChain工具
+# 函数的docstring会作为工具的描述
+# 函数的类型注解会作为参数的类型定义
 @tool
 def search(query: str) -> str:
-    """搜索互联网"""
+    """搜索互联网
+    
+    参数：
+        query (str): 搜索关键词
+    
+    返回值：
+        str: 搜索结果
+    """
+    # 这里应该是实际的搜索API调用
+    # 示例返回模拟结果
     return f"搜索结果: {query}"
 
 @tool
 def calculate(expression: str) -> str:
-    """计算数学表达式"""
+    """计算数学表达式
+    
+    参数：
+        expression (str): 数学表达式，如 "2 + 3 * 4"
+    
+    返回值：
+        str: 计算结果
+    """
     try:
+        # eval()函数：执行字符串形式的Python表达式
+        # 注意：生产环境中应使用更安全的计算方式
         result = eval(expression)
         return str(result)
     except:
         return "计算错误"
 
 def create_agent():
+    """
+    创建Agent执行器
+    
+    返回值：
+        AgentExecutor: Agent执行器实例
+    
+    Agent是能够使用工具的智能体
+    """
+    # 创建OpenAI模型
     llm = ChatOpenAI(model="gpt-3.5-turbo")
+    
+    # 工具列表
     tools = [search, calculate]
     
+    # 导入提示模板
     from langchain.prompts import ChatPromptTemplate
+    
+    # 创建提示模板
+    # Agent提示模板需要包含{agent_scratchpad}占位符
+    # agent_scratchpad：Agent的思考过程和工具调用历史
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "你是一个有用的助手，可以使用工具来完成任务。"),
-        ("user", "{input}"),
-        ("placeholder", "{agent_scratchpad}")
+        ("system", "你是一个有用的助手，可以使用工具来完成任务。"),  # 系统消息
+        ("user", "{input}"),  # 用户输入
+        ("placeholder", "{agent_scratchpad}")  # Agent思考过程
     ])
     
+    # 创建Agent
+    # create_openai_tools_agent()：创建支持OpenAI工具调用的Agent
+    # 参数：
+    #   llm：语言模型
+    #   tools：工具列表
+    #   prompt：提示模板
     agent = create_openai_tools_agent(llm, tools, prompt)
+    
+    # 创建Agent执行器
+    # AgentExecutor：管理Agent的执行循环
+    # 参数：
+    #   agent：Agent实例
+    #   tools：工具列表
+    #   verbose=True：打印详细执行过程
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
     return agent_executor
 
 # 使用示例
+# 创建Agent实例
 agent = create_agent()
+
+# 执行Agent
+# invoke()方法：执行Agent
+# 参数：包含用户输入的字典
+# Agent会自动决定是否使用工具，以及使用哪个工具
 result = agent.invoke({"input": "搜索最新科技新闻并计算相关数据"})
 print(result)
 ```

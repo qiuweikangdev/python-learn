@@ -51,64 +51,98 @@ LLM选择合适的函数：
 
 ### 1. 基础函数调用
 ```python
+# 导入OpenAI库
+# openai：OpenAI官方Python客户端库
+# 安装：pip install openai
 from openai import OpenAI
+
+# 导入json模块
+# json：Python内置的JSON处理模块
 import json
 
+# 创建OpenAI客户端实例
+# OpenAI(api_key)：初始化OpenAI客户端
+# api_key参数：OpenAI API密钥
 client = OpenAI(api_key="your-api-key")
 
-# 定义函数
+# 定义函数（Function Calling）
+# functions参数：定义模型可以调用的函数列表
+# 每个函数是一个字典，包含以下字段：
+#   name：函数名称（必须是有效的Python标识符）
+#   description：函数功能描述（帮助模型理解何时使用该函数）
+#   parameters：函数参数定义（JSON Schema格式）
 functions = [
     {
-        "name": "get_weather",
-        "description": "获取指定城市的天气信息",
-        "parameters": {
-            "type": "object",
-            "properties": {
+        "name": "get_weather",  # 函数名称
+        "description": "获取指定城市的天气信息",  # 函数描述
+        "parameters": {  # 参数定义
+            "type": "object",  # 参数类型：对象
+            "properties": {  # 属性定义
                 "location": {
-                    "type": "string",
-                    "description": "城市名称，如：北京"
+                    "type": "string",  # 类型：字符串
+                    "description": "城市名称，如：北京"  # 描述
                 },
                 "unit": {
-                    "type": "string",
-                    "enum": ["celsius", "fahrenheit"],
-                    "description": "温度单位"
+                    "type": "string",  # 类型：字符串
+                    "enum": ["celsius", "fahrenheit"],  # 枚举值
+                    "description": "温度单位"  # 描述
                 }
             },
-            "required": ["location"]
+            "required": ["location"]  # 必需的参数
         }
     }
 ]
 
 # 调用API
+# client.chat.completions.create()：创建聊天补全请求
+# 参数：
+#   model：使用的模型名称
+#   messages：消息列表
+#   functions：函数定义列表
+#   function_call：函数调用模式
+#       "auto"：模型自动决定是否调用函数
+#       "none"：禁止调用函数
+#       {"name": "function_name"}：强制调用指定函数
 response = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
         {"role": "user", "content": "北京今天天气怎么样？"}
     ],
     functions=functions,
-    function_call="auto"
+    function_call="auto"  # 自动决定是否调用函数
 )
 
 # 处理函数调用
 message = response.choices[0].message
+
+# 检查模型是否决定调用函数
+# message.function_call：如果模型决定调用函数，该属性不为None
 if message.function_call:
+    # 获取函数名称
     function_name = message.function_call.name
+    
+    # 获取函数参数（JSON字符串）
+    # json.loads()：将JSON字符串解析为Python字典
     arguments = json.loads(message.function_call.arguments)
+    
     print(f"调用函数: {function_name}")
     print(f"参数: {arguments}")
 ```
 
 ### 2. 多函数调用
 ```python
+# 导入OpenAI库和json模块
 from openai import OpenAI
 import json
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 # 定义多个函数
+# 模型可以根据用户请求选择调用一个或多个函数
 functions = [
     {
-        "name": "get_weather",
+        "name": "get_weather",  # 天气查询函数
         "description": "获取指定城市的天气信息",
         "parameters": {
             "type": "object",
@@ -122,7 +156,7 @@ functions = [
         }
     },
     {
-        "name": "search_restaurant",
+        "name": "search_restaurant",  # 餐厅搜索函数
         "description": "搜索指定城市的餐厅",
         "parameters": {
             "type": "object",
@@ -142,33 +176,47 @@ functions = [
 ]
 
 # 调用API
+# 用户请求包含多个任务：查询天气和搜索餐厅
 response = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
         {"role": "user", "content": "北京今天天气怎么样？顺便推荐几家川菜馆"}
     ],
     functions=functions,
-    function_call="auto"
+    function_call="auto"  # 模型自动决定调用哪些函数
 )
 
-# 处理多个函数调用
+# 处理函数调用
 message = response.choices[0].message
+
+# 检查是否需要调用函数
 if message.function_call:
-    print(f"调用函数: {message.function_call.name}")
-    print(f"参数: {json.loads(message.function_call.arguments)}")
+    # 获取函数名称
+    function_name = message.function_call.name
+    
+    # 获取函数参数
+    arguments = json.loads(message.function_call.arguments)
+    
+    print(f"调用函数: {function_name}")
+    print(f"参数: {arguments}")
+    
+    # 注意：当前API版本一次只能调用一个函数
+    # 如果需要调用多个函数，需要多次调用API或使用并行函数调用（Parallel Function Calling）
 ```
 
 ### 3. 强制函数调用
 ```python
+# 导入OpenAI库和json模块
 from openai import OpenAI
 import json
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 # 定义函数
 functions = [
     {
-        "name": "extract_info",
+        "name": "extract_info",  # 信息提取函数
         "description": "从文本中提取信息",
         "parameters": {
             "type": "object",
@@ -179,30 +227,37 @@ functions = [
                 },
                 "info_type": {
                     "type": "string",
-                    "enum": ["name", "date", "location"],
+                    "enum": ["name", "date", "location"],  # 可提取的信息类型
                     "description": "要提取的信息类型"
                 }
             },
-            "required": ["text", "info_type"]
+            "required": ["text", "info_type"]  # 两个参数都是必需的
         }
     }
 ]
 
 # 强制调用函数
+# function_call={"name": "extract_info"}：强制模型调用extract_info函数
+# 适用场景：当确定需要调用特定函数时
 response = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
         {"role": "user", "content": "张三在北京参加了2024年1月15日的会议"}
     ],
     functions=functions,
-    function_call={"name": "extract_info"}
+    function_call={"name": "extract_info"}  # 强制调用extract_info函数
 )
 
 # 处理结果
 message = response.choices[0].message
+
 if message.function_call:
+    # 解析函数参数
     arguments = json.loads(message.function_call.arguments)
     print(f"提取的信息: {arguments}")
+    
+    # 示例输出：
+    # 提取的信息: {"text": "张三在北京参加了2024年1月15日的会议", "info_type": "name"}
 ```
 
 ## 实践指南
@@ -218,16 +273,28 @@ export OPENAI_API_KEY="your-api-key"
 
 ### 2. 完整示例
 ```python
+# 导入必要的库
 from openai import OpenAI
 import json
-import requests
+import requests  # HTTP请求库
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 # 定义实际函数
+# 这些函数会被模型调用
 def get_weather(location: str) -> dict:
-    """获取天气信息"""
+    """
+    获取天气信息
+    
+    参数：
+        location (str): 城市名称
+    
+    返回值：
+        dict: 天气信息字典
+    """
     # 这里应该是实际的天气API调用
+    # 示例返回模拟数据
     return {
         "location": location,
         "temperature": 25,
@@ -236,20 +303,33 @@ def get_weather(location: str) -> dict:
     }
 
 def search_restaurant(location: str, cuisine: str) -> list:
-    """搜索餐厅"""
+    """
+    搜索餐厅
+    
+    参数：
+        location (str): 城市名称
+        cuisine (str): 菜系类型
+    
+    返回值：
+        list: 餐厅列表
+    """
     # 这里应该是实际的餐厅API调用
+    # 示例返回模拟数据
     return [
         {"name": "川菜馆A", "rating": 4.5, "address": "北京市朝阳区"},
         {"name": "川菜馆B", "rating": 4.2, "address": "北京市海淀区"}
     ]
 
 # 函数映射
+# 将函数名称映射到实际函数
+# 用于根据模型返回的函数名调用对应函数
 function_map = {
     "get_weather": get_weather,
     "search_restaurant": search_restaurant
 }
 
 # 定义函数描述
+# 与之前的函数定义相同
 functions = [
     {
         "name": "get_weather",
@@ -286,7 +366,20 @@ functions = [
 ]
 
 def chat_with_functions(user_input: str) -> str:
-    """带函数调用的对话"""
+    """
+    带函数调用的对话
+    
+    参数：
+        user_input (str): 用户输入
+    
+    返回值：
+        str: 模型生成的回答
+    
+    流程：
+        1. 第一次调用：模型决定是否调用函数
+        2. 如果需要调用函数，执行函数并获取结果
+        3. 第二次调用：将函数结果传回模型，生成最终回答
+    """
     # 第一次调用
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
@@ -306,24 +399,27 @@ def chat_with_functions(user_input: str) -> str:
         
         # 执行函数
         if function_name in function_map:
+            # 调用实际函数
             function_result = function_map[function_name](**arguments)
             
             # 第二次调用，将函数结果传回模型
+            # 注意：需要将函数结果作为新的消息添加到对话中
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "user", "content": user_input},
-                    message,
+                    {"role": "user", "content": user_input},  # 原始用户输入
+                    message,  # 模型的响应（包含函数调用信息）
                     {
-                        "role": "function",
-                        "name": function_name,
-                        "content": json.dumps(function_result, ensure_ascii=False)
+                        "role": "function",  # 角色：函数
+                        "name": function_name,  # 函数名称
+                        "content": json.dumps(function_result, ensure_ascii=False)  # 函数结果
                     }
                 ]
             )
             
             return response.choices[0].message.content
     
+    # 如果不需要调用函数，直接返回模型的回答
     return message.content
 
 # 使用示例
@@ -333,14 +429,27 @@ print(response)
 
 ### 3. 错误处理
 ```python
+# 导入必要的库
 from openai import OpenAI
 import json
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 def safe_function_call(user_input: str) -> str:
-    """安全的函数调用"""
+    """
+    安全的函数调用
+    
+    参数：
+        user_input (str): 用户输入
+    
+    返回值：
+        str: 模型生成的回答或错误信息
+    
+    功能：包含完整的错误处理机制
+    """
     try:
+        # 第一次调用
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -352,6 +461,7 @@ def safe_function_call(user_input: str) -> str:
         
         message = response.choices[0].message
         
+        # 检查是否需要调用函数
         if message.function_call:
             function_name = message.function_call.name
             arguments = json.loads(message.function_call.arguments)
@@ -362,10 +472,13 @@ def safe_function_call(user_input: str) -> str:
             
             # 验证参数
             try:
+                # 调用函数
                 function_result = function_map[function_name](**arguments)
             except TypeError as e:
+                # 参数类型错误
                 return f"错误：函数参数不正确 - {e}"
             except Exception as e:
+                # 其他执行错误
                 return f"错误：函数执行失败 - {e}"
             
             # 将结果传回模型
@@ -384,9 +497,11 @@ def safe_function_call(user_input: str) -> str:
             
             return response.choices[0].message.content
         
+        # 如果不需要调用函数，直接返回
         return message.content
         
     except Exception as e:
+        # 捕获所有其他异常
         return f"错误：{e}"
 
 # 使用示例

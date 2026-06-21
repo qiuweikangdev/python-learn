@@ -56,28 +56,66 @@ LLM生成工具参数的机制：
 
 ### 1. 工具接口设计
 ```python
-from typing import Dict, Any, Optional
-from dataclasses import dataclass
-from abc import ABC, abstractmethod
+# 导入必要的库
+from typing import Dict, Any, Optional  # 类型提示
+from dataclasses import dataclass  # 数据类装饰器
+from abc import ABC, abstractmethod  # 抽象基类
 
+# 定义工具结果数据类
+# @dataclass装饰器：自动生成__init__、__repr__等方法
 @dataclass
 class ToolResult:
-    success: bool
-    data: Any
-    error: Optional[str] = None
+    """
+    工具执行结果
+    
+    属性：
+        success (bool): 是否执行成功
+        data (Any): 返回的数据
+        error (Optional[str]): 错误信息（如果失败）
+    """
+    success: bool  # 是否成功
+    data: Any  # 返回数据
+    error: Optional[str] = None  # 错误信息（可选）
 
+# 定义工具抽象基类
+# ABC：抽象基类，不能直接实例化
 class Tool(ABC):
+    """
+    工具抽象基类
+    
+    所有工具都必须继承这个类并实现抽象方法
+    """
     def __init__(self, name: str, description: str):
-        self.name = name
-        self.description = description
+        """
+        初始化工具
+        
+        参数：
+            name (str): 工具名称
+            description (str): 工具描述
+        """
+        self.name = name  # 工具名称
+        self.description = description  # 工具描述
     
     @abstractmethod
     def execute(self, **kwargs) -> ToolResult:
-        """执行工具"""
-        pass
+        """
+        执行工具（抽象方法）
+        
+        参数：
+            **kwargs: 工具参数
+        
+        返回值：
+            ToolResult: 执行结果
+        """
+        pass  # 子类必须实现这个方法
     
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典格式"""
+        """
+        转换为字典格式
+        
+        返回值：
+            Dict[str, Any]: 工具定义字典
+        """
         return {
             "name": self.name,
             "description": self.description,
@@ -86,32 +124,68 @@ class Tool(ABC):
     
     @abstractmethod
     def get_parameters(self) -> Dict[str, Any]:
-        """获取参数定义"""
-        pass
+        """
+        获取参数定义（抽象方法）
+        
+        返回值：
+            Dict[str, Any]: 参数定义字典
+        """
+        pass  # 子类必须实现这个方法
 ```
 
 ### 2. 工具注册机制
 ```python
+# 导入类型提示
 from typing import Dict, List, Type
 
+# 定义工具注册表
 class ToolRegistry:
+    """
+    工具注册表
+    
+    功能：管理和组织所有可用的工具
+    """
     def __init__(self):
-        self.tools: Dict[str, Tool] = {}
+        """初始化工具注册表"""
+        self.tools: Dict[str, Tool] = {}  # 工具字典，键是工具名，值是工具实例
     
     def register(self, tool: Tool):
-        """注册工具"""
-        self.tools[tool.name] = tool
+        """
+        注册工具
+        
+        参数：
+            tool (Tool): 工具实例
+        """
+        self.tools[tool.name] = tool  # 将工具添加到字典
     
     def get_tool(self, name: str) -> Optional[Tool]:
-        """获取工具"""
+        """
+        获取工具
+        
+        参数：
+            name (str): 工具名称
+        
+        返回值：
+            Optional[Tool]: 工具实例，如果不存在返回None
+        """
         return self.tools.get(name)
     
     def list_tools(self) -> List[str]:
-        """列出所有工具"""
+        """
+        列出所有工具
+        
+        返回值：
+            List[str]: 工具名称列表
+        """
         return list(self.tools.keys())
     
     def get_tools_description(self) -> List[Dict[str, Any]]:
-        """获取所有工具描述"""
+        """
+        获取所有工具描述
+        
+        返回值：
+            List[Dict[str, Any]]: 工具描述列表
+        """
         return [tool.to_dict() for tool in self.tools.values()]
 
 # 使用示例
@@ -120,15 +194,40 @@ registry = ToolRegistry()
 
 ### 3. 工具执行器
 ```python
+# 导入类型提示
 from typing import Dict, Any
 
+# 定义工具执行器
 class ToolExecutor:
+    """
+    工具执行器
+    
+    功能：执行工具并处理结果
+    """
     def __init__(self, registry: ToolRegistry):
-        self.registry = registry
+        """
+        初始化工具执行器
+        
+        参数：
+            registry (ToolRegistry): 工具注册表
+        """
+        self.registry = registry  # 工具注册表
     
     def execute(self, tool_name: str, **kwargs) -> ToolResult:
-        """执行工具"""
+        """
+        执行工具
+        
+        参数：
+            tool_name (str): 工具名称
+            **kwargs: 工具参数
+        
+        返回值：
+            ToolResult: 执行结果
+        """
+        # 从注册表获取工具
         tool = self.registry.get_tool(tool_name)
+        
+        # 检查工具是否存在
         if not tool:
             return ToolResult(
                 success=False,
@@ -137,9 +236,11 @@ class ToolExecutor:
             )
         
         try:
+            # 执行工具
             result = tool.execute(**kwargs)
             return result
         except Exception as e:
+            # 捕获执行异常
             return ToolResult(
                 success=False,
                 data=None,
@@ -160,21 +261,38 @@ export OPENAI_API_KEY="your-api-key"
 
 ### 2. 基础工具示例
 ```python
+# 导入必要的库
 from openai import OpenAI
 import json
-import requests
+import requests  # HTTP请求库
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
-# 定义工具
+# 定义搜索工具类
 class SearchTool:
+    """
+    搜索工具
+    
+    功能：搜索互联网信息
+    """
     def __init__(self):
-        self.name = "search"
-        self.description = "搜索互联网信息"
+        """初始化搜索工具"""
+        self.name = "search"  # 工具名称
+        self.description = "搜索互联网信息"  # 工具描述
     
     def execute(self, query: str) -> dict:
-        """执行搜索"""
+        """
+        执行搜索
+        
+        参数：
+            query (str): 搜索关键词
+        
+        返回值：
+            dict: 搜索结果
+        """
         # 这里应该是实际的搜索API调用
+        # 示例返回模拟数据
         return {
             "query": query,
             "results": [
@@ -184,6 +302,12 @@ class SearchTool:
         }
     
     def to_dict(self):
+        """
+        转换为OpenAI函数格式
+        
+        返回值：
+            dict: 函数定义字典
+        """
         return {
             "name": self.name,
             "description": self.description,
@@ -199,20 +323,43 @@ class SearchTool:
             }
         }
 
+# 定义计算工具类
 class CalculatorTool:
+    """
+    计算工具
+    
+    功能：计算数学表达式
+    """
     def __init__(self):
-        self.name = "calculator"
-        self.description = "计算数学表达式"
+        """初始化计算工具"""
+        self.name = "calculator"  # 工具名称
+        self.description = "计算数学表达式"  # 工具描述
     
     def execute(self, expression: str) -> dict:
-        """执行计算"""
+        """
+        执行计算
+        
+        参数：
+            expression (str): 数学表达式
+        
+        返回值：
+            dict: 计算结果
+        """
         try:
+            # eval()函数：执行字符串形式的Python表达式
+            # 注意：生产环境中应使用更安全的计算方式
             result = eval(expression)
             return {"expression": expression, "result": result}
         except Exception as e:
             return {"expression": expression, "error": str(e)}
     
     def to_dict(self):
+        """
+        转换为OpenAI函数格式
+        
+        返回值：
+            dict: 函数定义字典
+        """
         return {
             "name": self.name,
             "description": self.description,
@@ -236,58 +383,77 @@ calculator_tool = CalculatorTool()
 tools = [search_tool, calculator_tool]
 
 # 转换为OpenAI函数格式
+# 列表推导式：将每个工具转换为字典格式
 functions = [tool.to_dict() for tool in tools]
 
 # 工具映射
+# 字典推导式：创建工具名称到工具实例的映射
 tool_map = {tool.name: tool for tool in tools}
 ```
 
 ### 3. 带工具的对话
 ```python
+# 导入必要的库
 from openai import OpenAI
 import json
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 def chat_with_tools(user_input: str) -> str:
-    """带工具的对话"""
+    """
+    带工具的对话
+    
+    参数：
+        user_input (str): 用户输入
+    
+    返回值：
+        str: 模型生成的回答
+    
+    流程：
+        1. 第一次调用：模型决定是否调用工具
+        2. 如果需要调用工具，执行工具并获取结果
+        3. 第二次调用：将工具结果传回模型，生成最终回答
+    """
     # 第一次调用
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "user", "content": user_input}
         ],
-        functions=functions,
-        function_call="auto"
+        functions=functions,  # 工具定义列表
+        function_call="auto"  # 自动决定是否调用工具
     )
     
     message = response.choices[0].message
     
     # 检查是否需要调用工具
     if message.function_call:
-        tool_name = message.function_call.name
-        arguments = json.loads(message.function_call.arguments)
+        tool_name = message.function_call.name  # 工具名称
+        arguments = json.loads(message.function_call.arguments)  # 工具参数
         
         # 执行工具
         if tool_name in tool_map:
+            # 调用工具
             tool_result = tool_map[tool_name].execute(**arguments)
             
             # 第二次调用，将工具结果传回模型
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "user", "content": user_input},
-                    message,
+                    {"role": "user", "content": user_input},  # 原始用户输入
+                    message,  # 模型的响应（包含工具调用信息）
                     {
-                        "role": "function",
-                        "name": tool_name,
-                        "content": json.dumps(tool_result, ensure_ascii=False)
+                        "role": "function",  # 角色：函数
+                        "name": tool_name,  # 工具名称
+                        "content": json.dumps(tool_result, ensure_ascii=False)  # 工具结果
                     }
                 ]
             )
             
             return response.choices[0].message.content
     
+    # 如果不需要调用工具，直接返回
     return message.content
 
 # 使用示例
@@ -297,17 +463,31 @@ print(response)
 
 ### 4. 多工具组合
 ```python
+# 导入必要的库
 from openai import OpenAI
 import json
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 def chat_with_multiple_tools(user_input: str) -> str:
-    """带多个工具的对话"""
+    """
+    带多个工具的对话
+    
+    参数：
+        user_input (str): 用户输入
+    
+    返回值：
+        str: 模型生成的回答
+    
+    功能：支持多轮工具调用，直到模型不再需要调用工具
+    """
+    # 初始化消息列表
     messages = [
         {"role": "user", "content": user_input}
     ]
     
+    # 循环执行，直到模型不再需要调用工具
     while True:
         # 调用API
         response = client.chat.completions.create(
@@ -328,8 +508,8 @@ def chat_with_multiple_tools(user_input: str) -> str:
             if tool_name in tool_map:
                 tool_result = tool_map[tool_name].execute(**arguments)
                 
-                # 将工具结果添加到消息
-                messages.append(message)
+                # 将工具结果添加到消息列表
+                messages.append(message)  # 添加模型的响应
                 messages.append({
                     "role": "function",
                     "name": tool_name,
@@ -351,15 +531,36 @@ print(response)
 
 ### 1. 工具链
 ```python
+# 导入类型提示
 from typing import List, Dict, Any
 
+# 定义工具链类
 class ToolChain:
+    """
+    工具链
+    
+    功能：将多个工具串联执行
+    """
     def __init__(self, tools: List[Tool]):
-        self.tools = tools
-        self.results: Dict[str, Any] = {}
+        """
+        初始化工具链
+        
+        参数：
+            tools (List[Tool]): 工具列表
+        """
+        self.tools = tools  # 工具列表
+        self.results: Dict[str, Any] = {}  # 结果字典
     
     def execute(self, user_input: str) -> Dict[str, Any]:
-        """执行工具链"""
+        """
+        执行工具链
+        
+        参数：
+            user_input (str): 用户输入
+        
+        返回值：
+            Dict[str, Any]: 执行结果
+        """
         # 这里应该实现工具链的执行逻辑
         # 例如：先搜索，再分析，最后总结
         pass
@@ -371,27 +572,63 @@ result = chain.execute("搜索人工智能最新进展")
 
 ### 2. 工具缓存
 ```python
+# 导入必要的库
 from typing import Dict, Any
-import hashlib
+import hashlib  # 哈希库
 import json
 
+# 定义工具缓存类
 class ToolCache:
+    """
+    工具缓存
+    
+    功能：缓存工具执行结果，避免重复计算
+    """
     def __init__(self):
-        self.cache: Dict[str, Any] = {}
+        """初始化工具缓存"""
+        self.cache: Dict[str, Any] = {}  # 缓存字典
     
     def get_cache_key(self, tool_name: str, **kwargs) -> str:
-        """生成缓存键"""
+        """
+        生成缓存键
+        
+        参数：
+            tool_name (str): 工具名称
+            **kwargs: 工具参数
+        
+        返回值：
+            str: 缓存键（MD5哈希值）
+        """
+        # 创建包含工具名和参数的字典
         key_data = {"tool": tool_name, "args": kwargs}
+        # 转换为JSON字符串（排序键以确保一致性）
         key_str = json.dumps(key_data, sort_keys=True)
+        # 计算MD5哈希值
         return hashlib.md5(key_str.encode()).hexdigest()
     
     def get(self, tool_name: str, **kwargs) -> Any:
-        """获取缓存"""
+        """
+        获取缓存
+        
+        参数：
+            tool_name (str): 工具名称
+            **kwargs: 工具参数
+        
+        返回值：
+            Any: 缓存的结果，如果不存在返回None
+        """
         key = self.get_cache_key(tool_name, **kwargs)
         return self.cache.get(key)
     
     def set(self, tool_name: str, result: Any, **kwargs):
-        """设置缓存"""
+        """
+        设置缓存
+        
+        参数：
+            tool_name (str): 工具名称
+            result (Any): 工具执行结果
+            **kwargs: 工具参数
+        """
         key = self.get_cache_key(tool_name, **kwargs)
         self.cache[key] = result
 

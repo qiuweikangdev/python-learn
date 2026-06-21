@@ -61,38 +61,103 @@ LangGraph的图执行引擎：
 
 ### 1. 状态图定义
 ```python
+# 导入LangGraph的核心组件
+# langgraph.graph.StateGraph：状态图，LangGraph的核心类
+# langgraph.graph.END：结束节点，表示图执行结束
 from langgraph.graph import StateGraph, END
+
+# 导入Python类型提示模块
+# typing.TypedDict：定义字典的类型结构
+# typing.Annotated：添加类型注解
 from typing import TypedDict, Annotated
 
-# 定义状态
+# 定义状态类型
+# TypedDict：定义字典的键和值的类型
+# 这里定义了状态对象必须包含的字段
 class State(TypedDict):
-    messages: list
-    current_step: str
-    results: dict
+    """
+    状态定义
+    
+    属性：
+        messages (list): 消息列表，存储对话历史
+        current_step (str): 当前执行步骤
+        results (dict): 结果字典，存储执行结果
+    """
+    messages: list  # 消息列表
+    current_step: str  # 当前步骤
+    results: dict  # 结果字典
 
 # 创建状态图
+# StateGraph(State)：创建状态图实例
+# 参数：状态类型定义
+# 返回值：StateGraph实例
 graph = StateGraph(State)
 ```
 
 ### 2. 节点定义
 ```python
+# 导入LangChain的OpenAI模型
 from langchain_openai import ChatOpenAI
+
+# 导入LangChain的消息类型
+# HumanMessage：用户消息
+# AIMessage：AI助手消息
 from langchain_core.messages import HumanMessage
 
 # 定义节点函数
+# 节点是LangGraph中执行具体操作的单元
+# 每个节点函数接收当前状态，返回更新后的状态
+
 def process_input(state: State) -> State:
-    """处理输入节点"""
+    """
+    处理输入节点
+    
+    参数：
+        state (State): 当前状态对象
+    
+    返回值：
+        State: 更新后的状态对象
+    
+    功能：处理用户输入，准备后续处理
+    """
+    # 从状态中获取消息列表
     messages = state["messages"]
-    # 处理逻辑
+    
+    # 处理逻辑（这里可以添加具体的处理代码）
+    # ...
+    
+    # 返回更新后的状态
+    # 返回的字典会与现有状态合并
     return {"messages": messages, "current_step": "processed"}
 
 def generate_response(state: State) -> State:
-    """生成响应节点"""
+    """
+    生成响应节点
+    
+    参数：
+        state (State): 当前状态对象
+    
+    返回值：
+        State: 更新后的状态对象
+    
+    功能：调用LLM生成响应
+    """
+    # 创建OpenAI模型实例
     llm = ChatOpenAI(model="gpt-3.5-turbo")
+    
+    # 调用模型生成响应
+    # invoke()方法：发送请求并获取响应
     response = llm.invoke(state["messages"])
+    
+    # 返回更新后的状态
+    # 将响应添加到消息列表
     return {"messages": [response], "current_step": "completed"}
 
 # 添加节点到图
+# add_node()方法：向图中添加节点
+# 参数：
+#   name：节点名称（字符串）
+#   action：节点函数（可调用对象）
 graph.add_node("process_input", process_input)
 graph.add_node("generate_response", generate_response)
 ```
@@ -100,21 +165,46 @@ graph.add_node("generate_response", generate_response)
 ### 3. 边定义
 ```python
 # 添加普通边
+# add_edge()方法：添加普通边（无条件转移）
+# 参数：
+#   start：起始节点名称
+#   end：结束节点名称
+# 这里表示从process_input节点转移到generate_response节点
 graph.add_edge("process_input", "generate_response")
 
 # 添加条件边
-def should_continue(state: State) -> str:
-    """判断是否继续"""
-    if state["current_step"] == "completed":
-        return "end"
-    return "continue"
+# 条件边根据条件函数的返回值选择不同的路径
 
+def should_continue(state: State) -> str:
+    """
+    判断是否继续执行
+    
+    参数：
+        state (State): 当前状态对象
+    
+    返回值：
+        str: 决定下一步的字符串
+            "continue"：继续执行
+            "end"：结束执行
+    """
+    # 根据当前步骤决定下一步
+    if state["current_step"] == "completed":
+        return "end"  # 已完成，结束执行
+    return "continue"  # 未完成，继续执行
+
+# add_conditional_edges()方法：添加条件边
+# 参数：
+#   start：起始节点名称
+#   condition：条件函数
+#   path_map：路径映射字典
+#       键：条件函数的返回值
+#       值：目标节点名称
 graph.add_conditional_edges(
-    "generate_response",
-    should_continue,
+    "generate_response",  # 起始节点
+    should_continue,  # 条件函数
     {
-        "continue": "process_input",
-        "end": END
+        "continue": "process_input",  # 继续执行，回到process_input
+        "end": END  # 结束执行，END是LangGraph的特殊标记
     }
 )
 ```
@@ -122,16 +212,23 @@ graph.add_conditional_edges(
 ### 4. 图编译和执行
 ```python
 # 设置入口点
+# set_entry_point()方法：设置图的入口节点
+# 入口点是图执行的起始节点
 graph.set_entry_point("process_input")
 
 # 编译图
+# compile()方法：编译图，使其可执行
+# 返回值：编译后的图应用
 app = graph.compile()
 
 # 执行图
+# invoke()方法：执行图
+# 参数：初始状态字典
+# 返回值：最终状态
 initial_state = {
-    "messages": [HumanMessage(content="你好！")],
-    "current_step": "start",
-    "results": {}
+    "messages": [HumanMessage(content="你好！")],  # 初始消息
+    "current_step": "start",  # 初始步骤
+    "results": {}  # 初始结果
 }
 result = app.invoke(initial_state)
 ```
@@ -139,7 +236,12 @@ result = app.invoke(initial_state)
 ### 5. 流式执行
 ```python
 # 流式执行
+# stream()方法：流式执行图
+# 与invoke()不同，stream()会逐步返回每个节点的执行结果
+# 适用于需要实时查看执行过程的场景
 for event in app.stream(initial_state):
+    # event是一个字典，包含当前节点的执行结果
+    # 键是节点名称，值是该节点的输出状态
     print(event)
 ```
 
@@ -156,66 +258,117 @@ export OPENAI_API_KEY="your-openai-key"
 
 ### 2. 基础示例
 ```python
-from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, AIMessage
-from typing import TypedDict, Annotated
+# 导入必要的组件
+from langgraph.graph import StateGraph, END  # 状态图和结束标记
+from langchain_openai import ChatOpenAI  # OpenAI模型
+from langchain_core.messages import HumanMessage, AIMessage  # 消息类型
+from typing import TypedDict, Annotated  # 类型提示
 
-# 定义状态
+# 定义Agent状态
 class AgentState(TypedDict):
-    messages: list
-    next_step: str
+    """
+    Agent状态定义
+    
+    属性：
+        messages (list): 消息列表
+        next_step (str): 下一步执行的节点
+    """
+    messages: list  # 消息列表
+    next_step: str  # 下一步
 
-# 定义节点
+# 定义聊天节点
 def chat_node(state: AgentState) -> AgentState:
-    """聊天节点"""
+    """
+    聊天节点
+    
+    参数：
+        state (AgentState): 当前状态
+    
+    返回值：
+        AgentState: 更新后的状态
+    """
+    # 创建OpenAI模型
     llm = ChatOpenAI(model="gpt-3.5-turbo")
+    
+    # 调用模型生成响应
     response = llm.invoke(state["messages"])
+    
+    # 返回更新后的状态
+    # 将AI响应添加到消息列表
     return {
-        "messages": state["messages"] + [response],
-        "next_step": "end"
+        "messages": state["messages"] + [response],  # 追加响应
+        "next_step": "end"  # 设置下一步为结束
     }
 
 # 创建图
 graph = StateGraph(AgentState)
+
+# 添加节点
 graph.add_node("chat", chat_node)
 
 # 设置边
-graph.set_entry_point("chat")
-graph.add_edge("chat", END)
+graph.set_entry_point("chat")  # 设置入口点
+graph.add_edge("chat", END)  # chat节点直接结束
 
 # 编译和执行
 app = graph.compile()
+
+# 执行图
 result = app.invoke({
-    "messages": [HumanMessage(content="你好！")],
-    "next_step": "start"
+    "messages": [HumanMessage(content="你好！")],  # 初始消息
+    "next_step": "start"  # 初始步骤
 })
+
+# 获取最后一条消息（AI的响应）
 print(result["messages"][-1].content)
 ```
 
 ### 3. 条件路由示例
 ```python
+# 导入必要的组件
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, Literal
 
-# 定义状态
+# 定义路由器状态
 class RouterState(TypedDict):
-    input: str
-    route: str
-    output: str
+    """
+    路由器状态定义
+    
+    属性：
+        input (str): 用户输入
+        route (str): 路由决定（weather/news/general）
+        output (str): 输出结果
+    """
+    input: str  # 用户输入
+    route: str  # 路由决定
+    output: str  # 输出结果
 
-# 定义节点
+# 定义分类节点
 def classify_input(state: RouterState) -> RouterState:
-    """分类输入"""
-    input_text = state["input"].lower()
+    """
+    分类输入节点
+    
+    参数：
+        state (RouterState): 当前状态
+    
+    返回值：
+        RouterState: 更新后的状态
+    
+    功能：根据用户输入内容决定路由
+    """
+    input_text = state["input"].lower()  # 转换为小写
+    
+    # 根据关键词决定路由
     if "天气" in input_text:
-        route = "weather"
+        route = "weather"  # 天气查询
     elif "新闻" in input_text:
-        route = "news"
+        route = "news"  # 新闻查询
     else:
-        route = "general"
+        route = "general"  # 一般查询
+    
     return {"input": state["input"], "route": route, "output": ""}
 
+# 定义处理节点
 def handle_weather(state: RouterState) -> RouterState:
     """处理天气查询"""
     return {"input": state["input"], "route": state["route"], "output": "天气查询结果"}
@@ -230,53 +383,84 @@ def handle_general(state: RouterState) -> RouterState:
 
 # 创建图
 graph = StateGraph(RouterState)
-graph.add_node("classify", classify_input)
-graph.add_node("weather", handle_weather)
-graph.add_node("news", handle_news)
-graph.add_node("general", handle_general)
+
+# 添加节点
+graph.add_node("classify", classify_input)  # 分类节点
+graph.add_node("weather", handle_weather)  # 天气处理节点
+graph.add_node("news", handle_news)  # 新闻处理节点
+graph.add_node("general", handle_general)  # 一般处理节点
 
 # 设置条件边
 def route_function(state: RouterState) -> str:
+    """
+    路由函数
+    
+    参数：
+        state (RouterState): 当前状态
+    
+    返回值：
+        str: 路由决定
+    """
     return state["route"]
 
+# 添加条件边
+# add_conditional_edges()：根据条件选择路径
 graph.add_conditional_edges(
-    "classify",
-    route_function,
+    "classify",  # 起始节点
+    route_function,  # 路由函数
     {
-        "weather": "weather",
-        "news": "news",
-        "general": "general"
+        "weather": "weather",  # 天气路由
+        "news": "news",  # 新闻路由
+        "general": "general"  # 一般路由
     }
 )
 
 # 设置出口
-graph.add_edge("weather", END)
-graph.add_edge("news", END)
-graph.add_edge("general", END)
+graph.add_edge("weather", END)  # 天气处理后结束
+graph.add_edge("news", END)  # 新闻处理后结束
+graph.add_edge("general", END)  # 一般处理后结束
 
 # 编译和执行
-graph.set_entry_point("classify")
+graph.set_entry_point("classify")  # 设置入口点
 app = graph.compile()
 
+# 执行图
 result = app.invoke({"input": "北京天气怎么样？", "route": "", "output": ""})
 print(result["output"])
 ```
 
 ### 4. 人机交互示例
 ```python
+# 导入必要的组件
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import MemorySaver  # 内存检查点
 from typing import TypedDict
 
-# 定义状态
+# 定义人机交互状态
 class HumanLoopState(TypedDict):
-    messages: list
-    human_input: str
-    approved: bool
+    """
+    人机交互状态定义
+    
+    属性：
+        messages (list): 消息列表
+        human_input (str): 人工输入
+        approved (bool): 是否已批准
+    """
+    messages: list  # 消息列表
+    human_input: str  # 人工输入
+    approved: bool  # 是否已批准
 
 # 定义节点
 def process_node(state: HumanLoopState) -> HumanLoopState:
-    """处理节点"""
+    """
+    处理节点
+    
+    参数：
+        state (HumanLoopState): 当前状态
+    
+    返回值：
+        HumanLoopState: 更新后的状态
+    """
     return {
         "messages": state["messages"],
         "human_input": "",
@@ -284,17 +468,36 @@ def process_node(state: HumanLoopState) -> HumanLoopState:
     }
 
 def human_approval_node(state: HumanLoopState) -> HumanLoopState:
-    """人工审批节点"""
+    """
+    人工审批节点
+    
+    参数：
+        state (HumanLoopState): 当前状态
+    
+    返回值：
+        HumanLoopState: 更新后的状态
+    
+    功能：等待人工审批
+    """
     # 这里可以集成人工审批界面
+    # 例如：Web界面、命令行输入等
     print("需要人工审批")
     return {
         "messages": state["messages"],
-        "human_input": "approved",
+        "human_input": "approved",  # 模拟人工输入
         "approved": True
     }
 
 def final_node(state: HumanLoopState) -> HumanLoopState:
-    """最终节点"""
+    """
+    最终节点
+    
+    参数：
+        state (HumanLoopState): 当前状态
+    
+    返回值：
+        HumanLoopState: 更新后的状态
+    """
     return {
         "messages": state["messages"],
         "human_input": state["human_input"],
@@ -303,22 +506,32 @@ def final_node(state: HumanLoopState) -> HumanLoopState:
 
 # 创建图
 graph = StateGraph(HumanLoopState)
+
+# 添加节点
 graph.add_node("process", process_node)
 graph.add_node("human_approval", human_approval_node)
 graph.add_node("final", final_node)
 
 # 设置边
-graph.set_entry_point("process")
-graph.add_edge("process", "human_approval")
-graph.add_edge("human_approval", "final")
-graph.add_edge("final", END)
+graph.set_entry_point("process")  # 入口点
+graph.add_edge("process", "human_approval")  # 处理后进入人工审批
+graph.add_edge("human_approval", "final")  # 审批后进入最终节点
+graph.add_edge("final", END)  # 最终节点后结束
 
 # 使用检查点
+# MemorySaver()：内存检查点，用于保存和恢复状态
 checkpointer = MemorySaver()
+
+# 编译图，启用检查点和中断
+# checkpointer：检查点实例
+# interrupt_before：在指定节点前中断执行
 app = graph.compile(checkpointer=checkpointer, interrupt_before=["human_approval"])
 
-# 执行
+# 执行配置
+# config：配置字典，包含thread_id用于标识执行线程
 config = {"configurable": {"thread_id": "1"}}
+
+# 执行图
 result = app.invoke({
     "messages": [],
     "human_input": "",

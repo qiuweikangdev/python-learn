@@ -145,12 +145,31 @@ temperature = 1.0 → 输出更有创造性（适合创作）
 
 **解决方案：**
 ```python
+# 导入OpenAI库
+# openai：OpenAI官方Python客户端库
+# 安装：pip install openai
 from openai import OpenAI
 
+# 创建OpenAI客户端实例
+# OpenAI(api_key)：初始化OpenAI客户端
+# api_key参数：OpenAI API密钥，用于身份验证
+# 注意：实际使用时需要替换为真实的API密钥
 client = OpenAI(api_key="your-api-key")
 
 def customer_service(query, history=[]):
-    """智能客服函数"""
+    """
+    智能客服函数
+    
+    参数：
+        query (str): 用户的查询问题
+        history (list): 对话历史，默认为空列表
+    
+    返回值：
+        str: 模型生成的回答
+    
+    功能：使用GPT-3.5-turbo模型回答用户问题
+    """
+    # 系统提示词：定义AI助手的角色和行为规则
     system_prompt = """
     你是一个专业的客服助手。请遵守以下规则：
     1. 回答要简洁明了
@@ -158,16 +177,28 @@ def customer_service(query, history=[]):
     3. 保持友好专业的语气
     """
     
+    # 构建消息列表
+    # messages：对话消息列表，每个消息包含role和content
     messages = [{"role": "system", "content": system_prompt}]
+    # 添加历史对话
     messages.extend(history)
+    # 添加当前用户问题
     messages.append({"role": "user", "content": query})
     
+    # 调用Chat Completions API
+    # client.chat.completions.create()：创建聊天补全请求
+    # 参数：
+    #   model：使用的模型名称
+    #   messages：消息列表
+    #   temperature：控制输出的随机性（0-2），越低越确定
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-3.5-turbo",  # 使用GPT-3.5-turbo模型
         messages=messages,
-        temperature=0.3  # 客服场景需要稳定输出
+        temperature=0.3  # 客服场景需要稳定输出，使用较低的temperature
     )
     
+    # 返回模型生成的回答
+    # response.choices[0].message.content：获取第一个选择的消息内容
     return response.choices[0].message.content
 
 # 使用示例
@@ -187,30 +218,48 @@ print(answer)
 
 **解决方案：**
 ```python
+# 导入OpenAI库
 from openai import OpenAI
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 def generate_content(topic, content_type="article"):
-    """内容生成函数"""
+    """
+    内容生成函数
+    
+    参数：
+        topic (str): 内容主题
+        content_type (str): 内容类型，可选值："article"、"title"、"summary"
+    
+    返回值：
+        str: 生成的内容
+    
+    功能：根据主题和类型生成不同类型的内容
+    """
+    # 定义不同类型内容的提示词模板
     prompts = {
         "article": f"请写一篇关于{topic}的文章，约500字，包含标题和正文。",
         "title": f"请为关于{topic}的文章生成5个吸引人的标题。",
         "summary": f"请用一句话总结{topic}的核心内容。"
     }
     
+    # 调用Chat Completions API
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
+            # 使用get方法获取对应的提示词，如果不存在则使用默认的article提示词
             {"role": "user", "content": prompts.get(content_type, prompts["article"])}
         ],
-        temperature=0.8  # 创作场景需要一定创造性
+        temperature=0.8  # 创作场景需要一定创造性，使用较高的temperature
     )
     
     return response.choices[0].message.content
 
 # 使用示例
+# 生成文章
 article = generate_content("人工智能在医疗领域的应用", "article")
+# 生成标题
 titles = generate_content("人工智能在医疗领域的应用", "title")
 print(article)
 print(titles)
@@ -228,12 +277,26 @@ print(titles)
 
 **解决方案：**
 ```python
+# 导入OpenAI库
 from openai import OpenAI
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 def code_assistant(task, code=None):
-    """代码助手函数"""
+    """
+    代码助手函数
+    
+    参数：
+        task (str): 任务类型，可选值："generate"、"explain"、"optimize"、"debug"
+        code (str): 代码内容，默认为None
+    
+    返回值：
+        str: 生成的代码或解释
+    
+    功能：根据任务类型生成代码或解释代码
+    """
+    # 根据任务类型构建不同的提示词
     if task == "generate":
         prompt = f"请用Python实现以下功能：{code}"
     elif task == "explain":
@@ -245,19 +308,24 @@ def code_assistant(task, code=None):
     else:
         prompt = task
     
+    # 调用Chat Completions API
     response = client.chat.completions.create(
-        model="gpt-4",  # 代码任务建议使用GPT-4
+        model="gpt-4",  # 代码任务建议使用GPT-4，能力更强
         messages=[
+            # 系统消息：定义AI助手的角色
             {"role": "system", "content": "你是一个专业的Python开发者。"},
+            # 用户消息：具体的任务内容
             {"role": "user", "content": prompt}
         ],
-        temperature=0.2  # 代码任务需要低temperature
+        temperature=0.2  # 代码任务需要低temperature，保证代码正确性
     )
     
     return response.choices[0].message.content
 
 # 使用示例
+# 生成代码
 code = code_assistant("generate", "一个快速排序算法")
+# 解释代码
 explanation = code_assistant("explain", "def quicksort(arr): return arr if len(arr) <= 1 else quicksort([x for x in arr[1:] if x < arr[0]]) + [arr[0]] + quicksort([x for x in arr[1:] if x >= arr[0]])")
 print(code)
 print(explanation)
@@ -275,12 +343,26 @@ print(explanation)
 
 **解决方案：**
 ```python
+# 导入OpenAI库
 from openai import OpenAI
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 def analyze_data(data_description, analysis_type="insight"):
-    """数据分析函数"""
+    """
+    数据分析函数
+    
+    参数：
+        data_description (str): 数据描述
+        analysis_type (str): 分析类型，可选值："insight"、"report"、"visualization"、"prediction"
+    
+    返回值：
+        str: 分析结果
+    
+    功能：根据数据描述和分析类型生成数据分析报告
+    """
+    # 定义不同类型分析的提示词模板
     prompts = {
         "insight": f"请分析以下数据并提供关键洞察：\n{data_description}",
         "report": f"请基于以下数据生成分析报告：\n{data_description}",
@@ -288,20 +370,25 @@ def analyze_data(data_description, analysis_type="insight"):
         "prediction": f"请基于以下数据进行趋势预测：\n{data_description}"
     }
     
+    # 调用Chat Completions API
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
+            # 系统消息：定义AI助手的角色
             {"role": "system", "content": "你是一个资深数据分析师。"},
+            # 用户消息：具体的分析任务
             {"role": "user", "content": prompts.get(analysis_type, prompts["insight"])}
         ],
-        temperature=0.5
+        temperature=0.5  # 使用中等temperature平衡准确性和创造性
     )
     
     return response.choices[0].message.content
 
 # 使用示例
 data = "2023年Q1-Q4销售额分别为：100万、120万、150万、180万"
+# 获取数据洞察
 insight = analyze_data(data, "insight")
+# 生成分析报告
 report = analyze_data(data, "report")
 print(insight)
 print(report)
@@ -316,57 +403,84 @@ print(report)
 
 ### 1. Chat Completions API
 ```python
+# 导入OpenAI库
 from openai import OpenAI
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 # 基础调用
+# client.chat.completions.create()：创建聊天补全请求
+# 参数：
+#   model：使用的模型名称
+#   messages：消息列表，包含对话历史
+#   temperature：控制输出的随机性（0-2）
+#   max_tokens：最大输出token数
 response = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
+        # 系统消息：定义AI助手的角色
         {"role": "system", "content": "你是一个有用的助手。"},
+        # 用户消息：具体的对话内容
         {"role": "user", "content": "你好！"}
     ],
-    temperature=0.7,
-    max_tokens=1000
+    temperature=0.7,  # 使用中等temperature
+    max_tokens=1000  # 限制最大输出长度
 )
 
+# 获取模型生成的回答
+# response.choices[0].message.content：获取第一个选择的消息内容
 print(response.choices[0].message.content)
 ```
 
 ### 2. 流式响应
 ```python
+# 导入OpenAI库
 from openai import OpenAI
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 # 流式调用
+# stream=True：启用流式响应
+# 流式响应：模型生成内容时逐步返回，而不是一次性返回全部内容
+# 优点：提升用户体验，减少等待时间
 stream = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
         {"role": "user", "content": "写一个关于人工智能的故事"}
     ],
-    stream=True
+    stream=True  # 启用流式响应
 )
 
+# 遍历流式响应的每个chunk
+# chunk：响应的一个片段，包含部分生成内容
 for chunk in stream:
+    # 检查chunk是否有内容
+    # chunk.choices[0].delta.content：获取当前chunk的内容
+    # delta：增量内容，表示新增的部分
     if chunk.choices[0].delta.content is not None:
+        # 打印内容，end=""表示不换行
+        # 实现实时输出效果
         print(chunk.choices[0].delta.content, end="")
 ```
 
 ### 3. Function Calling
 ```python
+# 导入OpenAI库和json模块
 from openai import OpenAI
 import json
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
-# 定义函数
+# 定义函数（Function Calling）
+# functions参数：定义模型可以调用的函数列表
 functions = [
     {
-        "name": "get_weather",
-        "description": "获取指定城市的天气信息",
-        "parameters": {
+        "name": "get_weather",  # 函数名称
+        "description": "获取指定城市的天气信息",  # 函数描述
+        "parameters": {  # 函数参数定义
             "type": "object",
             "properties": {
                 "location": {
@@ -375,16 +489,19 @@ functions = [
                 },
                 "unit": {
                     "type": "string",
-                    "enum": ["celsius", "fahrenheit"],
+                    "enum": ["celsius", "fahrenheit"],  # 枚举值
                     "description": "温度单位"
                 }
             },
-            "required": ["location"]
+            "required": ["location"]  # 必需的参数
         }
     }
 ]
 
 # 调用API
+# functions参数：传入函数定义
+# function_call参数：控制函数调用行为
+# "auto"：模型自动决定是否调用函数
 response = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
@@ -396,8 +513,13 @@ response = client.chat.completions.create(
 
 # 处理函数调用
 message = response.choices[0].message
+
+# 检查模型是否决定调用函数
 if message.function_call:
+    # 获取函数名称
     function_name = message.function_call.name
+    # 获取函数参数（JSON字符串）
+    # json.loads()：将JSON字符串解析为Python字典
     arguments = json.loads(message.function_call.arguments)
     print(f"调用函数: {function_name}")
     print(f"参数: {arguments}")
@@ -405,36 +527,59 @@ if message.function_call:
 
 ### 4. Embeddings API
 ```python
+# 导入OpenAI库
 from openai import OpenAI
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 # 获取文本嵌入
+# client.embeddings.create()：创建文本嵌入请求
+# 参数：
+#   model：使用的嵌入模型
+#   input：要嵌入的文本
+# 返回值：包含嵌入向量的响应对象
 response = client.embeddings.create(
-    model="text-embedding-ada-002",
+    model="text-embedding-ada-002",  # 使用Ada 002嵌入模型
     input="这是一段测试文本"
 )
 
+# 获取嵌入向量
+# response.data[0].embedding：获取第一个文本的嵌入向量
+# embedding：一个浮点数列表，表示文本的向量表示
 embedding = response.data[0].embedding
-print(f"嵌入维度: {len(embedding)}")
-print(f"前5个值: {embedding[:5]}")
+
+# 打印嵌入信息
+print(f"嵌入维度: {len(embedding)}")  # 嵌入向量的维度
+print(f"前5个值: {embedding[:5]}")  # 嵌入向量的前5个值
 ```
 
 ### 5. 图像生成API
 ```python
+# 导入OpenAI库
 from openai import OpenAI
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 # 生成图像
+# client.images.generate()：创建图像生成请求
+# 参数：
+#   model：使用的图像生成模型
+#   prompt：图像描述提示词
+#   size：图像尺寸
+#   quality：图像质量
+#   n：生成图像的数量
 response = client.images.generate(
-    model="dall-e-3",
-    prompt="一只可爱的猫咪在花园里玩耍",
-    size="1024x1024",
-    quality="standard",
-    n=1
+    model="dall-e-3",  # 使用DALL-E 3模型
+    prompt="一只可爱的猫咪在花园里玩耍",  # 图像描述
+    size="1024x1024",  # 图像尺寸：1024x1024像素
+    quality="standard",  # 图像质量：标准
+    n=1  # 生成1张图像
 )
 
+# 获取生成的图像URL
+# response.data[0].url：获取第一张图像的URL
 image_url = response.data[0].url
 print(f"图像URL: {image_url}")
 ```
@@ -443,36 +588,57 @@ print(f"图像URL: {image_url}")
 
 ### 1. 多轮对话
 ```python
+# 导入OpenAI库
 from openai import OpenAI
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 # 多轮对话
+# messages列表：包含完整的对话历史
+# 每个消息包含role（角色）和content（内容）
 messages = [
-    {"role": "system", "content": "你是一个有用的助手。"},
-    {"role": "user", "content": "你好！"},
-    {"role": "assistant", "content": "你好！有什么可以帮助你的吗？"},
-    {"role": "user", "content": "请介绍一下人工智能。"}
+    {"role": "system", "content": "你是一个有用的助手。"},  # 系统消息
+    {"role": "user", "content": "你好！"},  # 用户消息
+    {"role": "assistant", "content": "你好！有什么可以帮助你的吗？"},  # 助手消息
+    {"role": "user", "content": "请介绍一下人工智能。"}  # 新的用户消息
 ]
 
+# 调用Chat Completions API
+# 传入完整的对话历史，模型会根据历史上下文生成回答
 response = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=messages
 )
 
+# 获取模型生成的回答
 print(response.choices[0].message.content)
 ```
 
 ### 2. 结构化输出
 ```python
+# 导入OpenAI库、pydantic库和typing模块
 from openai import OpenAI
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel  # Pydantic：数据验证库
+from typing import List  # 类型提示
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
 # 定义输出格式
+# 使用Pydantic定义数据模型
+# BaseModel：Pydantic的基类，提供数据验证功能
 class MovieReview(BaseModel):
+    """
+    电影评论数据模型
+    
+    属性：
+        title (str): 电影标题
+        rating (float): 评分
+        pros (List[str]): 优点列表
+        cons (List[str]): 缺点列表
+        summary (str): 总结
+    """
     title: str
     rating: float
     pros: List[str]
@@ -480,46 +646,65 @@ class MovieReview(BaseModel):
     summary: str
 
 # 使用JSON模式
+# response_format参数：指定输出格式
+# {"type": "json_object"}：要求模型以JSON格式输出
 response = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
         {"role": "system", "content": "你是一个电影评论家。请以JSON格式输出电影评论。"},
         {"role": "user", "content": "请评论电影《流浪地球》"}
     ],
-    response_format={"type": "json_object"}
+    response_format={"type": "json_object"}  # 要求JSON输出
 )
 
+# 解析JSON响应
 import json
+# json.loads()：将JSON字符串解析为Python字典
 review = json.loads(response.choices[0].message.content)
 print(review)
 ```
 
 ### 3. 错误处理
 ```python
+# 导入OpenAI库和异常类
 from openai import OpenAI
 from openai import (
-    APIError,
-    RateLimitError,
-    APIConnectionError,
-    AuthenticationError
+    APIError,  # API错误基类
+    RateLimitError,  # 速率限制错误
+    APIConnectionError,  # API连接错误
+    AuthenticationError  # 认证错误
 )
 
+# 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
+# 使用try-except处理异常
 try:
+    # 调用Chat Completions API
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": "你好！"}]
     )
+    # 获取模型生成的回答
     print(response.choices[0].message.content)
+    
+# 认证错误：API密钥无效或过期
 except AuthenticationError as e:
     print(f"认证错误: {e}")
+    
+# 速率限制错误：请求过于频繁
 except RateLimitError as e:
     print(f"速率限制: {e}")
+    
+# API连接错误：网络连接问题
 except APIConnectionError as e:
     print(f"连接错误: {e}")
+    
+# API错误：其他API相关错误
 except APIError as e:
     print(f"API错误: {e}")
+    
+# 未知错误：其他未预期的异常
 except Exception as e:
     print(f"未知错误: {e}")
 ```
