@@ -361,7 +361,9 @@ export default defineConfig({
             { text: 'Qdrant详解', link: '/agent/rag/vector-databases/qdrant' },
             { text: 'Weaviate详解', link: '/agent/rag/vector-databases/weaviate' },
             { text: 'Pinecone详解', link: '/agent/rag/vector-databases/pinecone' },
-            { text: 'pgvector详解', link: '/agent/rag/vector-databases/pgvector' }
+            { text: 'pgvector详解', link: '/agent/rag/vector-databases/pgvector' },
+            { text: 'Redis详解', link: '/day121-125/redis' },
+            { text: 'Elasticsearch详解', link: '/day121-125/elasticsearch' }
           ]
         }
       ],
