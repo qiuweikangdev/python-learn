@@ -345,7 +345,12 @@ export default defineConfig({
             { text: 'RAG技术概述', link: '/day116-120/' },
             { text: '核心概念详解', link: '/agent/rag/core-concepts' },
             { text: '实现与优化', link: '/agent/rag/implementation' },
-            { text: '高级模式', link: '/agent/rag/advanced-patterns' },
+            { text: '高级模式', link: '/agent/rag/advanced-patterns' }
+          ]
+        },
+        {
+          text: 'Day121-125 - 向量数据库',
+          items: [
             { text: '向量数据库概述', link: '/agent/rag/vector-databases/' },
             { text: 'Chroma详解', link: '/agent/rag/vector-databases/chroma' },
             { text: 'FAISS详解', link: '/agent/rag/vector-databases/faiss' },
