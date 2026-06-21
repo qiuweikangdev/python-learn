@@ -1360,8 +1360,29 @@ print("审查意见：", result["review"])
 - 协作流程确保内容完整
 - 审查环节保证质量
 
+## 深入学习
+
+### 多Agent核心文档
+
+深入学习多Agent系统的核心技术：
+
+| 文档 | 内容 | 关键技术 |
+|------|------|---------|
+| [多Agent通信机制](/agent/multi-agent/communication) | 消息传递、共享内存、事件驱动、黑板系统 | 4种通信模式的原理和实现 |
+| [多Agent协作模式](/agent/multi-agent/collaboration) | 主从模式、对等模式、竞争模式、协作模式 | 4种协作模式的原理和实现 |
+| [任务分解策略](/agent/multi-agent/task-decomposition) | 层次分解、功能分解、数据分解、流水线分解 | 5种分解策略的原理和实现 |
+
+### 详细文档导航
+
+| 文档 | 核心内容 | 代码示例 |
+|------|---------|---------|
+| [多Agent通信机制](/agent/multi-agent/communication) | MessageBus、AsyncMessageBus、SharedMemory、EventBus、Blackboard | 完整的通信系统实现 |
+| [多Agent协作模式](/agent/multi-agent/collaboration) | MasterAgent、PeerAgent、CompetitiveAgent、RoleBasedAgent | 完整的协作系统实现 |
+| [任务分解策略](/agent/multi-agent/task-decomposition) | HierarchicalDecomposer、FunctionalDecomposer、DataDecomposer、Pipeline | 完整的分解器实现 |
+
 ## 下一步学习
 
-- [通信框架](/day131-135/communication) - Agent间通信机制
-- [协作模式](/day131-135/collaboration) - Agent协作模式
-- [任务分解](/day131-135/task-decomposition) - 复杂任务分解策略
+- [Agent核心API](/agent/agent-frameworks/core-apis) - 学习Agent开发核心API
+- [Agent核心技术](/agent/agent-frameworks/core-technologies) - 掌握ReAct、CoT等技术
+- [Deep-Agent](/day136-140/) - 深度学习与Agent结合
+- [平台与服务](/day141-145/) - Agent部署和运维

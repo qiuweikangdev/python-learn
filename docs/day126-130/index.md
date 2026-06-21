@@ -988,13 +988,33 @@ print(response["output"])
 - **集成性**：与现有系统的集成难度
 - **学习成本**：团队学习和使用成本
 
-## 下一步学习
+## 深入学习
+
+### Agent核心API和技术详解
+
+深入学习Agent开发的核心技术：
+
+| 文档 | 内容 | 关键技术 |
+|------|------|---------|
+| [Agent核心API详解](/agent/agent-frameworks/core-apis) | LLM引擎、工具注册、记忆管理、规划器、执行器 | 6大核心API的详细实现 |
+| [Agent核心技术详解](/agent/agent-frameworks/core-technologies) | ReAct、CoT、ToT、Plan-and-Execute、Reflexion | 6种推理框架的原理和实现 |
+
+### Agent框架详解
 
 选择一个Agent框架深入学习：
-- [AutoGPT详解](/day126-130/autogpt) - 自主AI代理
-- [BabyAGI详解](/day126-130/babyagi) - 任务驱动的自主Agent
-- [MetaGPT详解](/day126-130/metagpt) - 多角色协作框架
-- [CrewAI详解](/day126-130/crewai) - 多Agent协作框架
-- [Microsoft AutoGen详解](/day126-130/autogen) - 多Agent对话框架
-- [ChatDev详解](/day126-130/chatdev) - 基于角色的开发框架
-- [CAMEL详解](/day126-130/camel) - 通信Agent框架
+
+| 框架 | 特点 | 详细文档 |
+|------|------|---------|
+| **AutoGPT** | 自主AI代理 | [AutoGPT详解](/day126-130/autogpt) |
+| **BabyAGI** | 任务驱动的自主Agent | [BabyAGI详解](/day126-130/babyagi) |
+| **MetaGPT** | 多角色协作框架 | [MetaGPT详解](/day126-130/metagpt) |
+| **CrewAI** | 多Agent协作框架 | [CrewAI详解](/day126-130/crewai) |
+| **AutoGen** | 多Agent对话框架 | [AutoGen详解](/day126-130/autogen) |
+| **ChatDev** | 基于角色的开发框架 | [ChatDev详解](/day126-130/chatdev) |
+| **CAMEL** | 通信Agent框架 | [CAMEL详解](/day126-130/camel) |
+
+## 下一步学习
+
+- [多Agent系统](/day131-135/) - 学习多Agent协作和通信
+- [向量数据库](/day121-125/) - 了解向量存储和检索
+- [RAG技术](/day116-120/) - 掌握检索增强生成

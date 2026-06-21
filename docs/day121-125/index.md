@@ -606,15 +606,35 @@ for result in results:
 - **监控告警**：设置监控和告警
 - **版本升级**：平滑升级版本
 
-## 下一步学习
+## 深入学习
+
+### 向量数据库详细文档
 
 选择一个向量数据库深入学习：
-- [Pinecone详解](/agent/rag/vector-databases/pinecone) - 云原生向量数据库
-- [Weaviate详解](/agent/rag/vector-databases/weaviate) - 开源多模态向量数据库
-- [Milvus详解](/agent/rag/vector-databases/milvus) - 高性能分布式向量数据库
-- [Chroma详解](/agent/rag/vector-databases/chroma) - 轻量级嵌入式向量数据库
-- [Qdrant详解](/agent/rag/vector-databases/qdrant) - Rust编写的高性能向量数据库
-- [FAISS详解](/agent/rag/vector-databases/faiss) - Facebook开源的相似性搜索库
-- [pgvector详解](/agent/rag/vector-databases/pgvector) - PostgreSQL向量扩展
-- [Redis详解](/agent/rag/vector-databases/redis) - Redis向量搜索模块
-- [Elasticsearch详解](/agent/rag/vector-databases/elasticsearch) - Elasticsearch向量搜索
+
+| 数据库 | 特点 | 适用场景 | 详细文档 |
+|--------|------|---------|---------|
+| **Chroma** | 轻量级、Python原生 | 原型开发、学习 | [Chroma详解](/agent/rag/vector-databases/chroma) |
+| **FAISS** | Facebook开源、GPU加速 | 研究、高性能本地 | [FAISS详解](/agent/rag/vector-databases/faiss) |
+| **Milvus** | 云原生、分布式 | 大规模生产 | [Milvus详解](/agent/rag/vector-databases/milvus) |
+| **Qdrant** | Rust实现、高性能 | 中小规模生产 | [Qdrant详解](/agent/rag/vector-databases/qdrant) |
+| **Weaviate** | 多模态、GraphQL | 多模态应用 | [Weaviate详解](/agent/rag/vector-databases/weaviate) |
+| **Pinecone** | 全托管、零运维 | 快速上线 | [Pinecone详解](/agent/rag/vector-databases/pinecone) |
+| **pgvector** | PostgreSQL扩展 | 已有PG环境 | [pgvector详解](/agent/rag/vector-databases/pgvector) |
+
+### 向量数据库深度对比
+
+查看详细的对比分析：[向量数据库深度对比](/agent/rag/vector-databases/)
+
+对比内容包括：
+- 性能基准测试对比
+- 功能特性对比（混合搜索、多模态、事务支持）
+- 可扩展性对比
+- 运维复杂度对比
+- 选型建议
+
+## 下一步学习
+
+- [RAG实现](/day116-120/) - 学习如何构建RAG系统
+- [Agent框架](/day126-130/) - 了解主流Agent框架
+- [多Agent系统](/day131-135/) - 学习多Agent协作
