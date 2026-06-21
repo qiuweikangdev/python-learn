@@ -1,9 +1,31 @@
 <script setup lang="ts">
 import DefaultTheme from 'vitepress/theme'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
+import { useRoute } from 'vitepress'
 
 const { Layout } = DefaultTheme
 const isCollapsed = ref(false)
+const route = useRoute()
+
+// 判断当前页面是否在Agent开发相关的页面
+const isAgentRelatedPage = computed(() => {
+  const path = route.path
+  return path.startsWith('/day101-105/') || 
+         path.startsWith('/day106-110/') || 
+         path.startsWith('/day111-115/') || 
+         path.startsWith('/day116-120/') || 
+         path.startsWith('/day121-125/') || 
+         path.startsWith('/day126-130/') || 
+         path.startsWith('/day131-135/') || 
+         path.startsWith('/day136-140/') || 
+         path.startsWith('/day141-145/') ||
+         path.startsWith('/agent/')
+})
+
+// 站点标题链接
+const siteTitleLink = computed(() => {
+  return isAgentRelatedPage.value ? '/agent/' : '/'
+})
 
 function toggle() {
   isCollapsed.value = !isCollapsed.value
@@ -21,7 +43,25 @@ onMounted(() => {
     isCollapsed.value = true
     document.body.classList.add('sidebar-collapsed')
   }
+  
+  // 修改站点标题链接
+  updateSiteTitleLink()
 })
+
+// 监听路由变化，更新站点标题链接
+watch(() => route.path, () => {
+  updateSiteTitleLink()
+})
+
+function updateSiteTitleLink() {
+  // 等待DOM更新
+  setTimeout(() => {
+    const titleLink = document.querySelector('.VPNavBarTitle .title')
+    if (titleLink) {
+      titleLink.setAttribute('href', siteTitleLink.value)
+    }
+  }, 100)
+}
 </script>
 
 <template>

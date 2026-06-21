@@ -67,7 +67,7 @@ function slugify(path: string): string {
 }
 
 export default defineConfig({
-  title: 'Python - 100天从新手到大师',
+  title: 'Python',
   description: 'Python学习课程，从基础到高级的100天学习计划',
   lang: 'zh-CN',
 
@@ -309,12 +309,10 @@ export default defineConfig({
           text: 'Day101-105 - LLM应用开发基础',
           items: [
             { text: '概述与学习路线', link: '/day101-105/' },
-            { text: 'Transformer原理详解', link: '/day101-105/transformer' },
-            { text: '模型微调详解', link: '/day101-105/fine-tuning' },
-            { text: 'OpenAI API详解', link: '/day101-105/openai-api' },
-            { text: '提示工程', link: '/day101-105/prompt-engineering' },
-            { text: '函数调用', link: '/day101-105/function-calling' },
-            { text: '工具使用', link: '/day101-105/tool-use' }
+            { text: 'OpenAI API详解', link: '/agent/llm-basics/openai-api' },
+            { text: '提示工程', link: '/agent/llm-basics/prompt-engineering' },
+            { text: '函数调用', link: '/agent/llm-basics/function-calling' },
+            { text: '工具使用', link: '/agent/llm-basics/tool-use' }
           ]
         }
       ],
@@ -323,9 +321,9 @@ export default defineConfig({
           text: 'Day106-110 - LangChain框架',
           items: [
             { text: 'LangChain入门', link: '/day106-110/' },
-            { text: '核心概念详解', link: '/day106-110/core-concepts' },
-            { text: 'API参考手册', link: '/day106-110/api-reference' },
-            { text: '最佳实践指南', link: '/day106-110/best-practices' }
+            { text: '核心概念详解', link: '/agent/langchain/core-concepts' },
+            { text: 'API参考手册', link: '/agent/langchain/api-reference' },
+            { text: '最佳实践指南', link: '/agent/langchain/best-practices' }
           ]
         }
       ],
@@ -334,9 +332,9 @@ export default defineConfig({
           text: 'Day111-115 - LangGraph工作流',
           items: [
             { text: 'LangGraph入门', link: '/day111-115/' },
-            { text: '核心概念详解', link: '/day111-115/core-concepts' },
-            { text: 'API参考手册', link: '/day111-115/api-reference' },
-            { text: '工作流模式', link: '/day111-115/workflow-patterns' }
+            { text: '核心概念详解', link: '/agent/langgraph/core-concepts' },
+            { text: 'API参考手册', link: '/agent/langgraph/api-reference' },
+            { text: '工作流模式', link: '/agent/langgraph/workflow-patterns' }
           ]
         }
       ],
@@ -345,9 +343,9 @@ export default defineConfig({
           text: 'Day116-120 - RAG技术',
           items: [
             { text: 'RAG技术概述', link: '/day116-120/' },
-            { text: '核心概念详解', link: '/day116-120/core-concepts' },
-            { text: '实现与优化', link: '/day116-120/implementation' },
-            { text: '高级模式', link: '/day116-120/advanced-patterns' }
+            { text: '核心概念详解', link: '/agent/rag/core-concepts' },
+            { text: '实现与优化', link: '/agent/rag/implementation' },
+            { text: '高级模式', link: '/agent/rag/advanced-patterns' }
           ]
         }
       ],
