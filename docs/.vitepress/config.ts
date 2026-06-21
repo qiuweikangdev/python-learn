@@ -347,11 +347,14 @@ export default defineConfig({
             { text: '实现与优化', link: '/agent/rag/implementation' },
             { text: '高级模式', link: '/agent/rag/advanced-patterns' }
           ]
-        },
+        }
+      ],
+      '/agent/rag/vector-databases/': [
         {
           text: 'Day121-125 - 向量数据库',
           items: [
-            { text: '向量数据库概述', link: '/agent/rag/vector-databases/' },
+            { text: '向量数据库概述', link: '/day121-125/' },
+            { text: '向量数据库深度对比', link: '/agent/rag/vector-databases/' },
             { text: 'Chroma详解', link: '/agent/rag/vector-databases/chroma' },
             { text: 'FAISS详解', link: '/agent/rag/vector-databases/faiss' },
             { text: 'Milvus详解', link: '/agent/rag/vector-databases/milvus' },
