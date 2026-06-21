@@ -304,6 +304,111 @@ export default defineConfig({
           ]
         }
       ],
+      '/agent/llm-basics/': [
+        {
+          text: 'Day101-105 - LLM应用开发基础',
+          items: [
+            { text: '概述与学习路线', link: '/day101-105/' },
+            { text: 'OpenAI API详解', link: '/agent/llm-basics/openai-api' },
+            { text: '提示工程', link: '/agent/llm-basics/prompt-engineering' },
+            { text: '函数调用', link: '/agent/llm-basics/function-calling' },
+            { text: '工具使用', link: '/agent/llm-basics/tool-use' }
+          ]
+        }
+      ],
+      '/agent/langchain/': [
+        {
+          text: 'Day106-110 - LangChain框架',
+          items: [
+            { text: 'LangChain入门', link: '/day106-110/' },
+            { text: '核心概念详解', link: '/agent/langchain/core-concepts' },
+            { text: 'API参考手册', link: '/agent/langchain/api-reference' },
+            { text: '最佳实践指南', link: '/agent/langchain/best-practices' }
+          ]
+        }
+      ],
+      '/agent/langgraph/': [
+        {
+          text: 'Day111-115 - LangGraph工作流',
+          items: [
+            { text: 'LangGraph入门', link: '/day111-115/' },
+            { text: '核心概念详解', link: '/agent/langgraph/core-concepts' },
+            { text: 'API参考手册', link: '/agent/langgraph/api-reference' },
+            { text: '工作流模式', link: '/agent/langgraph/workflow-patterns' }
+          ]
+        }
+      ],
+      '/agent/rag/': [
+        {
+          text: 'Day116-120 - RAG技术',
+          items: [
+            { text: 'RAG技术概述', link: '/day116-120/' },
+            { text: '核心概念详解', link: '/agent/rag/core-concepts' },
+            { text: '实现与优化', link: '/agent/rag/implementation' },
+            { text: '高级模式', link: '/agent/rag/advanced-patterns' },
+            { text: '向量数据库概述', link: '/agent/rag/vector-databases/' },
+            { text: 'Chroma详解', link: '/agent/rag/vector-databases/chroma' },
+            { text: 'FAISS详解', link: '/agent/rag/vector-databases/faiss' },
+            { text: 'Milvus详解', link: '/agent/rag/vector-databases/milvus' },
+            { text: 'Qdrant详解', link: '/agent/rag/vector-databases/qdrant' },
+            { text: 'Weaviate详解', link: '/agent/rag/vector-databases/weaviate' },
+            { text: 'Pinecone详解', link: '/agent/rag/vector-databases/pinecone' },
+            { text: 'pgvector详解', link: '/agent/rag/vector-databases/pgvector' }
+          ]
+        }
+      ],
+      '/agent/agent-frameworks/': [
+        {
+          text: 'Day126-130 - Agent框架',
+          items: [
+            { text: 'Agent框架概述', link: '/day126-130/' },
+            { text: 'Agent核心API详解', link: '/agent/agent-frameworks/core-apis' },
+            { text: 'Agent核心技术详解', link: '/agent/agent-frameworks/core-technologies' },
+            { text: '现代Agent Harness', link: '/day126-130/agent-harness' },
+            { text: 'Skills与能力打包', link: '/day126-130/skills-protocol' },
+            { text: 'AutoGPT详解', link: '/day126-130/autogpt' },
+            { text: 'BabyAGI详解', link: '/day126-130/babyagi' },
+            { text: 'MetaGPT详解', link: '/day126-130/metagpt' },
+            { text: 'CrewAI详解', link: '/day126-130/crewai' },
+            { text: 'AutoGen详解', link: '/day126-130/autogen' },
+            { text: 'ChatDev详解', link: '/day126-130/chatdev' },
+            { text: 'CAMEL详解', link: '/day126-130/camel' }
+          ]
+        }
+      ],
+      '/agent/multi-agent/': [
+        {
+          text: 'Day131-135 - 多Agent系统',
+          items: [
+            { text: '多Agent系统概述', link: '/day131-135/' },
+            { text: '通信机制详解', link: '/agent/multi-agent/communication' },
+            { text: '协作模式详解', link: '/agent/multi-agent/collaboration' },
+            { text: '任务分解策略', link: '/agent/multi-agent/task-decomposition' }
+          ]
+        }
+      ],
+      '/agent/deep-agent/': [
+        {
+          text: 'Day136-140 - Deep-Agent开发',
+          items: [
+            { text: 'Deep-Agent入门', link: '/day136-140/' },
+            { text: '核心概念详解', link: '/day136-140/core-concepts' },
+            { text: 'API参考手册', link: '/day136-140/api-reference' },
+            { text: '架构设计', link: '/day136-140/architecture' }
+          ]
+        }
+      ],
+      '/agent/agent-platforms/': [
+        {
+          text: 'Day141-145 - Agent平台与服务',
+          items: [
+            { text: 'Agent平台概述', link: '/day141-145/' },
+            { text: '云服务Agent平台', link: '/day141-145/cloud-platforms' },
+            { text: 'API服务', link: '/day141-145/api-services' },
+            { text: '部署与运维', link: '/day141-145/deployment' }
+          ]
+        }
+      ],
       '/day101-105/': [
         {
           text: 'Day101-105 - LLM应用开发基础',
@@ -380,7 +485,7 @@ export default defineConfig({
             { text: 'BabyAGI详解', link: '/day126-130/babyagi' },
             { text: 'MetaGPT详解', link: '/day126-130/metagpt' },
             { text: 'CrewAI详解', link: '/day126-130/crewai' },
-            { text: 'Microsoft AutoGen详解', link: '/day126-130/autogen' },
+            { text: 'AutoGen详解', link: '/day126-130/autogen' },
             { text: 'ChatDev详解', link: '/day126-130/chatdev' },
             { text: 'CAMEL详解', link: '/day126-130/camel' }
           ]
@@ -393,10 +498,7 @@ export default defineConfig({
             { text: '多Agent系统概述', link: '/day131-135/' },
             { text: '通信机制详解', link: '/agent/multi-agent/communication' },
             { text: '协作模式详解', link: '/agent/multi-agent/collaboration' },
-            { text: '任务分解策略', link: '/agent/multi-agent/task-decomposition' },
-            { text: '通信框架', link: '/day131-135/communication' },
-            { text: '协作模式', link: '/day131-135/collaboration' },
-            { text: '任务分解', link: '/day131-135/task-decomposition' }
+            { text: '任务分解策略', link: '/agent/multi-agent/task-decomposition' }
           ]
         }
       ],
