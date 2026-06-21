@@ -356,13 +356,14 @@ export default defineConfig({
           text: 'Day121-125 - 向量数据库',
           items: [
             { text: '向量数据库概述', link: '/day121-125/' },
-            { text: 'Pinecone详解', link: '/day121-125/pinecone' },
-            { text: 'Weaviate详解', link: '/day121-125/weaviate' },
-            { text: 'Milvus详解', link: '/day121-125/milvus' },
-            { text: 'Chroma详解', link: '/day121-125/chroma' },
-            { text: 'Qdrant详解', link: '/day121-125/qdrant' },
-            { text: 'FAISS详解', link: '/day121-125/faiss' },
-            { text: 'pgvector详解', link: '/day121-125/pgvector' },
+            { text: '向量数据库深度对比', link: '/agent/rag/vector-databases/' },
+            { text: 'Chroma详解', link: '/agent/rag/vector-databases/chroma' },
+            { text: 'FAISS详解', link: '/agent/rag/vector-databases/faiss' },
+            { text: 'Milvus详解', link: '/agent/rag/vector-databases/milvus' },
+            { text: 'Qdrant详解', link: '/agent/rag/vector-databases/qdrant' },
+            { text: 'Weaviate详解', link: '/agent/rag/vector-databases/weaviate' },
+            { text: 'Pinecone详解', link: '/agent/rag/vector-databases/pinecone' },
+            { text: 'pgvector详解', link: '/agent/rag/vector-databases/pgvector' },
             { text: 'Redis详解', link: '/day121-125/redis' },
             { text: 'Elasticsearch详解', link: '/day121-125/elasticsearch' }
           ]
@@ -373,6 +374,8 @@ export default defineConfig({
           text: 'Day126-130 - Agent框架',
           items: [
             { text: 'Agent框架概述', link: '/day126-130/' },
+            { text: 'Agent核心API详解', link: '/agent/agent-frameworks/core-apis' },
+            { text: 'Agent核心技术详解', link: '/agent/agent-frameworks/core-technologies' },
             { text: '现代Agent Harness', link: '/day126-130/agent-harness' },
             { text: 'Skills与能力打包', link: '/day126-130/skills-protocol' },
             { text: 'AutoGPT详解', link: '/day126-130/autogpt' },
@@ -390,6 +393,9 @@ export default defineConfig({
           text: 'Day131-135 - 多Agent系统',
           items: [
             { text: '多Agent系统概述', link: '/day131-135/' },
+            { text: '通信机制详解', link: '/agent/multi-agent/communication' },
+            { text: '协作模式详解', link: '/agent/multi-agent/collaboration' },
+            { text: '任务分解策略', link: '/agent/multi-agent/task-decomposition' },
             { text: '通信框架', link: '/day131-135/communication' },
             { text: '协作模式', link: '/day131-135/collaboration' },
             { text: '任务分解', link: '/day131-135/task-decomposition' }
