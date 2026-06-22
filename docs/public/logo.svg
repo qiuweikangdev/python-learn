@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3776AB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E5A88;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- 圆形背景 -->
+  <circle cx="256" cy="256" r="240" fill="url(#grad)" />
+  <!-- 抽象化蛇形图案 -->
+  <path d="M180 160 Q200 120 240 140 Q280 160 260 200 Q240 240 280 260 Q320 280 300 320 Q280 360 240 340 Q200 320 220 280 Q240 240 200 220 Q160 200 180 160 Z" fill="white" />
+  <!-- 蛇眼 -->
+  <circle cx="220" cy="180" r="12" fill="#FFD43B" />
+  <!-- 蛇形细节 -->
+  <path d="M200 200 Q220 180 240 200" stroke="white" stroke-width="8" fill="none" />
+</svg>

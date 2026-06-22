@@ -90,6 +90,17 @@ export default defineConfig({
   
   // 主题配置
   themeConfig: {
+    // Favicon配置
+    head: [
+      ['link', { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
+      ['link', { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/icon-16.png' }],
+      ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/icon-32.png' }],
+      ['link', { rel: 'icon', type: 'image/png', sizes: '48x48', href: '/icon-48.png' }]
+    ],
+    
+    // Logo配置
+    logo: '/logo.svg',
+    
     // 导航栏
     nav: [
       { text: '首页', link: '/' },

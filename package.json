@@ -19,6 +19,7 @@
   "author": "qiuweikangdev",
   "license": "MIT",
   "dependencies": {
-    "@vueuse/core": "^14.3.0"
+    "@vueuse/core": "^14.3.0",
+    "sharp": "^0.35.2"
   }
 }
