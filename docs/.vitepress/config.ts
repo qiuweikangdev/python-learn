@@ -107,6 +107,7 @@ export default defineConfig({
       { text: 'Agent开发', link: '/agent/' },
       { text: '爬虫系列', link: '/crawler/' },
       { text: '数据分析', link: '/data-analysis/' },
+      { text: '自动化', link: '/automation/' },
       { text: '番外篇', link: '/extra/' }
     ],
 
@@ -644,6 +645,56 @@ export default defineConfig({
             { text: 'Day 13: 社交媒体数据分析实战', link: '/data-analysis/data-analysis-practice/day13/' },
             { text: 'Day 14: 医疗数据分析实战', link: '/data-analysis/data-analysis-practice/day14/' },
             { text: 'Day 15: 完整项目实战与部署', link: '/data-analysis/data-analysis-practice/day15/' }
+          ]
+        }
+      ],
+      '/automation/': [
+        {
+          text: 'Python 自动化系列',
+          items: [
+            { text: '概述与学习路线', link: '/automation/' },
+            { text: '自动化基础', link: '/automation/automation-basics/' },
+            { text: '自动化进阶', link: '/automation/automation-advanced/' },
+            { text: '自动化实战', link: '/automation/automation-practice/' }
+          ]
+        }
+      ],
+      '/automation/automation-basics/': [
+        {
+          text: 'Day1-5 - 自动化基础',
+          items: [
+            { text: '概述与学习路线', link: '/automation/automation-basics/' },
+            { text: 'Day 1: Python脚本基础与自动化概述', link: '/automation/automation-basics/day1/' },
+            { text: 'Day 2: 文件处理自动化', link: '/automation/automation-basics/day2/' },
+            { text: 'Day 3: 系统任务自动化', link: '/automation/automation-basics/day3/' },
+            { text: 'Day 4: 参数处理与配置管理', link: '/automation/automation-basics/day4/' },
+            { text: 'Day 5: 错误处理与异常管理', link: '/automation/automation-basics/day5/' }
+          ]
+        }
+      ],
+      '/automation/automation-advanced/': [
+        {
+          text: 'Day6-10 - 自动化进阶',
+          items: [
+            { text: '概述与学习路线', link: '/automation/automation-advanced/' },
+            { text: 'Day 6: 日志记录与监控', link: '/automation/automation-advanced/day6/' },
+            { text: 'Day 7: 开发环境自动化', link: '/automation/automation-advanced/day7/' },
+            { text: 'Day 8: 测试自动化', link: '/automation/automation-advanced/day8/' },
+            { text: 'Day 9: 部署自动化', link: '/automation/automation-advanced/day9/' },
+            { text: 'Day 10: CI/CD持续集成与持续部署', link: '/automation/automation-advanced/day10/' }
+          ]
+        }
+      ],
+      '/automation/automation-practice/': [
+        {
+          text: 'Day11-15 - 自动化实战',
+          items: [
+            { text: '概述与学习路线', link: '/automation/automation-practice/' },
+            { text: 'Day 11: 系统监控与告警自动化', link: '/automation/automation-practice/day11/' },
+            { text: 'Day 12: 日志分析自动化', link: '/automation/automation-practice/day12/' },
+            { text: 'Day 13: AI自动化基础', link: '/automation/automation-practice/day13/' },
+            { text: 'Day 14: 网页自动化（Selenium）', link: '/automation/automation-practice/day14/' },
+            { text: 'Day 15: 爬虫自动化（Scrapy）', link: '/automation/automation-practice/day15/' }
           ]
         }
       ]
