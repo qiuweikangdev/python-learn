@@ -105,6 +105,8 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: 'Agent开发', link: '/agent/' },
+      { text: '爬虫系列', link: '/crawler/' },
+      { text: '数据分析', link: '/data-analysis/' },
       { text: '番外篇', link: '/extra/' }
     ],
 
@@ -542,6 +544,106 @@ export default defineConfig({
             { text: '云服务Agent平台', link: '/day141-145/cloud-platforms' },
             { text: 'API服务', link: '/day141-145/api-services' },
             { text: '部署与运维', link: '/day141-145/deployment' }
+          ]
+        }
+      ],
+      '/crawler/': [
+        {
+          text: 'Python 爬虫开发',
+          items: [
+            { text: '概述与学习路线', link: '/crawler/' },
+            { text: '爬虫基础入门', link: '/crawler/crawler-basics/' },
+            { text: '爬虫进阶技术', link: '/crawler/crawler-advanced/' },
+            { text: '爬虫项目实战', link: '/crawler/crawler-practice/' }
+          ]
+        }
+      ],
+      '/crawler/crawler-basics/': [
+        {
+          text: 'Day1-5 - 爬虫基础入门',
+          items: [
+            { text: '概述与学习路线', link: '/crawler/crawler-basics/' },
+            { text: 'Day 1: 爬虫基础与HTTP协议', link: '/crawler/crawler-basics/day1/' },
+            { text: 'Day 2: HTML解析与BeautifulSoup', link: '/crawler/crawler-basics/day2/' },
+            { text: 'Day 3: 数据提取与正则表达式', link: '/crawler/crawler-basics/day3/' },
+            { text: 'Day 4: 反爬机制与应对策略', link: '/crawler/crawler-basics/day4/' },
+            { text: 'Day 5: 爬虫框架入门', link: '/crawler/crawler-basics/day5/' }
+          ]
+        }
+      ],
+      '/crawler/crawler-advanced/': [
+        {
+          text: 'Day6-10 - 爬虫进阶技术',
+          items: [
+            { text: '概述与学习路线', link: '/crawler/crawler-advanced/' },
+            { text: 'Day 6: 动态页面爬取', link: '/crawler/crawler-advanced/day6/' },
+            { text: 'Day 7: 多线程与异步爬虫', link: '/crawler/crawler-advanced/day7/' },
+            { text: 'Day 8: 分布式爬虫架构', link: '/crawler/crawler-advanced/day8/' },
+            { text: 'Day 9: 数据存储与清洗', link: '/crawler/crawler-advanced/day9/' },
+            { text: 'Day 10: 爬虫中间件与管道', link: '/crawler/crawler-advanced/day10/' }
+          ]
+        }
+      ],
+      '/crawler/crawler-practice/': [
+        {
+          text: 'Day11-15 - 爬虫项目实战',
+          items: [
+            { text: '概述与学习路线', link: '/crawler/crawler-practice/' },
+            { text: 'Day 11: 电商数据爬取实战', link: '/crawler/crawler-practice/day11/' },
+            { text: 'Day 12: 社交媒体数据采集', link: '/crawler/crawler-practice/day12/' },
+            { text: 'Day 13: 新闻网站爬取', link: '/crawler/crawler-practice/day13/' },
+            { text: 'Day 14: API 数据抓取', link: '/crawler/crawler-practice/day14/' },
+            { text: 'Day 15: 综合项目实战', link: '/crawler/crawler-practice/day15/' }
+          ]
+        }
+      ],
+      '/data-analysis/': [
+        {
+          text: '数据分析系列教程',
+          items: [
+            { text: '概述与学习路线', link: '/data-analysis/' },
+            { text: '数据分析基础', link: '/data-analysis/data-analysis-basics/' },
+            { text: '数据分析进阶', link: '/data-analysis/data-analysis-advanced/' },
+            { text: '数据分析实战', link: '/data-analysis/data-analysis-practice/' }
+          ]
+        }
+      ],
+      '/data-analysis/data-analysis-basics/': [
+        {
+          text: 'Day1-5 - 数据分析基础',
+          items: [
+            { text: '概述与学习路线', link: '/data-analysis/data-analysis-basics/' },
+            { text: 'Day 1: 数据分析概述与环境搭建', link: '/data-analysis/data-analysis-basics/day1/' },
+            { text: 'Day 2: Python基础与数据处理', link: '/data-analysis/data-analysis-basics/day2/' },
+            { text: 'Day 3: 数据清洗与预处理', link: '/data-analysis/data-analysis-basics/day3/' },
+            { text: 'Day 4: 数据可视化基础', link: '/data-analysis/data-analysis-basics/day4/' },
+            { text: 'Day 5: 探索性数据分析(EDA)', link: '/data-analysis/data-analysis-basics/day5/' }
+          ]
+        }
+      ],
+      '/data-analysis/data-analysis-advanced/': [
+        {
+          text: 'Day6-10 - 数据分析进阶',
+          items: [
+            { text: '概述与学习路线', link: '/data-analysis/data-analysis-advanced/' },
+            { text: 'Day 6: 统计分析基础', link: '/data-analysis/data-analysis-advanced/day6/' },
+            { text: 'Day 7: 时间序列分析', link: '/data-analysis/data-analysis-advanced/day7/' },
+            { text: 'Day 8: 文本数据分析', link: '/data-analysis/data-analysis-advanced/day8/' },
+            { text: 'Day 9: 地理数据分析', link: '/data-analysis/data-analysis-advanced/day9/' },
+            { text: 'Day 10: 机器学习入门', link: '/data-analysis/data-analysis-advanced/day10/' }
+          ]
+        }
+      ],
+      '/data-analysis/data-analysis-practice/': [
+        {
+          text: 'Day11-15 - 数据分析实战',
+          items: [
+            { text: '概述与学习路线', link: '/data-analysis/data-analysis-practice/' },
+            { text: 'Day 11: 电商数据分析实战', link: '/data-analysis/data-analysis-practice/day11/' },
+            { text: 'Day 12: 金融数据分析实战', link: '/data-analysis/data-analysis-practice/day12/' },
+            { text: 'Day 13: 社交媒体数据分析实战', link: '/data-analysis/data-analysis-practice/day13/' },
+            { text: 'Day 14: 医疗数据分析实战', link: '/data-analysis/data-analysis-practice/day14/' },
+            { text: 'Day 15: 完整项目实战与部署', link: '/data-analysis/data-analysis-practice/day15/' }
           ]
         }
       ]
