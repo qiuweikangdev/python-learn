@@ -286,7 +286,7 @@ class TestWeatherService:
             service = WeatherService('test_key')
             forecast = service.get_forecast('Beijing', days=3)
             
-            assert len(fault['forecast']) == 3
+            assert len(forecast['forecast']) == 3
             assert forecast['forecast'][0]['temp'] == 25
     
     def test_get_temperature_error(self):

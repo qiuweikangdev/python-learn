@@ -143,7 +143,7 @@ def generate_response(state: State) -> State:
     功能：调用LLM生成响应
     """
     # 创建OpenAI模型实例
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     
     # 调用模型生成响应
     # invoke()方法：发送请求并获取响应
@@ -288,7 +288,7 @@ def chat_node(state: AgentState) -> AgentState:
         AgentState: 更新后的状态
     """
     # 创建OpenAI模型
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     
     # 调用模型生成响应
     response = llm.invoke(state["messages"])

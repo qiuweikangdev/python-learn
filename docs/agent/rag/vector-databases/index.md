@@ -25,7 +25,7 @@
 - **HNSW**：分层可导航小世界图
 - **IVF**：倒排文件索引
 - **PQ**：乘积量化
-- **Annoy**：近似最近邻哦yeah
+- **Annoy**：近似最近邻搜索（Approximate Nearest Neighbors Oh Yeah）
 
 ### 4. 数据管理
 向量数据库的数据管理功能：

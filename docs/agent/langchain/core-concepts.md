@@ -164,7 +164,7 @@ chain = (
         ("user", "{input}")
     ])
     # 第二步：创建OpenAI模型
-    | ChatOpenAI(model="gpt-3.5-turbo")
+    | ChatOpenAI(model="gpt-4o-mini")
     # 第三步：创建输出解析器
     # StrOutputParser()：将模型输出转换为字符串
     | StrOutputParser()
@@ -178,46 +178,52 @@ result = chain.invoke({"input": "你好！"})
 print(result)
 ```
 
-### 4. 记忆管理
+### 4. 记忆管理（现代方式）
 ```python
-# 导入LangChain的记忆组件
-# langchain.memory.ConversationBufferMemory：对话缓冲记忆
-# 保存完整的对话历史
-from langchain.memory import ConversationBufferMemory
-
-# 导入OpenAI模型
+# 导入LangChain的核心组件
 from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
 
-# 导入对话链
-# langchain.chains.ConversationChain：对话链
-# 自动管理对话历史和上下文
-from langchain.chains import ConversationChain
+# 创建存储会话历史的字典
+# 每个session_id对应一个独立的对话历史
+store = {}
 
-# 创建记忆组件
-# ConversationBufferMemory：保存完整对话历史
-# 参数：
-#   return_messages=True：以消息列表形式返回记忆
-#   如果为False，则返回字符串格式
-memory = ConversationBufferMemory(return_messages=True)
+def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
+    """获取会话历史"""
+    if session_id not in store:
+        store[session_id] = InMemoryChatMessageHistory()
+    return store[session_id]
 
-# 创建对话链
-# ConversationChain：封装了对话逻辑
-# 参数：
-#   llm：语言模型实例
-#   memory：记忆组件实例
-#   verbose=True：打印详细执行过程
-conversation = ConversationChain(
-    llm=ChatOpenAI(model="gpt-3.5-turbo"),  # 使用GPT-3.5-turbo模型
-    memory=memory,  # 使用对话缓冲记忆
-    verbose=True  # 打印详细执行过程，便于调试
+# 创建模型
+llm = ChatOpenAI(model="gpt-4o-mini")
+
+# 创建带历史的链
+# RunnableWithMessageHistory：自动管理对话历史
+with_message_history = RunnableWithMessageHistory(
+    llm,  # 语言模型
+    get_session_history,  # 获取历史的函数
+    input_messages_key="input",  # 输入消息的键
+    history_messages_key="history",  # 历史消息的键
 )
 
-# 进行对话
-# predict()方法：发送消息并获取响应
-# 参数：用户输入的消息
-# 返回值：模型生成的回复
-response = conversation.predict(input="你好！")
-print(response)
+# 配置session_id
+config = {"configurable": {"session_id": "abc123"}}
+
+# 第一轮对话
+response = with_message_history.invoke(
+    {"input": "你好，我叫小明"},
+    config=config,
+)
+print(response.content)
+
+# 第二轮对话（模型会记住上下文）
+response = with_message_history.invoke(
+    {"input": "我叫什么名字？"},
+    config=config,
+)
+print(response.content)  # 模型会回答"小明"
 ```
 
 ## 实践指南
@@ -255,7 +261,7 @@ def simple_chain():
     ])
     
     # 创建OpenAI模型
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     
     # 创建输出解析器
     # StrOutputParser()：将模型输出转换为纯字符串
@@ -330,7 +336,7 @@ def create_agent():
     Agent是能够使用工具的智能体
     """
     # 创建OpenAI模型
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     
     # 工具列表
     tools = [search, calculate]

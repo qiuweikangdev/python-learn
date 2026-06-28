@@ -323,6 +323,7 @@ export default defineConfig({
           text: 'Day101-105 - LLM应用开发基础',
           items: [
             { text: '概述与学习路线', link: '/day101-105/' },
+            { text: 'LLM选型指南', link: '/agent/llm-basics/model-selection' },
             { text: 'OpenAI API详解', link: '/agent/llm-basics/openai-api' },
             { text: '提示工程', link: '/agent/llm-basics/prompt-engineering' },
             { text: '函数调用', link: '/agent/llm-basics/function-calling' },

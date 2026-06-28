@@ -126,7 +126,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 #   model：嵌入模型名称
 #   openai_api_key：OpenAI API密钥
 embeddings = OpenAIEmbeddings(
-    model="text-embedding-ada-002",  # 使用Ada 002嵌入模型
+    model="text-embedding-3-small",  # 使用text-embedding-3-small嵌入模型（推荐）
     openai_api_key="your-api-key"  # 替换为真实的API密钥
 )
 
@@ -231,7 +231,7 @@ retriever = vectorstore.as_retriever(
 #   llm：语言模型实例
 retriever = MultiQueryRetriever.from_llm(
     retriever=vectorstore.as_retriever(),  # 基础检索器
-    llm=ChatOpenAI(model="gpt-3.5-turbo")  # 用于生成查询的LLM
+    llm=ChatOpenAI(model="gpt-4o-mini")  # 用于生成查询的LLM
 )
 
 # 创建上下文压缩检索器
@@ -241,7 +241,7 @@ from langchain.retrievers.document_compressors import LLMChainExtractor
 
 # 创建压缩器
 # LLMChainExtractor.from_llm()：使用LLM提取关键信息
-compressor = LLMChainExtractor.from_llm(ChatOpenAI(model="gpt-3.5-turbo"))
+compressor = LLMChainExtractor.from_llm(ChatOpenAI(model="gpt-4o-mini"))
 
 # 创建压缩检索器
 retriever = ContextualCompressionRetriever(
@@ -323,7 +323,7 @@ template = """基于以下上下文回答问题：
 prompt = ChatPromptTemplate.from_template(template)
 
 # 创建语言模型
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-4o-mini")
 
 # 创建RAG链
 # 使用管道操作符连接组件
