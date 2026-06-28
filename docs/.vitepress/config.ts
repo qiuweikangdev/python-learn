@@ -687,14 +687,19 @@ export default defineConfig({
       ],
       '/automation/automation-practice/': [
         {
-          text: 'Day11-15 - 自动化实战',
+          text: 'Day11-20 - 自动化实战',
           items: [
             { text: '概述与学习路线', link: '/automation/automation-practice/' },
             { text: 'Day 11: 系统监控与告警自动化', link: '/automation/automation-practice/day11/' },
             { text: 'Day 12: 日志分析自动化', link: '/automation/automation-practice/day12/' },
             { text: 'Day 13: AI自动化基础', link: '/automation/automation-practice/day13/' },
             { text: 'Day 14: 网页自动化（Selenium）', link: '/automation/automation-practice/day14/' },
-            { text: 'Day 15: 爬虫自动化（Scrapy）', link: '/automation/automation-practice/day15/' }
+            { text: 'Day 15: 爬虫自动化（Scrapy）', link: '/automation/automation-practice/day15/' },
+            { text: 'Day 16: API接口自动化测试', link: '/automation/automation-practice/day16/' },
+            { text: 'Day 17: 性能测试与压测', link: '/automation/automation-practice/day17/' },
+            { text: 'Day 18: 前端UI自动化测试', link: '/automation/automation-practice/day18/' },
+            { text: 'Day 19: 脚本自动化实战', link: '/automation/automation-practice/day19/' },
+            { text: 'Day 20: 企业级自动化测试实战', link: '/automation/automation-practice/day20/' }
           ]
         }
       ]
