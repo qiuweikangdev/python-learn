@@ -18,8 +18,8 @@ features:
     details: 自动化进阶技术，日志记录、开发环境、测试自动化、部署自动化、CI/CD
     link: /automation/automation-advanced/
     icon: ⚡
-  - title: 实战篇 · Day 11-15
-    details: 自动化项目实战，监控告警、日志分析、AI自动化、网页自动化、爬虫自动化
+  - title: 实战篇 · Day 11-20
+    details: 自动化项目实战，监控告警、AI自动化、网页自动化、API测试、压测、UI测试、脚本自动化
     link: /automation/automation-practice/
     icon: 🚀
 ---
@@ -44,12 +44,17 @@ features:
 - **Day 9**: 部署自动化
 - **Day 10**: CI/CD持续集成与持续部署
 
-### 🔴 实战篇（Day 11-15）
+### 🔴 实战篇（Day 11-20）
 - **Day 11**: 系统监控与告警自动化
 - **Day 12**: 日志分析自动化
 - **Day 13**: AI自动化基础
 - **Day 14**: 网页自动化（Selenium）
 - **Day 15**: 爬虫自动化（Scrapy）
+- **Day 16**: API接口自动化测试
+- **Day 17**: 性能测试与压测
+- **Day 18**: 前端UI自动化测试
+- **Day 19**: 脚本自动化实战
+- **Day 20**: 企业级自动化测试实战
 
 ## 技术栈
 
@@ -58,9 +63,12 @@ features:
 - **系统任务**: subprocess, schedule, cron
 - **日志记录**: logging, loguru
 - **测试自动化**: pytest, unittest, mock
+- **API测试**: requests, httpx, pytest-html
+- **性能测试**: locust, httpx
+- **UI测试**: Playwright, Selenium
+- **办公自动化**: openpyxl, python-docx, PyPDF2
 - **部署自动化**: fabric, ansible, docker
 - **CI/CD**: GitHub Actions, GitLab CI, Jenkins
-- **网页自动化**: Selenium, Playwright, BeautifulSoup
 - **爬虫自动化**: Scrapy, requests, aiohttp
 
 ## 学习建议
@@ -75,6 +83,11 @@ features:
 ```bash
 # 安装必要的库
 pip install selenium scrapy pytest loguru fabric docker
+pip install requests httpx locust
+pip install playwright openpyxl python-docx PyPDF2
+
+# 安装Playwright浏览器
+playwright install
 
 # 验证Python版本
 python --version
