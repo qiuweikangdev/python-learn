@@ -81,7 +81,7 @@ export OPENAI_API_KEY="your-api-key"
 # 配置文件
 config = {
     "llm": {
-        "model": "gpt-3.5-turbo",
+        "model": "gpt-4o-mini",
         "api_key": "your-api-key"
     },
     "roles": ["product_manager", "architect", "engineer", "tester"],

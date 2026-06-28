@@ -212,7 +212,7 @@ tools = [
 def chat_with_search(query):
     """带搜索功能的对话"""
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": query}],
         tools=tools,
         tool_choice="auto"
@@ -229,7 +229,7 @@ def chat_with_search(query):
             result = web_search(**args)
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": query},
                 message,
@@ -310,7 +310,7 @@ tools = [
 def chat_with_calculator(query):
     """带计算功能的对话"""
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": query}],
         tools=tools,
         tool_choice="auto"
@@ -324,7 +324,7 @@ def chat_with_calculator(query):
         result = calculator(**args)
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": query},
                 message,
@@ -438,7 +438,7 @@ tools = [
 def chat_with_files(query):
     """带文件操作的对话"""
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": query}],
         tools=tools,
         tool_choice="auto"
@@ -461,7 +461,7 @@ def chat_with_files(query):
             result = {"error": "未知工具"}
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": query},
                 message,
@@ -550,7 +550,7 @@ def search_restaurant(location, cuisine="中餐"):
 def chat_with_multiple_tools(query):
     """多工具协作对话"""
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": query}],
         tools=tools,
         tool_choice="auto"
@@ -587,7 +587,7 @@ def chat_with_multiple_tools(query):
             })
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": query},
                 message,
@@ -809,7 +809,7 @@ def chat_with_tools(user_input: str) -> str:
     """带工具的对话"""
     # 第一次调用
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[
             {"role": "user", "content": user_input}
         ],
@@ -830,7 +830,7 @@ def chat_with_tools(user_input: str) -> str:
             
             # 第二次调用，将工具结果传回模型
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "user", "content": user_input},
                     message,
@@ -867,7 +867,7 @@ def chat_with_multiple_tools(user_input: str) -> str:
     while True:
         # 调用API
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=messages,
             functions=functions,
             function_call="auto"

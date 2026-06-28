@@ -322,7 +322,7 @@ def create_customer_service_agent():
 def handle_conversation(messages: List[Dict]) -> str:
     """处理对话"""
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=messages,
         tools=tools,
         tool_choice="auto"
@@ -423,7 +423,7 @@ def create_vectorstore(documents):
 # 3. 创建问答系统
 def create_qa_system(vectorstore):
     """创建问答系统"""
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     
     prompt_template = """基于以下文档内容回答问题。如果文档中没有相关信息，请说"我不知道"。
 

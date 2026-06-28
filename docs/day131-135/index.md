@@ -1098,7 +1098,7 @@ def create_agent(role: AgentRole, tools: List) -> AgentExecutor:
         MessagesPlaceholder(variable_name="agent_scratchpad")
     ])
     
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     agent = create_openai_functions_agent(llm, tools, prompt)
     return AgentExecutor(agent=agent, tools=tools, verbose=True)
 
@@ -1224,7 +1224,7 @@ def create_support_agent(specialty: str, tools: List) -> AgentExecutor:
         MessagesPlaceholder(variable_name="agent_scratchpad")
     ])
     
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     agent = create_openai_functions_agent(llm, tools, prompt)
     return AgentExecutor(agent=agent, tools=tools, verbose=True)
 
@@ -1315,7 +1315,7 @@ def create_research_agent(role: str, tools: List) -> AgentExecutor:
         MessagesPlaceholder(variable_name="agent_scratchpad")
     ])
     
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     agent = create_openai_functions_agent(llm, tools, prompt)
     return AgentExecutor(agent=agent, tools=tools, verbose=True)
 

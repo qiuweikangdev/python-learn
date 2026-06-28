@@ -81,7 +81,7 @@ def simple_chatbot():
         
         # 调用LLM获取响应
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=messages
         )
         
@@ -137,7 +137,7 @@ def document_processing_workflow(document: str) -> Dict:
     def extract_summary(doc: str) -> str:
         """提取文档摘要"""
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "请提取以下文档的摘要，不超过100字。"},
                 {"role": "user", "content": doc}
@@ -150,7 +150,7 @@ def document_processing_workflow(document: str) -> Dict:
     def translate_text(text: str, target_lang: str = "英文") -> str:
         """翻译文本"""
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": f"请将以下文本翻译成{target_lang}。"},
                 {"role": "user", "content": text}
@@ -267,7 +267,7 @@ class SimpleAgent:
             
             # Think：让LLM决定下一步行动
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=messages,
                 functions=[
                     {
@@ -444,7 +444,7 @@ class MultiAgentSystem:
         agent = self.agents[role]
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": f"你是{agent.name}，{agent.description}。你的技能包括：{', '.join(agent.skills)}"},
                 {"role": "user", "content": prompt}
@@ -567,7 +567,7 @@ OpenAI API是最常用的LLM API，主要接口包括：
 import openai
 
 response = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "system", "content": "你是一个有用的助手。"},
         {"role": "user", "content": "你好！"}
@@ -599,7 +599,7 @@ functions = [
 ]
 
 response = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[{"role": "user", "content": "北京天气怎么样？"}],
     functions=functions,
     function_call="auto"
@@ -654,7 +654,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # 简单对话
 def chat_with_gpt(prompt):
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content
@@ -673,7 +673,7 @@ client = OpenAI()
 
 try:
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": "你好！"}]
     )
     print(response.choices[0].message.content)

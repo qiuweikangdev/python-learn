@@ -51,7 +51,7 @@ import autogen
 
 # 配置LLM
 llm_config = {
-    "model": "gpt-3.5-turbo",
+    "model": "gpt-4o-mini",
     "api_key": "your-api-key"
 }
 
@@ -189,7 +189,7 @@ import autogen
 
 # 配置LLM
 llm_config = {
-    "model": "gpt-3.5-turbo",
+    "model": "gpt-4o-mini",
     "api_key": "your-api-key"
 }
 
@@ -221,7 +221,7 @@ import autogen
 
 # 配置LLM
 llm_config = {
-    "model": "gpt-3.5-turbo",
+    "model": "gpt-4o-mini",
     "api_key": "your-api-key"
 }
 

@@ -361,7 +361,7 @@ from langchain.retrievers import MultiQueryRetriever
 #   llm：语言模型，用于生成查询
 multi_query_retriever = MultiQueryRetriever.from_llm(
     retriever=vectorstore.as_retriever(),
-    llm=ChatOpenAI(model="gpt-3.5-turbo")
+    llm=ChatOpenAI(model="gpt-4o-mini")
 )
 
 # 使用多查询检索器
@@ -575,7 +575,7 @@ async def async_rag(query: str) -> str:
     docs = await retriever.ainvoke(query)
     
     # 异步生成
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     response = await llm.ainvoke(f"基于以下文档回答问题: {docs}")
     
     return response.content

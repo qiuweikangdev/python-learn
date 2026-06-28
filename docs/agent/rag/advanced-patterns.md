@@ -216,7 +216,7 @@ class AdaptiveRetriever:
         """
         self.simple_retriever = simple_retriever
         self.complex_retriever = complex_retriever
-        self.llm = ChatOpenAI(model="gpt-3.5-turbo")
+        self.llm = ChatOpenAI(model="gpt-4o-mini")
     
     def classify_complexity(self, query: str) -> str:
         """
@@ -281,7 +281,7 @@ class IterativeRAG:
         """
         self.vectorstore = vectorstore
         self.max_iterations = max_iterations
-        self.llm = ChatOpenAI(model="gpt-3.5-turbo")
+        self.llm = ChatOpenAI(model="gpt-4o-mini")
     
     def retrieve(self, query: str) -> List[str]:
         """
@@ -560,7 +560,7 @@ class ContextCompressor:
     """
     def __init__(self):
         """初始化上下文压缩器"""
-        self.llm = ChatOpenAI(model="gpt-3.5-turbo")
+        self.llm = ChatOpenAI(model="gpt-4o-mini")
     
     def compress(self, query: str, context: List[str], max_length: int = 1000) -> str:
         """
@@ -606,7 +606,7 @@ class ContextEnhancer:
     """
     def __init__(self):
         """初始化上下文增强器"""
-        self.llm = ChatOpenAI(model="gpt-3.5-turbo")
+        self.llm = ChatOpenAI(model="gpt-4o-mini")
     
     def enhance(self, query: str, context: List[str]) -> List[str]:
         """
@@ -668,11 +668,11 @@ class CollaborativeRAG:
     def __init__(self):
         """初始化协作式RAG"""
         # 检索智能体：使用GPT-3.5-turbo
-        self.retriever_llm = ChatOpenAI(model="gpt-3.5-turbo")
+        self.retriever_llm = ChatOpenAI(model="gpt-4o-mini")
         # 分析智能体：使用GPT-4（更强大）
         self.analyzer_llm = ChatOpenAI(model="gpt-4")
         # 生成智能体：使用GPT-3.5-turbo
-        self.generator_llm = ChatOpenAI(model="gpt-3.5-turbo")
+        self.generator_llm = ChatOpenAI(model="gpt-4o-mini")
     
     def retrieve(self, query: str) -> List[str]:
         """
@@ -766,7 +766,7 @@ class CompetitiveRAG:
             num_agents：智能体数量
         """
         # 创建多个智能体
-        self.agents = [ChatOpenAI(model="gpt-3.5-turbo") for _ in range(num_agents)]
+        self.agents = [ChatOpenAI(model="gpt-4o-mini") for _ in range(num_agents)]
         # 评判者：使用GPT-4
         self.judge = ChatOpenAI(model="gpt-4")
     

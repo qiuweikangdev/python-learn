@@ -57,7 +57,7 @@ assistant = ChatAgent(
         role_name="Assistant",
         content="你是一个有用的AI助手。"
     ),
-    model="gpt-3.5-turbo"
+    model="gpt-4o-mini"
 )
 
 # 创建用户Agent
@@ -66,7 +66,7 @@ user = ChatAgent(
         role_name="User",
         content="我需要帮助。"
     ),
-    model="gpt-3.5-turbo"
+    model="gpt-4o-mini"
 )
 ```
 
@@ -80,7 +80,7 @@ role_playing = RolePlaying(
     user_role_name="项目经理",
     task_prompt="开发一个Web应用",
     with_task_specify=True,
-    model="gpt-3.5-turbo"
+    model="gpt-4o-mini"
 )
 
 # 运行角色扮演
@@ -115,7 +115,7 @@ from camel.agents import TaskAgent
 
 # 创建任务Agent
 task_agent = TaskAgent(
-    model="gpt-3.5-turbo"
+    model="gpt-4o-mini"
 )
 
 # 分解任务
@@ -149,7 +149,7 @@ agent = ChatAgent(
         role_name="Assistant",
         content="你是一个有用的AI助手。"
     ),
-    model="gpt-3.5-turbo"
+    model="gpt-4o-mini"
 )
 
 # 创建消息
@@ -174,7 +174,7 @@ role_playing = RolePlaying(
     user_role_name="业务经理",
     task_prompt="分析销售数据并提供洞察",
     with_task_specify=True,
-    model="gpt-3.5-turbo"
+    model="gpt-4o-mini"
 )
 
 # 运行对话
@@ -196,7 +196,7 @@ researcher = ChatAgent(
         role_name="Researcher",
         content="你是一个研究员，负责收集信息。"
     ),
-    model="gpt-3.5-turbo"
+    model="gpt-4o-mini"
 )
 
 analyst = ChatAgent(
@@ -204,7 +204,7 @@ analyst = ChatAgent(
         role_name="Analyst",
         content="你是一个分析师，负责分析数据。"
     ),
-    model="gpt-3.5-turbo"
+    model="gpt-4o-mini"
 )
 
 # 研究员收集信息
@@ -231,7 +231,7 @@ from camel.agents import TaskAgent, ChatAgent
 from camel.messages import BaseMessage
 
 # 创建任务Agent
-task_agent = TaskAgent(model="gpt-3.5-turbo")
+task_agent = TaskAgent(model="gpt-4o-mini")
 
 # 分解任务
 main_task = "开发一个电商平台"
@@ -247,7 +247,7 @@ executor = ChatAgent(
         role_name="Executor",
         content="你是一个执行者，负责执行具体任务。"
     ),
-    model="gpt-3.5-turbo"
+    model="gpt-4o-mini"
 )
 
 # 执行子任务

@@ -188,7 +188,7 @@ def classify_sentiment(text):
 请只输出分类结果，不要解释。"""
 
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.0  # 分类任务用低温度
     )
@@ -236,7 +236,7 @@ def extract_entities(text):
 }}"""
 
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.0,
         response_format={"type": "json_object"}
@@ -281,7 +281,7 @@ def summarize(text, max_words=100):
 摘要："""
 
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3
     )
@@ -369,7 +369,7 @@ class ChatBot:
         self.messages.append({"role": "user", "content": user_input})
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=self.messages,
             temperature=0.7
         )
@@ -400,7 +400,7 @@ client = OpenAI(api_key="your-api-key")
 
 # 简单零样本提示
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "user", "content": "将以下文本翻译成英文：'人工智能是未来的发展方向'"}
     ]
@@ -417,7 +417,7 @@ client = OpenAI(api_key="your-api-key")
 
 # 少样本提示
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "system", "content": "你是一个情感分析专家。"},
         {"role": "user", "content": "示例1：'这个产品太棒了！' -> 正面"},
@@ -439,7 +439,7 @@ client = OpenAI(api_key="your-api-key")
 
 # 思维链提示
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "system", "content": "你是一个数学老师。请逐步解决数学问题。"},
         {"role": "user", "content": "问题：一个商店有15个苹果，卖出了8个，又进货了12个，现在有多少个苹果？\n\n请逐步推理："}
@@ -457,7 +457,7 @@ client = OpenAI(api_key="your-api-key")
 
 # 角色提示
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "system", "content": "你是一个经验丰富的软件工程师，擅长Python编程。请用专业但易懂的方式回答问题。"},
         {"role": "user", "content": "请解释什么是装饰器？"}
@@ -502,7 +502,7 @@ prompt = """
 review = "这款手机拍照效果很好，电池续航也不错，就是价格有点贵。"
 
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "system", "content": "你是一个产品评论分析专家。"},
         {"role": "user", "content": prompt.replace("{{review}}", review)}
@@ -530,7 +530,7 @@ messages = [
 ]
 
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=messages
 )
 
@@ -553,7 +553,7 @@ def generate_response(user_input, user_type):
         system_prompt = "你是一个编程助手。"
     
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_input}

@@ -167,7 +167,7 @@ def calculate(expression: str) -> str:
         return "计算错误"
 
 # 创建Agent
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-4o-mini")
 tools = [search, calculate]
 
 prompt = ChatPromptTemplate.from_messages([
@@ -196,7 +196,7 @@ def research(topic: str) -> str:
     """研究指定主题"""
     return f"关于{topic}的研究结果"
 
-research_llm = ChatOpenAI(model="gpt-3.5-turbo")
+research_llm = ChatOpenAI(model="gpt-4o-mini")
 research_tools = [research]
 research_prompt = ChatPromptTemplate.from_messages([
     ("system", "你是一个研究员，负责收集和分析信息。"),
@@ -212,7 +212,7 @@ def analyze(data: str) -> str:
     """分析数据"""
     return f"分析结果: {data}"
 
-analyst_llm = ChatOpenAI(model="gpt-3.5-turbo")
+analyst_llm = ChatOpenAI(model="gpt-4o-mini")
 analyst_tools = [analyze]
 analyst_prompt = ChatPromptTemplate.from_messages([
     ("system", "你是一个分析师，负责分析数据并提供见解。"),

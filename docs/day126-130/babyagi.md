@@ -80,7 +80,7 @@ cp .env.example .env
 ```python
 # .env文件配置
 OPENAI_API_KEY=your-openai-api-key
-OPENAPI_API_MODEL=gpt-3.5-turbo  # 或gpt-4
+OPENAPI_API_MODEL=gpt-4o-mini  # 或gpt-4
 
 # Pinecone配置（可选）
 PINECONE_API_KEY=your-pinecone-api-key

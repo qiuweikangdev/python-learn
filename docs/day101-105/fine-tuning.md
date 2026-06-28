@@ -722,7 +722,7 @@ def openai_fine_tuning():
     # 步骤3：创建微调任务
     job = client.fine_tuning.jobs.create(
         training_file=file.id,
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         hyperparameters={
             "n_epochs": 3,
         }

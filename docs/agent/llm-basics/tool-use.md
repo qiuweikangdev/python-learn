@@ -417,7 +417,7 @@ def chat_with_tools(user_input: str) -> str:
     """
     # 第一次调用
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[
             {"role": "user", "content": user_input}
         ],
@@ -439,7 +439,7 @@ def chat_with_tools(user_input: str) -> str:
             
             # 第二次调用，将工具结果传回模型
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "user", "content": user_input},  # 原始用户输入
                     message,  # 模型的响应（包含工具调用信息）
@@ -491,7 +491,7 @@ def chat_with_multiple_tools(user_input: str) -> str:
     while True:
         # 调用API
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=messages,
             functions=functions,
             function_call="auto"

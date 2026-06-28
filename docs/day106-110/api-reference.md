@@ -71,7 +71,7 @@ from langchain_openai import ChatOpenAI, OpenAI, OpenAIEmbeddings
 
 # ChatOpenAI
 chat_model = ChatOpenAI(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     temperature=0.7,
     api_key="your-api-key",
     max_tokens=1000,
@@ -81,7 +81,7 @@ chat_model = ChatOpenAI(
 
 # OpenAI (旧版)
 llm = OpenAI(
-    model="gpt-3.5-turbo-instruct",
+    model="gpt-4o-mini-instruct",
     temperature=0.7,
     api_key="your-api-key"
 )
@@ -97,7 +97,7 @@ embeddings = OpenAIEmbeddings(
 ```python
 from langchain_openai import ChatOpenAI
 
-chat = ChatOpenAI(model="gpt-3.5-turbo")
+chat = ChatOpenAI(model="gpt-4o-mini")
 
 # 同步调用
 response = chat.invoke("你好！")
@@ -279,7 +279,7 @@ memory = ConversationBufferMemory(
 
 # ConversationSummaryMemory
 memory = ConversationSummaryMemory(
-    llm=ChatOpenAI(model="gpt-3.5-turbo"),
+    llm=ChatOpenAI(model="gpt-4o-mini"),
     return_messages=True,
     memory_key="history"
 )
@@ -306,14 +306,14 @@ from langchain.chains import (
 
 # LLMChain
 chain = LLMChain(
-    llm=ChatOpenAI(model="gpt-3.5-turbo"),
+    llm=ChatOpenAI(model="gpt-4o-mini"),
     prompt=prompt,
     verbose=True
 )
 
 # ConversationChain
 conversation = ConversationChain(
-    llm=ChatOpenAI(model="gpt-3.5-turbo"),
+    llm=ChatOpenAI(model="gpt-4o-mini"),
     memory=ConversationBufferMemory(),
     verbose=True
 )
@@ -378,7 +378,7 @@ results = vectorstore.max_marginal_relevance_search(query, k=5)
 ### 1. 模型配置
 ```python
 model = ChatOpenAI(
-    model="gpt-3.5-turbo",           # 模型名称
+    model="gpt-4o-mini",           # 模型名称
     temperature=0.7,                  # 温度参数
     max_tokens=1000,                  # 最大token数
     timeout=30,                       # 超时时间

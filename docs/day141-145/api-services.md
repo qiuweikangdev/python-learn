@@ -42,7 +42,7 @@ app = FastAPI(title="Agent API", version="1.0.0")
 class AgentRequest(BaseModel):
     query: str
     context: Optional[str] = None
-    model: str = "gpt-3.5-turbo"
+    model: str = "gpt-4o-mini"
     max_tokens: int = 1000
 
 # 响应模型
@@ -120,7 +120,7 @@ def chat():
         response = call_agent(
             query=data['query'],
             context=data.get('context'),
-            model=data.get('model', 'gpt-3.5-turbo')
+            model=data.get('model', 'gpt-4o-mini')
         )
         
         return jsonify({
@@ -218,7 +218,7 @@ app = FastAPI()
 
 class StreamRequest(BaseModel):
     query: str
-    model: str = "gpt-3.5-turbo"
+    model: str = "gpt-4o-mini"
 
 @app.post("/agent/stream")
 async def stream_chat(request: StreamRequest):
@@ -277,7 +277,7 @@ SECRET_KEY = "your-secret-key"
 class ChatRequest(BaseModel):
     query: str = Field(..., description="用户查询")
     context: Optional[str] = Field(None, description="上下文信息")
-    model: str = Field("gpt-3.5-turbo", description="模型名称")
+    model: str = Field("gpt-4o-mini", description="模型名称")
     temperature: float = Field(0.7, ge=0, le=2, description="温度参数")
     max_tokens: int = Field(1000, ge=1, le=4000, description="最大token数")
 
@@ -337,7 +337,7 @@ async def list_models(user=Depends(verify_token)):
     """获取可用模型列表"""
     return {
         "models": [
-            {"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo"},
+            {"id": "gpt-4o-mini", "name": "GPT-3.5 Turbo"},
             {"id": "gpt-4", "name": "GPT-4"},
             {"id": "claude-3-sonnet", "name": "Claude 3 Sonnet"}
         ]

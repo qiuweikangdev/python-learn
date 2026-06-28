@@ -95,14 +95,14 @@ from langchain_openai import ChatOpenAI, OpenAI, OpenAIEmbeddings
 
 # ChatOpenAI：OpenAI聊天模型
 # 参数说明：
-#   model：模型名称，如"gpt-3.5-turbo"、"gpt-4"
+#   model：模型名称，如"gpt-4o-mini"、"gpt-4"
 #   temperature：控制输出随机性，0-2之间
 #   api_key：OpenAI API密钥
 #   max_tokens：最大输出token数
 #   timeout：请求超时时间（秒）
 #   max_retries：最大重试次数
 chat_model = ChatOpenAI(
-    model="gpt-3.5-turbo",  # 使用GPT-3.5-turbo模型
+    model="gpt-4o-mini",  # 使用GPT-3.5-turbo模型
     temperature=0.7,  # 中等随机性
     api_key="your-api-key",  # API密钥
     max_tokens=1000,  # 最大输出1000个token
@@ -113,7 +113,7 @@ chat_model = ChatOpenAI(
 # OpenAI：OpenAI文本补全模型（旧版）
 # 适用于文本补全任务
 llm = OpenAI(
-    model="gpt-3.5-turbo-instruct",  # 使用instruct模型
+    model="gpt-4o-mini-instruct",  # 使用instruct模型
     temperature=0.7,
     api_key="your-api-key"
 )
@@ -135,7 +135,7 @@ embeddings = OpenAIEmbeddings(
 from langchain_openai import ChatOpenAI
 
 # 创建模型实例
-chat = ChatOpenAI(model="gpt-3.5-turbo")
+chat = ChatOpenAI(model="gpt-4o-mini")
 
 # 同步调用
 # invoke()：发送请求并获取完整响应
@@ -400,7 +400,7 @@ memory = ConversationBufferMemory(
 #   return_messages=True：以消息列表形式返回
 #   memory_key：记忆在链中的键名
 memory = ConversationSummaryMemory(
-    llm=ChatOpenAI(model="gpt-3.5-turbo"),
+    llm=ChatOpenAI(model="gpt-4o-mini"),
     return_messages=True,
     memory_key="history"
 )
@@ -436,7 +436,7 @@ from langchain.chains import (
 #   prompt：提示模板
 #   verbose=True：打印详细执行过程
 chain = LLMChain(
-    llm=ChatOpenAI(model="gpt-3.5-turbo"),
+    llm=ChatOpenAI(model="gpt-4o-mini"),
     prompt=prompt,
     verbose=True
 )
@@ -444,7 +444,7 @@ chain = LLMChain(
 # ConversationChain：对话链
 # 带记忆的对话链，自动管理对话历史
 conversation = ConversationChain(
-    llm=ChatOpenAI(model="gpt-3.5-turbo"),
+    llm=ChatOpenAI(model="gpt-4o-mini"),
     memory=ConversationBufferMemory(),
     verbose=True
 )
@@ -551,7 +551,7 @@ results = vectorstore.max_marginal_relevance_search(query, k=5)
 # 创建模型实例
 # ChatOpenAI的配置参数
 model = ChatOpenAI(
-    model="gpt-3.5-turbo",           # 模型名称
+    model="gpt-4o-mini",           # 模型名称
     temperature=0.7,                  # 温度参数：控制输出随机性（0-2）
     max_tokens=1000,                  # 最大token数：限制输出长度
     timeout=30,                       # 超时时间：请求超时（秒）

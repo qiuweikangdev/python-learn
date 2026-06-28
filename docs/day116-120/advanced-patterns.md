@@ -149,7 +149,7 @@ class AdaptiveRetriever:
     def __init__(self, simple_retriever, complex_retriever):
         self.simple_retriever = simple_retriever
         self.complex_retriever = complex_retriever
-        self.llm = ChatOpenAI(model="gpt-3.5-turbo")
+        self.llm = ChatOpenAI(model="gpt-4o-mini")
     
     def classify_complexity(self, query: str) -> str:
         """分类查询复杂度"""
@@ -182,7 +182,7 @@ class IterativeRAG:
     def __init__(self, vectorstore, max_iterations=3):
         self.vectorstore = vectorstore
         self.max_iterations = max_iterations
-        self.llm = ChatOpenAI(model="gpt-3.5-turbo")
+        self.llm = ChatOpenAI(model="gpt-4o-mini")
     
     def retrieve(self, query: str) -> List[str]:
         """迭代检索"""
@@ -340,7 +340,7 @@ from langchain_openai import ChatOpenAI
 
 class ContextCompressor:
     def __init__(self):
-        self.llm = ChatOpenAI(model="gpt-3.5-turbo")
+        self.llm = ChatOpenAI(model="gpt-4o-mini")
     
     def compress(self, query: str, context: List[str], max_length: int = 1000) -> str:
         """压缩上下文"""
@@ -368,7 +368,7 @@ from langchain_openai import ChatOpenAI
 
 class ContextEnhancer:
     def __init__(self):
-        self.llm = ChatOpenAI(model="gpt-3.5-turbo")
+        self.llm = ChatOpenAI(model="gpt-4o-mini")
     
     def enhance(self, query: str, context: List[str]) -> List[str]:
         """增强上下文"""
@@ -405,9 +405,9 @@ from langchain_openai import ChatOpenAI
 
 class CollaborativeRAG:
     def __init__(self):
-        self.retriever_llm = ChatOpenAI(model="gpt-3.5-turbo")
+        self.retriever_llm = ChatOpenAI(model="gpt-4o-mini")
         self.analyzer_llm = ChatOpenAI(model="gpt-4")
-        self.generator_llm = ChatOpenAI(model="gpt-3.5-turbo")
+        self.generator_llm = ChatOpenAI(model="gpt-4o-mini")
     
     def retrieve(self, query: str) -> List[str]:
         """检索智能体"""
@@ -452,7 +452,7 @@ from langchain_openai import ChatOpenAI
 
 class CompetitiveRAG:
     def __init__(self, num_agents=3):
-        self.agents = [ChatOpenAI(model="gpt-3.5-turbo") for _ in range(num_agents)]
+        self.agents = [ChatOpenAI(model="gpt-4o-mini") for _ in range(num_agents)]
         self.judge = ChatOpenAI(model="gpt-4")
     
     def generate_candidates(self, query: str, context: str) -> List[str]:

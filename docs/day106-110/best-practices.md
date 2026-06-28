@@ -61,7 +61,7 @@ import asyncio
 from langchain_openai import ChatOpenAI
 
 async def process_batch(inputs):
-    model = ChatOpenAI(model="gpt-3.5-turbo")
+    model = ChatOpenAI(model="gpt-4o-mini")
     
     # 异步批量处理
     tasks = [model.ainvoke(input) for input in inputs]
@@ -79,7 +79,7 @@ results = asyncio.run(process_batch(inputs))
 ```python
 from langchain_openai import ChatOpenAI
 
-model = ChatOpenAI(model="gpt-3.5-turbo")
+model = ChatOpenAI(model="gpt-4o-mini")
 
 # 流式处理
 for chunk in model.stream("请详细解释人工智能"):
@@ -91,7 +91,7 @@ for chunk in model.stream("请详细解释人工智能"):
 ```python
 from langchain_openai import ChatOpenAI
 
-model = ChatOpenAI(model="gpt-3.5-turbo")
+model = ChatOpenAI(model="gpt-4o-mini")
 
 # 批量处理
 inputs = ["问题1", "问题2", "问题3"]
@@ -260,7 +260,7 @@ from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     openai_api_key: str
-    model_name: str = "gpt-3.5-turbo"
+    model_name: str = "gpt-4o-mini"
     temperature: float = 0.7
     max_tokens: int = 1000
     cache_enabled: bool = True
@@ -370,7 +370,7 @@ from unittest.mock import Mock, patch
 
 def test_model_call():
     """测试模型调用"""
-    model = ChatOpenAI(model="gpt-3.5-turbo")
+    model = ChatOpenAI(model="gpt-4o-mini")
     
     with patch.object(model, 'invoke') as mock_invoke:
         mock_invoke.return_value = Mock(content="测试响应")
@@ -397,7 +397,7 @@ from langchain.schema.output_parser import StrOutputParser
 @pytest.mark.integration
 def test_end_to_end():
     """端到端测试"""
-    model = ChatOpenAI(model="gpt-3.5-turbo")
+    model = ChatOpenAI(model="gpt-4o-mini")
     prompt = ChatPromptTemplate.from_messages([
         ("system", "你是一个有用的助手。"),
         ("user", "{input}")
@@ -421,7 +421,7 @@ from langchain_openai import ChatOpenAI
 @pytest.mark.performance
 def test_response_time():
     """测试响应时间"""
-    model = ChatOpenAI(model="gpt-3.5-turbo")
+    model = ChatOpenAI(model="gpt-4o-mini")
     
     start_time = time.time()
     response = model.invoke("测试输入")

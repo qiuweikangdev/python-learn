@@ -88,11 +88,11 @@ from langchain_anthropic import ChatAnthropic
 # 创建OpenAI模型实例
 # ChatOpenAI类：封装了OpenAI API的调用逻辑
 # 参数说明：
-#   model：模型名称，如"gpt-3.5-turbo"、"gpt-4"
+#   model：模型名称，如"gpt-4o-mini"、"gpt-4o"
 #   temperature：控制输出随机性，0-2之间，越低越确定
 #   api_key：OpenAI API密钥
 llm = ChatOpenAI(
-    model="gpt-3.5-turbo",  # 使用GPT-3.5-turbo模型
+    model="gpt-4o-mini",  # 使用GPT-4o-mini模型（推荐）
     temperature=0.7,  # 中等随机性，平衡创造性和准确性
     api_key="your-api-key"  # 替换为真实的API密钥
 )

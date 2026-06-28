@@ -125,7 +125,7 @@ import openai
 client = openai.OpenAI(api_key="your-api-key")
 
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "system", "content": "你是一个有用的助手。"},
         {"role": "user", "content": "你好！"}
@@ -254,9 +254,9 @@ class MonitoringService:
 monitoring = MonitoringService()
 
 # 记录指标
-monitoring.record_metric("response_time", 0.5, {"model": "gpt-3.5-turbo"})
-monitoring.record_metric("response_time", 0.3, {"model": "gpt-3.5-turbo"})
-monitoring.record_metric("token_usage", 100, {"model": "gpt-3.5-turbo"})
+monitoring.record_metric("response_time", 0.5, {"model": "gpt-4o-mini"})
+monitoring.record_metric("response_time", 0.3, {"model": "gpt-4o-mini"})
+monitoring.record_metric("token_usage", 100, {"model": "gpt-4o-mini"})
 
 # 获取指标
 avg_response_time = monitoring.calculate_average("response_time")
@@ -338,7 +338,7 @@ class AgentService:
         
         # 调用模型
         response = self.client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=messages
         )
         

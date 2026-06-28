@@ -156,12 +156,12 @@ retriever = vectorstore.as_retriever(
 # 多查询检索器
 retriever = MultiQueryRetriever.from_llm(
     retriever=vectorstore.as_retriever(),
-    llm=ChatOpenAI(model="gpt-3.5-turbo")
+    llm=ChatOpenAI(model="gpt-4o-mini")
 )
 
 # 上下文压缩检索器
 from langchain.retrievers.document_compressors import LLMChainExtractor
-compressor = LLMChainExtractor.from_llm(ChatOpenAI(model="gpt-3.5-turbo"))
+compressor = LLMChainExtractor.from_llm(ChatOpenAI(model="gpt-4o-mini"))
 retriever = ContextualCompressionRetriever(
     base_compressor=compressor,
     base_retriever=vectorstore.as_retriever()
@@ -224,7 +224,7 @@ template = """基于以下上下文回答问题：
 回答："""
 
 prompt = ChatPromptTemplate.from_template(template)
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-4o-mini")
 
 rag_chain = (
     {"context": retriever, "question": RunnablePassthrough()}
@@ -652,7 +652,7 @@ def create_rag_with_citations():
             "question": RunnablePassthrough()
         }
         | prompt
-        | ChatOpenAI(model="gpt-3.5-turbo")
+        | ChatOpenAI(model="gpt-4o-mini")
         | StrOutputParser()
     )
     
@@ -753,7 +753,7 @@ def create_robust_rag():
             "question": lambda x: x
         }
         | prompt
-        | ChatOpenAI(model="gpt-3.5-turbo")
+        | ChatOpenAI(model="gpt-4o-mini")
         | StrOutputParser()
     )
     

@@ -81,7 +81,7 @@ def create_langchain_agent():
     
     # 1. 创建模型
     llm = ChatOpenAI(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         temperature=0.7
     )
     
@@ -174,7 +174,7 @@ def create_autogen_agents():
     
     # 配置LLM
     llm_config = {
-        "model": "gpt-3.5-turbo",
+        "model": "gpt-4o-mini",
         "api_key": "your-api-key"
     }
     
@@ -322,7 +322,7 @@ def create_semantic_kernel_agent():
         OpenAIChatCompletion(
             service_id="chat",
             api_key="your-api-key",
-            ai_model_id="gpt-3.5-turbo"
+            ai_model_id="gpt-4o-mini"
         )
     )
     
@@ -380,7 +380,7 @@ class ModelProvider(ABC):
 class OpenAIProvider(ModelProvider):
     """OpenAI模型提供者"""
     
-    def __init__(self, api_key: str, model: str = "gpt-3.5-turbo"):
+    def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
         from openai import OpenAI
         self.client = OpenAI(api_key=api_key)
         self.model = model

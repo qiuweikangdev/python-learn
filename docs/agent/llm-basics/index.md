@@ -66,7 +66,7 @@ OpenAI API是最常用的LLM API，主要接口包括：
 import openai
 
 response = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "system", "content": "你是一个有用的助手。"},
         {"role": "user", "content": "你好！"}
@@ -98,7 +98,7 @@ functions = [
 ]
 
 response = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[{"role": "user", "content": "北京天气怎么样？"}],
     functions=functions,
     function_call="auto"
@@ -153,7 +153,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # 简单对话
 def chat_with_gpt(prompt):
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content
@@ -172,7 +172,7 @@ client = OpenAI()
 
 try:
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": "你好！"}]
     )
     print(response.choices[0].message.content)

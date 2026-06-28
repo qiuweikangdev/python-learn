@@ -266,7 +266,7 @@ vectorstore = Chroma.from_documents(
 )
 
 # 4. 创建问答链
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-4o-mini")
 qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
     chain_type="stuff",
@@ -322,7 +322,7 @@ template = """基于以下产品信息回答客户问题。
 prompt = ChatPromptTemplate.from_template(template)
 
 # 4. 构建RAG链
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-4o-mini")
 retriever = vectorstore.as_retriever()
 
 rag_chain = (
@@ -380,7 +380,7 @@ def search_documents(vectorstore, query, k=3):
 
 # 4. 生成摘要
 def generate_summary(chunks):
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     chain = load_summarize_chain(llm, chain_type="map_reduce")
     summary = chain.invoke(chunks)
     return summary["output_text"]
@@ -647,12 +647,12 @@ retriever = vectorstore.as_retriever(
 # 多查询检索器
 retriever = MultiQueryRetriever.from_llm(
     retriever=vectorstore.as_retriever(),
-    llm=ChatOpenAI(model="gpt-3.5-turbo")
+    llm=ChatOpenAI(model="gpt-4o-mini")
 )
 
 # 上下文压缩检索器
 from langchain.retrievers.document_compressors import LLMChainExtractor
-compressor = LLMChainExtractor.from_llm(ChatOpenAI(model="gpt-3.5-turbo"))
+compressor = LLMChainExtractor.from_llm(ChatOpenAI(model="gpt-4o-mini"))
 retriever = ContextualCompressionRetriever(
     base_compressor=compressor,
     base_retriever=vectorstore.as_retriever()
@@ -682,7 +682,7 @@ def create_rag_chain(retriever):
     prompt = ChatPromptTemplate.from_template(template)
     
     # LLM
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     
     # 构建链
     rag_chain = (
@@ -757,7 +757,7 @@ template = """基于以下上下文回答问题：
 回答："""
 
 prompt = ChatPromptTemplate.from_template(template)
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-4o-mini")
 
 rag_chain = (
     {"context": retriever, "question": RunnablePassthrough()}

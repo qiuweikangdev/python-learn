@@ -192,7 +192,7 @@ def customer_service(query, history=[]):
     #   messages：消息列表
     #   temperature：控制输出的随机性（0-2），越低越确定
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",  # 使用GPT-3.5-turbo模型
+        model="gpt-4o-mini",  # 使用GPT-3.5-turbo模型
         messages=messages,
         temperature=0.3  # 客服场景需要稳定输出，使用较低的temperature
     )
@@ -246,7 +246,7 @@ def generate_content(topic, content_type="article"):
     
     # 调用Chat Completions API
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[
             # 使用get方法获取对应的提示词，如果不存在则使用默认的article提示词
             {"role": "user", "content": prompts.get(content_type, prompts["article"])}
@@ -372,7 +372,7 @@ def analyze_data(data_description, analysis_type="insight"):
     
     # 调用Chat Completions API
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[
             # 系统消息：定义AI助手的角色
             {"role": "system", "content": "你是一个资深数据分析师。"},
@@ -417,7 +417,7 @@ client = OpenAI(api_key="your-api-key")
 #   temperature：控制输出的随机性（0-2）
 #   max_tokens：最大输出token数
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         # 系统消息：定义AI助手的角色
         {"role": "system", "content": "你是一个有用的助手。"},
@@ -446,7 +446,7 @@ client = OpenAI(api_key="your-api-key")
 # 流式响应：模型生成内容时逐步返回，而不是一次性返回全部内容
 # 优点：提升用户体验，减少等待时间
 stream = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "user", "content": "写一个关于人工智能的故事"}
     ],
@@ -503,7 +503,7 @@ functions = [
 # function_call参数：控制函数调用行为
 # "auto"：模型自动决定是否调用函数
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "user", "content": "北京今天天气怎么样？"}
     ],
@@ -607,7 +607,7 @@ messages = [
 # 调用Chat Completions API
 # 传入完整的对话历史，模型会根据历史上下文生成回答
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=messages
 )
 
@@ -649,7 +649,7 @@ class MovieReview(BaseModel):
 # response_format参数：指定输出格式
 # {"type": "json_object"}：要求模型以JSON格式输出
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "system", "content": "你是一个电影评论家。请以JSON格式输出电影评论。"},
         {"role": "user", "content": "请评论电影《流浪地球》"}
@@ -682,7 +682,7 @@ client = OpenAI(api_key="your-api-key")
 try:
     # 调用Chat Completions API
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": "你好！"}]
     )
     # 获取模型生成的回答

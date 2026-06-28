@@ -80,7 +80,7 @@ from langchain_anthropic import ChatAnthropic
 
 # OpenAI模型
 llm = ChatOpenAI(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     temperature=0.7,
     api_key="your-api-key"
 )
@@ -123,7 +123,7 @@ chain = (
         ("system", "你是一个有用的助手。"),
         ("user", "{input}")
     ])
-    | ChatOpenAI(model="gpt-3.5-turbo")
+    | ChatOpenAI(model="gpt-4o-mini")
     | StrOutputParser()
 )
 
@@ -143,7 +143,7 @@ memory = ConversationBufferMemory(return_messages=True)
 
 # 创建对话链
 conversation = ConversationChain(
-    llm=ChatOpenAI(model="gpt-3.5-turbo"),
+    llm=ChatOpenAI(model="gpt-4o-mini"),
     memory=memory,
     verbose=True
 )
@@ -201,7 +201,7 @@ def demonstrate_context_window():
     
     # 创建模型（指定上下文窗口大小）
     llm = ChatOpenAI(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         max_tokens=100,  # 限制输出token
     )
     
@@ -257,7 +257,7 @@ def demonstrate_different_memories():
     比较不同记忆类型的特点和适用场景
     """
     
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     
     # 1. ConversationBufferMemory：存储完整对话历史
     print("=== ConversationBufferMemory ===")
@@ -416,7 +416,7 @@ def create_robust_agent():
         return f"结果：{query}"
     
     # 创建Agent
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     tools = [reliable_tool, unreliable_tool, slow_tool]
     
     prompt = ChatPromptTemplate.from_messages([
@@ -492,7 +492,7 @@ def create_agent_with_empty_result_handling():
         return str(users[user_id])
     
     # 创建Agent
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     tools = [search_database, get_user_info]
     
     prompt = ChatPromptTemplate.from_messages([
@@ -591,7 +591,7 @@ def create_agent_with_citation_validation():
             "question": lambda x: x
         }
         | prompt
-        | ChatOpenAI(model="gpt-3.5-turbo")
+        | ChatOpenAI(model="gpt-4o-mini")
         | StrOutputParser()
     )
     
@@ -653,7 +653,7 @@ def create_agent_with_duplicate_prevention():
             return f"计算错误：{e}"
     
     # 创建Agent
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     tools = [search, calculate]
     
     prompt = ChatPromptTemplate.from_messages([
@@ -709,7 +709,7 @@ def simple_chain():
         ("user", "{input}")
     ])
     
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     output_parser = StrOutputParser()
     
     chain = prompt | llm | output_parser
@@ -742,7 +742,7 @@ def calculate(expression: str) -> str:
         return "计算错误"
 
 def create_agent():
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     tools = [search, calculate]
     
     from langchain.prompts import ChatPromptTemplate

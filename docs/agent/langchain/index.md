@@ -88,7 +88,7 @@ from langchain_anthropic import ChatAnthropic
 
 # OpenAI模型
 llm = ChatOpenAI(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     temperature=0.7,
     api_key="your-api-key"
 )
@@ -126,7 +126,7 @@ chain = (
         ("system", "你是一个有用的助手。"),
         ("user", "{input}")
     ])
-    | ChatOpenAI(model="gpt-3.5-turbo")
+    | ChatOpenAI(model="gpt-4o-mini")
     | StrOutputParser()
 )
 
@@ -147,7 +147,7 @@ def search(query: str) -> str:
     return f"搜索结果: {query}"
 
 # 创建代理
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-4o-mini")
 tools = [search]
 agent = create_openai_tools_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools)
@@ -167,7 +167,7 @@ memory = ConversationBufferMemory(return_messages=True)
 
 # 创建对话链
 conversation = ConversationChain(
-    llm=ChatOpenAI(model="gpt-3.5-turbo"),
+    llm=ChatOpenAI(model="gpt-4o-mini"),
     memory=memory,
     verbose=True
 )
@@ -201,7 +201,7 @@ def simple_chain():
         ("user", "{input}")
     ])
     
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     output_parser = StrOutputParser()
     
     chain = prompt | llm | output_parser
@@ -233,7 +233,7 @@ def search_web(query: str) -> str:
     return f"搜索结果: {query}"
 
 def create_agent():
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     tools = [get_weather, search_web]
     
     prompt = ChatPromptTemplate.from_messages([

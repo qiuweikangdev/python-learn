@@ -139,7 +139,7 @@ def demonstrate_parameter_extraction():
         
         # 让模型提取参数
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": user_input}],
             functions=functions,
             function_call="auto"
@@ -263,7 +263,7 @@ def demonstrate_function_selection():
         print(f"\n用户输入：{user_input}")
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": user_input}],
             functions=functions,
             function_call="auto"
@@ -429,7 +429,7 @@ class FunctionCallingWithErrorHandling:
             try:
                 # 调用模型
                 response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model="gpt-4o-mini",
                     messages=messages,
                     functions=self.function_definitions,
                     function_call="auto"
@@ -469,7 +469,7 @@ class FunctionCallingWithErrorHandling:
                         
                         # 让模型基于结果生成回答
                         final_response = client.chat.completions.create(
-                            model="gpt-3.5-turbo",
+                            model="gpt-4o-mini",
                             messages=messages
                         )
                         return final_response.choices[0].message.content
@@ -584,7 +584,7 @@ def multi_function_calling():
     messages = [{"role": "user", "content": user_input}]
     
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=messages,
         functions=functions,
         function_call="auto"
@@ -607,7 +607,7 @@ def multi_function_calling():
         
         # 第二次调用：模型决定是否预订酒店
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=messages,
             functions=functions,
             function_call="auto"
@@ -630,7 +630,7 @@ def multi_function_calling():
             
             # 最终回复
             final_response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=messages
             )
             print(f"最终回复：{final_response.choices[0].message.content}")
@@ -797,7 +797,7 @@ functions = [
 def chat_with_stock(query):
     """带股票查询的对话"""
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": query}],
         functions=functions,
         function_call="auto"
@@ -812,7 +812,7 @@ def chat_with_stock(query):
         
         # 将结果返回给模型
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": query},
                 message,
@@ -885,7 +885,7 @@ functions = [
 def chat_with_orders(query, user_id):
     """带订单查询的对话"""
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": f"当前用户ID：{user_id}"},
             {"role": "user", "content": query}
@@ -901,7 +901,7 @@ def chat_with_orders(query, user_id):
         result = query_orders(**args)
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": f"当前用户ID：{user_id}"},
                 {"role": "user", "content": query},
@@ -992,7 +992,7 @@ functions = [
 def chat_with_assistant(query):
     """多功能助手"""
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": query}],
         functions=functions,
         function_call="auto"
@@ -1015,7 +1015,7 @@ def chat_with_assistant(query):
             result = {"error": "未知函数"}
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": query},
                 message,
@@ -1074,7 +1074,7 @@ def chat_with_retry(query, max_retries=3):
     for attempt in range(max_retries):
         try:
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[{"role": "user", "content": query}],
                 functions=functions,
                 function_call="auto"
@@ -1092,7 +1092,7 @@ def chat_with_retry(query, max_retries=3):
                     result = {"error": str(e)}
                 
                 response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model="gpt-4o-mini",
                     messages=[
                         {"role": "user", "content": query},
                         message,
@@ -1153,7 +1153,7 @@ functions = [
 
 # 调用API
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "user", "content": "北京今天天气怎么样？"}
     ],
@@ -1215,7 +1215,7 @@ functions = [
 
 # 调用API
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "user", "content": "北京今天天气怎么样？顺便推荐几家川菜馆"}
     ],
@@ -1262,7 +1262,7 @@ functions = [
 
 # 强制调用函数
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {"role": "user", "content": "张三在北京参加了2024年1月15日的会议"}
     ],
@@ -1361,7 +1361,7 @@ def chat_with_functions(user_input: str) -> str:
     """带函数调用的对话"""
     # 第一次调用
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[
             {"role": "user", "content": user_input}
         ],
@@ -1382,7 +1382,7 @@ def chat_with_functions(user_input: str) -> str:
             
             # 第二次调用，将函数结果传回模型
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "user", "content": user_input},
                     message,
@@ -1414,7 +1414,7 @@ def safe_function_call(user_input: str) -> str:
     """安全的函数调用"""
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": user_input}
             ],
@@ -1442,7 +1442,7 @@ def safe_function_call(user_input: str) -> str:
             
             # 将结果传回模型
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "user", "content": user_input},
                     message,

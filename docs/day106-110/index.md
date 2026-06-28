@@ -255,7 +255,7 @@ from langchain.chains import ConversationChain
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 # 1. 创建模型
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-4o-mini")
 
 # 2. 创建记忆
 memory = ConversationBufferMemory(
@@ -332,7 +332,7 @@ prompt_template = """基于以下文档内容回答问题。如果文档中没�
 prompt = ChatPromptTemplate.from_template(prompt_template)
 
 # 5. 创建问答链
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-4o-mini")
 qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
     chain_type="stuff",
@@ -401,7 +401,7 @@ prompt = ChatPromptTemplate.from_messages([
 ])
 
 # 4. 创建Agent
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-4o-mini")
 agent = create_openai_functions_agent(llm, tools, prompt)
 
 # 5. 创建Agent执行器
@@ -447,7 +447,7 @@ text_splitter = RecursiveCharacterTextSplitter(
 chunks = text_splitter.split_documents(documents)
 
 # 3. 创建总结链
-llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 # map_reduce模式：先分别总结每个块，再合并总结
 chain = load_summarize_chain(
@@ -496,7 +496,7 @@ prompt = ChatPromptTemplate.from_messages([
 ])
 
 # 4. 创建链
-llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 chain = prompt | llm | parser
 
 # 5. 使用
@@ -557,7 +557,7 @@ from langchain_anthropic import ChatAnthropic
 
 # OpenAI模型
 llm = ChatOpenAI(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     temperature=0.7,
     api_key="your-api-key"
 )
@@ -595,7 +595,7 @@ chain = (
         ("system", "你是一个有用的助手。"),
         ("user", "{input}")
     ])
-    | ChatOpenAI(model="gpt-3.5-turbo")
+    | ChatOpenAI(model="gpt-4o-mini")
     | StrOutputParser()
 )
 
@@ -616,7 +616,7 @@ def search(query: str) -> str:
     return f"搜索结果: {query}"
 
 # 创建代理
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-4o-mini")
 tools = [search]
 agent = create_openai_tools_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools)
@@ -636,7 +636,7 @@ memory = ConversationBufferMemory(return_messages=True)
 
 # 创建对话链
 conversation = ConversationChain(
-    llm=ChatOpenAI(model="gpt-3.5-turbo"),
+    llm=ChatOpenAI(model="gpt-4o-mini"),
     memory=memory,
     verbose=True
 )
@@ -670,7 +670,7 @@ def simple_chain():
         ("user", "{input}")
     ])
     
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     output_parser = StrOutputParser()
     
     chain = prompt | llm | output_parser
@@ -702,7 +702,7 @@ def search_web(query: str) -> str:
     return f"搜索结果: {query}"
 
 def create_agent():
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     tools = [get_weather, search_web]
     
     prompt = ChatPromptTemplate.from_messages([

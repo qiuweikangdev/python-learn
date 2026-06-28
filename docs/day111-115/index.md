@@ -254,7 +254,7 @@ class QAState(TypedDict):
 # 2. 定义节点
 def analyze_question(state: QAState) -> QAState:
     """分析问题"""
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     analysis = llm.invoke(f"分析问题的类型和需要的信息：{state['question']}")
     return {"analysis": analysis.content}
 
@@ -266,7 +266,7 @@ def search_information(state: QAState) -> QAState:
 
 def generate_answer(state: QAState) -> QAState:
     """生成回答"""
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     context = "\n".join(state["search_results"])
     answer = llm.invoke(f"基于以下信息回答问题：\n{context}\n\n问题：{state['question']}")
     return {"answer": answer.content}
@@ -321,7 +321,7 @@ class RouterState(TypedDict):
 # 2. 定义节点
 def classify_question(state: RouterState) -> RouterState:
     """分类问题"""
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     response = llm.invoke(f"将以下问题分类为'天气'、'新闻'或'其他'：{state['question']}")
     question_type = response.content.strip().lower()
     return {"question_type": question_type}
@@ -336,7 +336,7 @@ def handle_news(state: RouterState) -> RouterState:
 
 def handle_other(state: RouterState) -> RouterState:
     """处理其他问题"""
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     answer = llm.invoke(state["question"])
     return {"answer": answer.content}
 
@@ -411,7 +411,7 @@ class ApprovalState(TypedDict):
 # 2. 定义节点
 def generate_draft(state: ApprovalState) -> ApprovalState:
     """生成草稿"""
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     draft = llm.invoke(f"根据以下任务生成草稿：{state['task']}")
     return {"draft": draft.content}
 
@@ -485,7 +485,7 @@ class OptimizationState(TypedDict):
 # 2. 定义节点
 def generate_output(state: OptimizationState) -> OptimizationState:
     """生成输出"""
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     output = llm.invoke(f"完成以下任务：{state['task']}")
     return {
         "current_output": output.content,
@@ -494,7 +494,7 @@ def generate_output(state: OptimizationState) -> OptimizationState:
 
 def evaluate_quality(state: OptimizationState) -> OptimizationState:
     """评估质量"""
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     response = llm.invoke(f"评估以下输出的质量（0-10分）：\n{state['current_output']}")
     try:
         score = float(response.content)
@@ -504,7 +504,7 @@ def evaluate_quality(state: OptimizationState) -> OptimizationState:
 
 def improve_output(state: OptimizationState) -> OptimizationState:
     """改进输出"""
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     improved = llm.invoke(f"改进以下输出，提高质量：\n{state['current_output']}")
     return {"current_output": improved.content}
 
@@ -628,7 +628,7 @@ def process_input(state: State) -> State:
 
 def generate_response(state: State) -> State:
     """生成响应节点"""
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     response = llm.invoke(state["messages"])
     return {"messages": [response], "current_step": "completed"}
 
@@ -709,7 +709,7 @@ class AgentState(TypedDict):
 # 定义节点
 def chat_node(state: AgentState) -> AgentState:
     """聊天节点"""
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     response = llm.invoke(state["messages"])
     return {
         "messages": state["messages"] + [response],

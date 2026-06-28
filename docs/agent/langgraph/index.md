@@ -103,7 +103,7 @@ def process_input(state: State) -> State:
 
 def generate_response(state: State) -> State:
     """生成响应节点"""
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     response = llm.invoke(state["messages"])
     return {"messages": [response], "current_step": "completed"}
 
@@ -184,7 +184,7 @@ class AgentState(TypedDict):
 # 定义节点
 def chat_node(state: AgentState) -> AgentState:
     """聊天节点"""
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
     response = llm.invoke(state["messages"])
     return {
         "messages": state["messages"] + [response],

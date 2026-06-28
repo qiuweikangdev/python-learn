@@ -89,7 +89,7 @@ class LLMManager:
     def __init__(self):
         self.models = {
             "gpt-4": ChatOpenAI(model="gpt-4"),
-            "gpt-3.5-turbo": ChatOpenAI(model="gpt-3.5-turbo"),
+            "gpt-4o-mini": ChatOpenAI(model="gpt-4o-mini"),
             "claude-3": ChatAnthropic(model="claude-3-sonnet-20240229"),
             "gemini": ChatGoogleGenerativeAI(model="gemini-pro")
         }
@@ -377,7 +377,7 @@ window_memory = ConversationBufferWindowMemory(
 
 # 3. 摘要记忆 - 使用LLM压缩对话历史
 summary_memory = ConversationSummaryMemory(
-    llm=ChatOpenAI(model="gpt-3.5-turbo"),
+    llm=ChatOpenAI(model="gpt-4o-mini"),
     return_messages=True,
     memory_key="history"
 )
