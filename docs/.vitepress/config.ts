@@ -107,7 +107,6 @@ export default defineConfig({
     // 导航栏
     nav: [
       { text: '首页', link: '/' },
-      { text: '语法基础', link: '/day01-20/01-python' },
       { text: 'Agent开发', link: '/agent/' },
       { text: '爬虫系列', link: '/crawler/' },
       { text: '数据分析', link: '/data-analysis/' },

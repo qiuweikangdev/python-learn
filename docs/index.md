@@ -2,7 +2,6 @@
 layout: home
 hero:
   name: Python
-  tagline: 基于 Python 3.12+，覆盖语法、Agent 开发、爬虫、数据分析与自动化的企业级全系列教程（2026-09 更新）
   actions:
     - theme: brand
       text: 开始学习
