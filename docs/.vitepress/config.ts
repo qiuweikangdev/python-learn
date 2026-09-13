@@ -286,6 +286,7 @@ export default defineConfig({
         {
           text: '番外篇',
           items: [
+            { text: '现代 Python 工程化入门', link: '/extra/modern-python-toolchain' },
             { text: 'Canvas的使用场景', link: '/extra/canvas' },
             { text: 'PEP8风格指南', link: '/extra/pep8' },
             { text: 'Python编程惯例', link: '/extra/python' },
