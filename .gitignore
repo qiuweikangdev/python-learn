@@ -24,4 +24,8 @@ docs/.vitepress/dist
 ### OpenCode ###
 docs/superpowers/
 
+### macOS / 本地工具 ###
+.DS_Store
+.mimocode/
+
 
