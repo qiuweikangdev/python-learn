@@ -434,6 +434,6 @@ for episode in range(100):
 
 ## 下一步学习
 
-- [核心概念详解](/agent/deep-agent/core-concepts) - 深入理解Deep-Agent核心概念
-- [API参考手册](/agent/deep-agent/api-reference) - 详细的API文档
-- [架构设计](/agent/deep-agent/architecture) - Deep-Agent架构设计
+- [核心概念详解](/day136-140/core-concepts) - 深入理解Deep-Agent核心概念
+- [API参考手册](/day136-140/api-reference) - 详细的API文档
+- [架构设计](/day136-140/architecture) - Deep-Agent架构设计

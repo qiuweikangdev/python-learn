@@ -476,6 +476,6 @@ volumes:
 
 ## 下一步学习
 
-- [云服务Agent平台](/agent/agent-platforms/cloud-platforms) - 各大云服务商的Agent服务
-- [API服务](/agent/agent-platforms/api-services) - Agent能力的API化
-- [部署与运维](/agent/agent-platforms/deployment) - Agent系统的部署和监控
+- [云服务Agent平台](/day141-145/cloud-platforms) - 各大云服务商的Agent服务
+- [API服务](/day141-145/api-services) - Agent能力的API化
+- [部署与运维](/day141-145/deployment) - Agent系统的部署和监控

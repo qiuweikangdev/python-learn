@@ -2,6 +2,7 @@
 layout: home
 hero:
   name: Python
+  tagline: 基于 Python 3.12+，覆盖语法、Agent 开发、爬虫、数据分析与自动化的企业级全系列教程（2026-09 更新）
   actions:
     - theme: brand
       text: 开始学习
@@ -26,10 +27,10 @@ features:
     details: 实战 Django Web 框架
     link: /day46-60/46-django
   - title: Day 61-65
-    details: 网络数据采集与爬虫
+    details: 网络数据采集与爬虫（深入篇）
     link: /day61-65/61
   - title: Day 66-80
-    details: Python 数据分析，NumPy 与 pandas
+    details: Python 数据分析，NumPy 与 pandas（深入篇）
     link: /day66-80/66
   - title: Day 81-90
     details: 机器学习入门
@@ -37,4 +38,16 @@ features:
   - title: Day 91-100
     details: 团队项目开发实战
     link: /day91-100/91
+  - title: Agent 开发
+    details: LLM 应用、LangChain 1.x、LangGraph、RAG 与多 Agent 实战
+    link: /agent/
+  - title: 爬虫系列
+    details: 15 天爬虫实战：HTTP、解析、反爬、异步与分布式
+    link: /crawler/
+  - title: 数据分析
+    details: 15 天数据分析实战：pandas、可视化、统计与机器学习
+    link: /data-analysis/
+  - title: 自动化
+    details: 20 天自动化实战：脚本、测试、部署与 CI/CD
+    link: /automation/
 ---

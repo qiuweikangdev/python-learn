@@ -284,5 +284,5 @@ collection = client.create_collection("test")
 - [Qdrant详解](/agent/rag/vector-databases/qdrant) - Rust编写的高性能向量数据库
 - [FAISS详解](/agent/rag/vector-databases/faiss) - Facebook开源的相似性搜索库
 - [pgvector详解](/agent/rag/vector-databases/pgvector) - PostgreSQL向量扩展
-- [Redis详解](/agent/rag/vector-databases/redis) - Redis向量搜索模块
-- [Elasticsearch详解](/agent/rag/vector-databases/elasticsearch) - Elasticsearch向量搜索
+- [Redis详解](/day121-125/redis) - Redis向量搜索模块
+- [Elasticsearch详解](/day121-125/elasticsearch) - Elasticsearch向量搜索

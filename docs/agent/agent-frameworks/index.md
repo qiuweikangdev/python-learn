@@ -282,10 +282,10 @@ print(result)
 ## 下一步学习
 
 选择一个Agent框架深入学习：
-- [AutoGPT详解](/agent/agent-frameworks/autogpt) - 自主AI代理
-- [BabyAGI详解](/agent/agent-frameworks/babyagi) - 任务驱动的自主Agent
-- [MetaGPT详解](/agent/agent-frameworks/metagpt) - 多角色协作框架
-- [CrewAI详解](/agent/agent-frameworks/crewai) - 多Agent协作框架
-- [Microsoft AutoGen详解](/agent/agent-frameworks/autogen) - 多Agent对话框架
-- [ChatDev详解](/agent/agent-frameworks/chatdev) - 基于角色的开发框架
-- [CAMEL详解](/agent/agent-frameworks/camel) - 通信Agent框架
+- [AutoGPT详解](/day126-130/autogpt) - 自主AI代理
+- [BabyAGI详解](/day126-130/babyagi) - 任务驱动的自主Agent
+- [MetaGPT详解](/day126-130/metagpt) - 多角色协作框架
+- [CrewAI详解](/day126-130/crewai) - 多Agent协作框架
+- [Microsoft AutoGen详解](/day126-130/autogen) - 多Agent对话框架
+- [ChatDev详解](/day126-130/chatdev) - 基于角色的开发框架
+- [CAMEL详解](/day126-130/camel) - 通信Agent框架
