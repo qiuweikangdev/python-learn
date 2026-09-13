@@ -1,4 +1,4 @@
-# Qdrant详解
+﻿# Qdrant详解
 
 > **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
 
@@ -37,14 +37,16 @@ Qdrant的搜索功能：
 ## 核心API
 
 ### 1. 安装和配置
-```python
+```bash
 # 安装Qdrant客户端
 pip install qdrant-client
 
 # LangChain 集成包（1.x 起为官方独立集成包）
 # 用法：from langchain_qdrant import QdrantVectorStore
 pip install langchain-qdrant
+```
 
+```python
 # 连接到Qdrant
 from qdrant_client import QdrantClient
 

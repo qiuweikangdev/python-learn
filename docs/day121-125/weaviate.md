@@ -1,4 +1,4 @@
-# Weaviate详解
+﻿# Weaviate详解
 
 > **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
 
@@ -66,10 +66,12 @@ Weaviate的查询优化：
 ## 核心API
 
 ### 1. 安装和配置
-```python
+```bash
 # 安装Weaviate v4客户端（weaviate-client >= 4）
 pip install weaviate-client
+```
 
+```python
 # 连接到Weaviate
 import weaviate
 

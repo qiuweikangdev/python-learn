@@ -1,4 +1,4 @@
-# pgvector详解
+﻿# pgvector详解
 
 > **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
 
@@ -422,7 +422,7 @@ def batch_search(cur, query_embeddings, k=5):
 
 ### 1. 数据建模
 
-```python
+```sql
 # 合理设计表结构
 CREATE TABLE documents (
     id SERIAL PRIMARY KEY,

@@ -1,4 +1,4 @@
-# Day 11: 电商数据分析实战
+﻿# Day 11: 电商数据分析实战
 
 ## 学习目标
 
@@ -247,7 +247,8 @@ n_orders = 5000
 order_ids = range(1, n_orders + 1)
 user_ids = np.random.randint(1, 501, n_orders)
 products = np.random.choice(['手机', '电脑', '平板', '耳机', '手表'], n_orders)
-categories = np.random.choice(['电子产品', '配件'], n_prices = np.random.uniform(100, 5000, n_orders)
+categories = np.random.choice(['电子产品', '配件'], n_orders)
+prices = np.random.uniform(100, 5000, n_orders)
 quantities = np.random.randint(1, 6, n_orders)
 dates = [datetime(2024, 1, 1) + timedelta(days=np.random.randint(0, 365)) 
          for _ in range(n_orders)]
@@ -280,7 +281,7 @@ unique_customers = df['用户ID'].nunique()
 
 print(f"总订单数: {total_orders}")
 print(f"总收入: {total_revenue:,.2f}")
-printf"平均订单金额: {avg_order_value:,.2f}")
+print(f"平均订单金额: {avg_order_value:,.2f}")
 print(f"独立客户数: {unique_customers}")
 
 # 3. 按产品分析

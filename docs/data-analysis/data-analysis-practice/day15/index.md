@@ -1,4 +1,4 @@
-# Day 15: 完整项目实战与部署
+﻿# Day 15: 完整项目实战与部署
 
 > **版本基线**：本文基于 Python 3.12+ / pandas 3.x（CoW 默认开启）/ numpy 2.x，更新于 2026-09。
 
@@ -854,7 +854,7 @@ html_report += """
     <h2>建议</h2>
 """
 for i, recommendation in enumerate(report['建议'], 1):
-    html_report += f'    <div class="recommendation">{i. {recommendation}}</div>\n'
+    html_report += f'    <div class="recommendation">{i}. {recommendation}</div>\n'
 
 html_report += """
 </body>
@@ -869,7 +869,7 @@ print("HTML报告已保存为 analysis_report.html")
 
 ### 项目部署
 
-```python
+````python
 # 项目部署示例
 
 import pandas as pd
@@ -1130,7 +1130,7 @@ print("\n项目部署准备完成！")
 print("可以使用以下命令部署:")
 print("  1. 本地运行: python app.py")
 print("  2. Docker部署: ./deploy.sh")
-```
+````
 
 ## 课后练习
 

@@ -1,4 +1,4 @@
-# Chroma详解
+﻿# Chroma详解
 
 > **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
 
@@ -30,13 +30,15 @@ Chroma的查询功能：
 ## 核心API
 
 ### 1. 安装和配置
-```python
+```bash
 # 安装Chroma
 pip install chromadb
 
 # LangChain 集成包（1.x 起为官方独立集成包）
 pip install langchain-chroma
+```
 
+```python
 # 创建客户端
 import chromadb
 

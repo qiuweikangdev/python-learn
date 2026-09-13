@@ -1,4 +1,4 @@
-# Pinecone详解
+﻿# Pinecone详解
 
 > **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
 
@@ -61,10 +61,12 @@ Pinecone支持实时数据更新：
 ## 核心API
 
 ### 1. 安装和配置
-```python
+```bash
 # 安装Pinecone客户端（包名已从 pinecone-client 更名为 pinecone）
 pip install pinecone
+```
 
+```python
 # 初始化Pinecone（新版 SDK 不再使用 pinecone.init()）
 import os
 from pinecone import Pinecone

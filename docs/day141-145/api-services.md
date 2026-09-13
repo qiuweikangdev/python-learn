@@ -377,8 +377,8 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 ### 4. API文档
 FastAPI自动生成API文档：
-- **Swagger UI**：http://localhost:8000/docs
-- **ReDoc**：http://localhost:8000/redoc
+- **Swagger UI**：`http://localhost:8000/docs`
+- **ReDoc**：`http://localhost:8000/redoc`
 
 ## 最佳实践
 
