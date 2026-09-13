@@ -1,5 +1,7 @@
 # Day 6: 动态页面爬取
 
+> **版本基线**：本文基于 Python 3.12+，requests 2.x / Scrapy 2.x / Selenium 4.x，更新于 2026-09。
+
 ## 学习目标
 
 - 掌握 Selenium 的基本使用
@@ -60,13 +62,17 @@ Playwright 是微软开发的现代化浏览器自动化工具。
 
 ### 案例1：Selenium 基础使用
 
+::: tip 驱动管理：Selenium Manager（Selenium 4.6+）
+Selenium 4.6 起内置 **Selenium Manager**：`webdriver.Chrome()` 会自动检测浏览器版本并下载、管理匹配的驱动，**无需再手动下载 ChromeDriver/geckodriver**（旧的 chromedriver.chromium.org 手动下载流程已被 Chrome for Testing 取代）。只需 `pip install selenium` 并确保本机装有浏览器即可。
+:::
+
 ```python
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-# 创建 Chrome 浏览器实例
+# 创建 Chrome 浏览器实例（Selenium 4.6+ 自动管理驱动，无需手动下载）
 driver = webdriver.Chrome()
 
 try:
@@ -290,8 +296,9 @@ def create_stealth_driver():
     """创建反检测浏览器"""
     options = Options()
     
-    # 无头模式
-    options.add_argument('--headless')
+    # 无头模式（Chrome 109+ 推荐使用新版无头模式 --headless=new，
+    # 行为更接近真实浏览器，旧版 --headless 已废弃）
+    options.add_argument('--headless=new')
     
     # 禁用自动化特征
     options.add_argument('--disable-blink-features=AutomationControlled')
@@ -301,8 +308,8 @@ def create_stealth_driver():
     # 设置窗口大小
     options.add_argument('--window-size=1920,1080')
     
-    # 设置 User-Agent
-    options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+    # 设置 User-Agent（当前主流 Chrome UA，用时请更新版本号）
+    options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36')
     
     # 创建驱动
     driver = webdriver.Chrome(options=options)
@@ -342,7 +349,8 @@ def create_stealth_browser():
     # 创建上下文
     context = browser.new_context(
         viewport={'width': 1920, 'height': 1080},
-        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        # 当前主流 Chrome UA，用时请更新版本号
+        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
     )
     
     # 添加脚本隐藏自动化特征
@@ -366,7 +374,78 @@ finally:
     p.stop()
 ```
 
-### 案例9：实际爬虫示例
+::: warning 2026 反检测现状
+上面两例的“手工隐身”手段（隐藏 `navigator.webdriver`、`excludeSwitches` 等基于 CDP/启动参数的补丁）对新一代指纹检测（TLS 指纹、Canvas/WebGL 指纹、行为分析）**基本失效**，只能对付最基础的检测。当前社区主流的反检测方案：
+
+- **Selenium**：[undetected-chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver) —— `pip install undetected-chromedriver`，用 `uc.Chrome()` 替换 `webdriver.Chrome()` 即可，自动修补自动化特征；
+- **Playwright**：[patchright](https://github.com/Kaliiiiiiiiii-Vinyzu/patchright) —— Playwright 的反检测分支，API 与 Playwright 兼容，`pip install patchright` 后执行 `patchright install chromium`；或 [playwright-stealth](https://github.com/AtuboDad/playwright-stealth) —— 在现有 Playwright 代码上应用一组隐身补丁脚本。
+
+反检测只是降低被识别的概率，并非“百毒不侵”。请把功夫优先花在降低频率、使用官方 API 与合规采集上。
+:::
+
+### 案例9：Playwright 异步 API
+
+现代爬虫普遍基于异步编排（配合 Day 7 的 asyncio），Playwright 原生提供 async API：
+
+```python
+import asyncio
+from playwright.async_api import async_playwright
+
+async def main():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+
+        # 以 toscrape 的 JS 渲染版为例：页面内容由 JavaScript 生成，
+        # requests 拿不到数据，必须用真实浏览器渲染
+        await page.goto('https://quotes.toscrape.com/js/')
+
+        # 异步等待元素出现
+        await page.wait_for_selector('div.quote')
+
+        # 异步提取所有名言文本
+        quotes = await page.locator('div.quote span.text').all_text_contents()
+        for q in quotes[:3]:
+            print(q)
+
+        await browser.close()
+
+asyncio.run(main())
+```
+
+### 案例10：Playwright 网络拦截与接口抓取
+
+现代网页的数据大多来自 XHR/fetch 接口。**拦截请求、直接抓接口返回** 是 Playwright 最常用的能力，往往比解析渲染后的 DOM 更稳定：
+
+```python
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
+    page = browser.new_page()
+
+    # 1) route 拦截：命中 **/api/** 的请求可修改、放行或中断
+    def handle_route(route):
+        # route.abort()               # 中断请求（如屏蔽广告/图片提速）
+        # route.continue_(headers={**route.request.headers, 'X-Tag': 'crawler'})  # 修改请求头
+        route.continue_()             # 放行
+    page.route('**/api/**', handle_route)
+
+    # 2) expect_response：等待某个接口的响应并直接读取返回内容
+    with page.expect_response(
+        lambda r: '/api/quotes' in r.url
+    ) as response_info:
+        # quotes.toscrape.com/scroll/ 通过 /api/quotes?page=N 接口加载名言
+        page.goto('https://quotes.toscrape.com/scroll/')
+
+    data = response_info.value.json()
+    print(f'接口返回 {len(data["quotes"])} 条, has_next: {data["has_next"]}')
+    print(data['quotes'][0]['text'])
+
+    browser.close()
+```
+
+### 案例11：实际爬虫示例
 
 ```python
 from selenium import webdriver
@@ -382,7 +461,8 @@ class DynamicSpider:
     def __init__(self, headless=True):
         self.options = webdriver.ChromeOptions()
         if headless:
-            self.options.add_argument('--headless')
+            # Chrome 109+ 推荐新版无头模式
+            self.options.add_argument('--headless=new')
         self.driver = webdriver.Chrome(options=self.options)
         self.wait = WebDriverWait(self.driver, 10)
     

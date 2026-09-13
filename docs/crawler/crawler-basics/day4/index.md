@@ -1,5 +1,7 @@
 # Day 4: 反爬机制与应对策略
 
+> **版本基线**：本文基于 Python 3.12+，requests 2.x / Scrapy 2.x / Selenium 4.x，更新于 2026-09。
+
 ## 学习目标
 
 - 了解常见的反爬虫机制
@@ -49,6 +51,67 @@
 | 验证码 | 验证码识别服务 |
 | JavaScript 渲染 | 使用浏览器自动化 |
 | 数据加密 | 分析加密算法 |
+
+### 4.3 2026 年反爬新趋势
+
+上面 UA / 代理 / 验证码三层是经典对抗手段，但近几年反爬的重心已经明显前移和升级，做爬虫前需要了解以下现状：
+
+#### 1. JS 渲染与风控前移
+
+主流站点普遍改为前端渲染 + 接口风控：页面骨架是空的，数据由带签名参数（如 `X-Bogus`、`_signature`）的 XHR 接口返回，请求参数由混淆过的 JS 生成。同时风控系统会综合 **IP 信誉、Cookie/设备指纹、鼠标轨迹、请求时序** 打分，单纯换 UA 或 IP 已经不够。应对思路要么逆向签名算法（成本高、易失效），要么使用真实浏览器执行环境（见 Day 6）。
+
+#### 2. TLS / HTTP2 指纹检测
+
+服务器可以在 TLS 握手阶段就识别客户端：Python `requests` 的 JA3/TLS 指纹与真实 Chrome 差异巨大，即使 UA 伪装成浏览器也会被识别并拒绝（常见表现是返回 403 或空响应）。开源库 **curl_cffi** 可以模拟真实浏览器的 TLS 指纹：
+
+```python
+# pip install curl_cffi
+from curl_cffi import requests as curl_requests
+
+# impersonate 参数会同时模拟 Chrome 的 TLS/JA3 与 HTTP/2 指纹，
+# 可选值包括 chrome、safari、edge 等
+response = curl_requests.get('https://example.com', impersonate='chrome')
+
+print(f'状态码: {response.status_code}')
+print(f'内容长度: {len(response.text)}')
+```
+
+::: tip
+curl_cffi 的 API 与 requests 高度相近，遇到“UA 已经是浏览器、代码仍被 403”的站点时，优先怀疑 TLS 指纹被识别，可换用 curl_cffi 验证。
+:::
+
+#### 3. 验证码识别现状
+
+- **打码平台大量关停**：人工打码服务近两年因合规压力大量退出市场，依赖第三方打码的方案可靠性明显下降。
+- **开源 OCR 成为免费替代**：对常见图形/数字验证码，开源库 **ddddocr** 开箱即用：
+
+```python
+# pip install ddddocr
+import ddddocr
+
+ocr = ddddocr.DdddOcr()
+
+with open('captcha.png', 'rb') as f:
+    image_bytes = f.read()
+
+result = ocr.classification(image_bytes)
+print(f'识别结果: {result}')
+```
+
+- **滑块/点选验证码仍是硬骨头**：滑块需要模拟轨迹（加速度曲线 + 抖动），点选/旋转需要目标检测模型，纯开源方案成功率有限。这类验证码更多应从“减少触发”入手：控制频率、复用登录态、优先使用官方 API。
+
+#### 4. Selenium / Playwright 反检测方案
+
+无头浏览器本身有自动化特征（`navigator.webdriver`、CDP 痕迹、字体/画布指纹），会被 EnvGo、Cloudflare 等风控识别。2026 年社区主流方案：
+
+- **Selenium**：[undetected-chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver)（`pip install undetected-chromedriver`，用 `uc.Chrome()` 替换 `webdriver.Chrome()`，自动修补特征）；
+- **Playwright**：[patchright](https://github.com/Kaliiiiiiiiii-Vinyzu/patchright)（Playwright 反检测分支，API 兼容，`pip install patchright` 后 `patchright install chromium`）或 [playwright-stealth](https://github.com/AtuboDad/playwright-stealth)（应用一组隐身补丁脚本）。
+
+注意：基于 CDP 的手工隐身手段（隐藏 `navigator.webdriver` 等）对新一代指纹检测**基本失效**，只能对付最基础的检测，详见 Day 6 的“2026 反检测现状”提示。
+
+::: warning 对抗升级的合规边界
+反爬与反反爬的对抗持续升级，但**技术能做不等于可以做**：绕过技术措施抓取数据的法律风险也在上升，可能涉及非法获取计算机信息系统数据罪等刑事风险。请遵守 robots.txt 与目标网站服务条款，不抓取个人信息与受版权保护的内容，控制请求频率，不绕过身份认证或访问控制。《数据安全法》《个人信息保护法》对数据采集与使用有明确法律要求，商业用途务必获得授权。
+:::
 
 ## 案例
 

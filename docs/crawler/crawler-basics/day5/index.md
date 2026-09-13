@@ -1,5 +1,7 @@
 # Day 5: 爬虫框架入门
 
+> **版本基线**：本文基于 Python 3.12+，requests 2.x / Scrapy 2.x / Selenium 4.x，更新于 2026-09。
+
 ## 学习目标
 
 - 了解 Scrapy 框架的架构和核心组件
@@ -142,6 +144,14 @@ class ProductItem(scrapy.Item):
 
 ### 案例4：爬取豆瓣电影 Top250
 
+::: warning 豆瓣反爬提示
+豆瓣对无 User-Agent 或高频请求的响应极不友好：常表现为返回 **418/403** 状态码，高频抓取会直接**封禁 IP**。用 Scrapy 爬取时请务必在 `custom_settings`（或 settings.py）中配置：
+
+- `USER_AGENT`：Scrapy 默认 UA 是 `Scrapy/x.y (+https://scrapy.org)`，会被豆瓣直接拒绝，必须换成浏览器 UA；
+- `DOWNLOAD_DELAY`：每个请求之间至少延迟 2 秒，控制抓取频率；
+- `ROBOTSTXT_OBEY = True`：默认遵守 robots.txt（豆瓣 robots.txt 对 `/top250` 有限制，请仅作学习用途，勿大规模抓取）。
+:::
+
 ```python
 import scrapy
 
@@ -151,6 +161,13 @@ class DoubanSpider(scrapy.Spider):
     name = 'douban'
     allowed_domains = ['movie.douban.com']
     start_urls = ['https://movie.douban.com/top250']
+    
+    # 豆瓣风控必备：浏览器 UA + 限速 + 遵守 robots.txt
+    custom_settings = {
+        'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'DOWNLOAD_DELAY': 2,
+        'ROBOTSTXT_OBEY': True,
+    }
     
     def parse(self, response):
         """解析电影列表页"""

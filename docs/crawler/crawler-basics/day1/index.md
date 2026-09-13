@@ -1,5 +1,7 @@
 # Day 1: 爬虫基础与HTTP协议
 
+> **版本基线**：本文基于 Python 3.12+，requests 2.x / Scrapy 2.x / Selenium 4.x，更新于 2026-09。
+
 ## 学习目标
 
 - 理解网络爬虫的基本概念和应用场景
@@ -128,6 +130,14 @@ print(f'响应大小: {len(response.content)} 字节')
 
 ### 案例3：获取豆瓣电影Top250
 
+::: warning 豆瓣反爬提示
+豆瓣对无 User-Agent 或高频请求的响应极不友好：常表现为返回 **418/403** 状态码，高频抓取会直接**封禁 IP**。运行下面的示例时请务必：
+
+- 自带浏览器 User-Agent（示例代码已设置）；
+- 如需抓取多页，在请求之间使用 `time.sleep(2)` 以上控制频率；
+- 仅用于个人学习，请勿大规模或商业性抓取豆瓣数据。
+:::
+
 ```python
 import requests
 from bs4 import BeautifulSoup
@@ -135,9 +145,9 @@ from bs4 import BeautifulSoup
 # 豆瓣电影Top250的URL
 url = 'https://movie.douban.com/top250'
 
-# 设置请求头
+# 设置请求头（豆瓣要求自带浏览器 User-Agent，否则返回 418/403）
 headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
 }
 
 # 发送请求

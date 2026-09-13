@@ -26,7 +26,13 @@ features:
 
 # Python 爬虫开发系列
 
+> **版本基线**：本文基于 Python 3.12+，requests 2.x / Scrapy 2.x / Selenium 4.x，更新于 2026-09。
+
 欢迎来到 Python 爬虫开发学习系列！本系列课程将带你从零开始掌握 Python 网络爬虫技术。
+
+::: warning 数据合规提醒
+爬虫在合规边界内是正当的数据采集技术：请遵守 robots.txt 与目标网站服务条款，不抓取个人信息与受版权保护的内容，控制请求频率，不绕过身份认证或访问控制。《数据安全法》《个人信息保护法》对数据采集与使用有明确法律要求，商业用途务必获得授权。
+:::
 
 ::: tip 深入篇
 完成本系列 15 天课程后，可以继续阅读《[Day61-65 网络数据采集（深入篇）](/day61-65/61)》，深入了解并发编程、Selenium 与 Scrapy 的底层机制。
@@ -58,10 +64,10 @@ features:
 
 ## 技术栈
 
-- **请求库**: requests, httpx, aiohttp
+- **请求库**: requests, httpx（Day 7 会教）, aiohttp
 - **解析库**: BeautifulSoup, lxml, parsel
-- **浏览器自动化**: Selenium, Playwright
-- **框架**: Scrapy, Crawlee
+- **浏览器自动化**: Selenium（Day 6 会教）, Playwright（Day 6 会教）
+- **框架**: Scrapy, Crawlee（进阶可选，本系列正文不展开）
 - **存储**: MySQL, MongoDB, Redis, CSV/JSON
 
 ## 学习建议
@@ -77,9 +83,13 @@ features:
 # 安装必要的库
 pip install requests beautifulsoup4 lxml selenium scrapy
 
-# 安装浏览器驱动（用于Selenium）
-# Chrome: https://chromedriver.chromium.org/
-# Firefox: https://github.com/mozilla/geckodriver
+# 浏览器驱动：Selenium 4.6+ 内置 Selenium Manager，无需手动下载驱动
+# webdriver.Chrome() 会自动检测浏览器版本并下载/管理匹配的驱动
+# （旧的 chromedriver.chromium.org 手动下载流程已被 Chrome for Testing 取代）
+
+# Playwright 自带浏览器管理，一条命令下载浏览器内核
+pip install playwright
+playwright install
 ```
 
 开始你的爬虫学习之旅吧！

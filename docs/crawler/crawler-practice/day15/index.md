@@ -1,5 +1,7 @@
 # Day 15: 综合项目实战
 
+> **版本基线**：本文基于 Python 3.12+，requests 2.x / Scrapy 2.x / Selenium 4.x，更新于 2026-09。
+
 ## 学习目标
 
 - 掌握爬虫项目的完整开发流程
@@ -425,6 +427,9 @@ class AlertNotifier:
     
     def send_dingtalk(self, message, webhook_url):
         """发送钉钉告警"""
+        # 注意（2026 现状）：钉钉自定义机器人必须至少启用
+        # “自定义关键词 / 加签 / IP 白名单”之一，消息需包含关键词或携带签名，
+        # 否则会返回 errcode 310000。加签方式见钉钉开放平台文档。
         payload = {
             'msgtype': 'text',
             'text': {
@@ -626,7 +631,7 @@ networks:
 
 ```dockerfile
 # Dockerfile
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 

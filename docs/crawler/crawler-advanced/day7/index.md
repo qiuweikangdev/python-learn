@@ -1,10 +1,12 @@
 # Day 7: 多线程与异步爬虫
 
+> **版本基线**：本文基于 Python 3.12+，requests 2.x / Scrapy 2.x / Selenium 4.x，更新于 2026-09。
+
 ## 学习目标
 
 - 掌握多线程爬虫的实现
 - 了解多进程爬虫的使用
-- 学会使用 asyncio 和 aiohttp 实现异步爬虫
+- 学会使用 asyncio 配合 httpx / aiohttp 实现异步爬虫
 - 理解不同并发方案的性能差异
 
 ## 技术原理
@@ -47,6 +49,27 @@ Python 的 asyncio 模块提供了异步编程支持：
 - `async/await`: 定义和等待协程
 - `asyncio.gather()`: 并发执行多个协程
 - `asyncio.Semaphore`: 限制并发数量
+
+### 7.5 httpx：新一代 HTTP 客户端
+
+[httpx](https://www.python-httpx.org/) 是近年来最流行的 requests 替代品，也是 2026 年异步爬虫的首选之一：
+
+- **API 与 requests 高度相近**：`httpx.get()`、`client.get()` 写法几乎无缝迁移；
+- **同步 / 异步双模**：同一套代码风格，既可 `httpx.get()` 同步请求，也可 `await client.get()` 异步请求；
+- **原生支持 HTTP/2**：`httpx.AsyncClient(http2=True)`（需先 `pip install "httpx[http2]"` 安装 h2 依赖）；
+- **内置连接池**：`async with httpx.AsyncClient() as client` 在整个爬取过程中复用连接，避免反复握手。
+
+**httpx 与 aiohttp 如何取舍：**
+
+| 维度 | httpx | aiohttp |
+|------|-------|---------|
+| API 风格 | 与 requests 几乎一致，迁移成本低 | 独立 API，需要单独学习 |
+| 同步/异步 | 双模统一 | 仅异步 |
+| HTTP/2 | 原生支持 | 不支持 |
+| 生态与成熟度 | 快速成长，requests 用户迁移首选 | 经典老牌，大量存量项目在用 |
+| 适用场景 | 新项目、需要 HTTP/2 或同步异步混用 | 已有 aiohttp 代码、纯异步高吞吐 |
+
+结论：**新项目优先 httpx**，既有 aiohttp 项目无需强行迁移；aiohttp 仍是经典且可靠的选择。
 
 ## 案例
 
@@ -200,7 +223,79 @@ print(f'爬取完成，共 {len(results)} 个结果')
 
 ## 代码案例
 
-### 案例3：asyncio + aiohttp 异步爬虫
+### 案例3：httpx.AsyncClient 异步爬虫（推荐）
+
+从同步写法到异步写法，httpx 的迁移成本非常低：
+
+```python
+import asyncio
+import time
+
+import httpx
+
+# ---------- 第一步：同步写法（与 requests 对照） ----------
+def sync_fetch(urls):
+    """同步逐个请求：httpx 顶层 API 与 requests 几乎一致"""
+    results = []
+    for url in urls:
+        response = httpx.get(url, timeout=10)
+        results.append({'url': url, 'status': response.status_code})
+    return results
+
+
+# ---------- 第二步：异步并发写法 ----------
+class HttpxAsyncSpider:
+    """httpx 异步爬虫：AsyncClient 连接池 + asyncio.gather 并发"""
+
+    def __init__(self, max_concurrent=10):
+        self.max_concurrent = max_concurrent
+        self.semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def fetch(self, client, url):
+        """异步获取单个 URL"""
+        async with self.semaphore:
+            try:
+                response = await client.get(url, timeout=10)
+                return {
+                    'url': url,
+                    'status': response.status_code,
+                    'length': len(response.text),
+                }
+            except Exception as e:
+                return {'url': url, 'error': str(e)}
+
+    async def crawl(self, urls):
+        """并发爬取：整个爬取过程复用同一个 AsyncClient 连接池"""
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        }
+        # http2=True 需先安装扩展依赖：pip install "httpx[http2]"
+        async with httpx.AsyncClient(http2=True, headers=headers) as client:
+            tasks = [self.fetch(client, url) for url in urls]
+            return await asyncio.gather(*tasks)
+
+
+# 使用示例
+async def main():
+    urls = [f'https://example.com/page/{i}' for i in range(20)]
+
+    spider = HttpxAsyncSpider(max_concurrent=10)
+    start_time = time.time()
+
+    results = await spider.crawl(urls)
+
+    elapsed = time.time() - start_time
+    print(f'爬取 {len(urls)} 个URL，耗时: {elapsed:.2f}秒')
+    print(f'成功: {sum(1 for r in results if "error" not in r)}')
+
+asyncio.run(main())
+```
+
+::: tip
+关键点在于 `async with httpx.AsyncClient(...) as client`：连接池由 `with` 块统一管理，所有请求复用其中的 TCP/TLS 连接（`http2=True` 时还会多路复用同一连接），这是异步爬虫性能的重要来源。不要为每个请求单独创建 `AsyncClient`。
+:::
+
+### 案例4：asyncio + aiohttp 异步爬虫
 
 ```python
 import asyncio
@@ -255,7 +350,7 @@ async def main():
 asyncio.run(main())
 ```
 
-### 案例4：异步爬虫带重试
+### 案例5：异步爬虫带重试
 
 ```python
 import asyncio
@@ -312,7 +407,7 @@ async def main():
 asyncio.run(main())
 ```
 
-### 案例5：多进程爬虫
+### 案例6：多进程爬虫
 
 ```python
 from multiprocessing import Pool, Manager
@@ -356,7 +451,7 @@ if __name__ == '__main__':
     print(f'爬取完成，共 {len(results)} 个结果')
 ```
 
-### 案例6：混合并发爬虫
+### 案例7：混合并发爬虫
 
 ```python
 import asyncio
@@ -408,7 +503,7 @@ async def main():
 asyncio.run(main())
 ```
 
-### 案例7：性能对比测试
+### 案例8：性能对比测试
 
 ```python
 import time

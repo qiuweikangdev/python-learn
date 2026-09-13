@@ -1,5 +1,11 @@
 # Day 12: 社交媒体数据采集
 
+> **版本基线**：本文基于 Python 3.12+，requests 2.x / Scrapy 2.x / Selenium 4.x，更新于 2026-09。
+
+::: warning 时效性说明
+社交平台的未登录接口自 2024 年起普遍要求登录态与签名（如 Cookie 校验、抖音 `X-Bogus`、知乎请求签名），接口结构也随时可能调整。本章微博/知乎示例代码定位为**思路演示**——展示“API 爬取、翻页、字段提取”的通用模式，**未必可直接运行**；请优先使用平台官方开放 API，并在合规授权范围内采集。想要一个稳定、可运行的对照练习，请见本章案例7的 GitHub API 示例。
+:::
+
 ## 学习目标
 
 - 掌握社交媒体平台的数据采集方法
@@ -54,7 +60,7 @@
 
 ## 案例
 
-### 案例1：微博数据采集
+### 案例1：微博数据采集（思路演示）
 
 ```python
 import scrapy
@@ -108,7 +114,7 @@ class WeiboSpider(scrapy.Spider):
                 }
 ```
 
-### 案例2：知乎数据采集
+### 案例2：知乎数据采集（思路演示）
 
 ```python
 import scrapy
@@ -179,7 +185,7 @@ class ZhihuSpider(scrapy.Spider):
 
 ## 代码案例
 
-### 案例3：微博评论采集
+### 案例3：微博评论采集（思路演示）
 
 ```python
 import scrapy
@@ -450,7 +456,7 @@ keywords = [('Python', 100), ('爬虫', 80), ('数据', 70), ('分析', 60), ('�
 visualizer.plot_wordcloud(keywords)
 ```
 
-### 案例6：完整社交媒体爬虫
+### 案例6：完整社交媒体爬虫（思路演示）
 
 ```python
 import scrapy
@@ -594,6 +600,95 @@ class SocialMediaSpider(scrapy.Spider):
                 meta={'offset': next_offset}
             )
 ```
+
+### 案例7：可运行对照示例：GitHub API 仓库采集
+
+社交平台的通用方法论——**认证、限流、去重、存储**——在任何公开 API 上都适用。[GitHub REST API](https://docs.github.com/rest) 稳定公开、无需认证（未认证限额 60 次/小时，认证后 5000 次/小时），是练习这套方法论的理想沙盒：
+
+```python
+import csv
+import json
+import time
+
+import requests
+
+API_BASE = 'https://api.github.com'
+HEADERS = {
+    'Accept': 'application/vnd.github+json',
+    'User-Agent': 'crawler-tutorial',  # GitHub API 要求自带 User-Agent
+    # 认证（可选，提高限额）：'Authorization': 'Bearer <your_token>'
+}
+
+
+def fetch_repo(session, full_name):
+    """抓取单个仓库信息"""
+    response = session.get(f'{API_BASE}/repos/{full_name}', timeout=10)
+
+    # 限流处理：留意响应头中的剩余配额
+    remaining = response.headers.get('X-RateLimit-Remaining')
+    if remaining == '0':
+        reset_at = int(response.headers.get('X-RateLimit-Reset', 0))
+        wait = max(reset_at - int(time.time()), 0) + 1
+        print(f'API 配额用尽，等待 {wait} 秒...')
+        time.sleep(wait)
+        return fetch_repo(session, full_name)
+
+    response.raise_for_status()
+    data = response.json()
+
+    return {
+        'full_name': data['full_name'],
+        'description': data.get('description') or '',
+        'stars': data['stargazers_count'],
+        'forks': data['forks_count'],
+        'language': data.get('language') or '',
+        'url': data['html_url'],
+        'fetched_at': time.strftime('%Y-%m-%d %H:%M:%S'),
+    }
+
+
+def crawl_repos(names, save_path='repos'):
+    """认证与否、限流、去重、存储——四步方法论完整落地"""
+    session = requests.Session()
+    session.headers.update(HEADERS)
+
+    # 去重：同一仓库只抓一次
+    seen, results = set(), []
+    for name in names:
+        if name in seen:
+            print(f'跳过重复: {name}')
+            continue
+        seen.add(name)
+
+        results.append(fetch_repo(session, name))
+        time.sleep(1)  # 礼貌限速
+
+    # 存储：JSON（完整结构）+ CSV（表格化）
+    with open(f'{save_path}.json', 'w', encoding='utf-8') as f:
+        json.dump(results, f, ensure_ascii=False, indent=2)
+
+    with open(f'{save_path}.csv', 'w', newline='', encoding='utf-8-sig') as f:
+        writer = csv.DictWriter(f, fieldnames=list(results[0].keys()))
+        writer.writeheader()
+        writer.writerows(results)
+
+    return results
+
+
+if __name__ == '__main__':
+    repos = crawl_repos([
+        'psf/requests',
+        'scrapy/scrapy',
+        'psf/requests',   # 故意重复，验证去重逻辑
+        'pallets/flask',
+    ])
+    for r in repos:
+        print(f"{r['full_name']}: {r['stars']} stars ({r['language']})")
+```
+
+::: tip
+把案例7与前面的微博/知乎思路演示对照阅读：无论目标平台是社交网络还是代码托管平台，采集系统的骨架都一样——认证（Token/Cookie）→ 限流（配额/延迟）→ 去重（URL 或 ID 集合）→ 存储（JSON/CSV/数据库）。差异只在于每一步的具体实现。
+:::
 
 ## 课后练习
 
