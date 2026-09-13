@@ -1,5 +1,7 @@
 # 向量数据库概述
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
 ## 什么是向量数据库？
 
 向量数据库是专门用于存储、管理和查询高维向量的数据库系统。在AI应用中，向量数据库主要用于存储文本、图像等数据的向量表示，并支持高效的相似性搜索。
@@ -281,8 +283,9 @@ IVF = 倒排文件索引
 **实现：**
 ```python
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+# 1.x：Chroma 已拆分到官方独立集成包 langchain-chroma
+from langchain_chroma import Chroma
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # 1. 准备文档
 documents = [
@@ -292,7 +295,7 @@ documents = [
 ]
 
 # 2. 创建向量数据库
-embeddings = OpenAIEmbeddings()
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 vectorstore = Chroma.from_texts(documents, embeddings)
 
 # 3. 搜索
@@ -323,7 +326,7 @@ client.create_collection(
 # 3. 添加商品
 def get_embedding(text):
     response = openai_client.embeddings.create(
-        model="text-embedding-ada-002",
+        model="text-embedding-3-small",
         input=text
     )
     return response.data[0].embedding
@@ -351,12 +354,12 @@ def recommend_similar(product_name, top_k=3):
     product = next(p for p in products if p["name"] == product_name)
     query_vector = get_embedding(product["desc"])
     
-    # 搜索相似商品
-    results = client.search(
+    # 搜索相似商品（qdrant-client ≥1.10 推荐 query_points，旧的 client.search 已弃用）
+    results = client.query_points(
         collection_name="products",
-        query_vector=query_vector,
+        query=query_vector,
         limit=top_k + 1  # 多取一个，排除自己
-    )
+    ).points
     
     # 排除自己
     return [r for r in results if r.id != product["id"]][:top_k]
@@ -434,11 +437,11 @@ client.upsert(collection_name="images", points=points)
 def search_similar_images(query_image_path, top_k=3):
     query_embedding = get_image_embedding(query_image_path)
     
-    results = client.search(
+    results = client.query_points(
         collection_name="images",
-        query_vector=query_embedding,
+        query=query_embedding,
         limit=top_k
-    )
+    ).points
     
     return results
 
@@ -483,7 +486,7 @@ es.indices.create(index="documents", body=mapping)
 def add_document(doc_id, content):
     # 获取嵌入向量
     response = openai_client.embeddings.create(
-        model="text-embedding-ada-002",
+        model="text-embedding-3-small",
         input=content
     )
     embedding = response.data[0].embedding
@@ -508,7 +511,7 @@ def hybrid_search(query, alpha=0.5):
     """混合搜索：结合关键词和语义"""
     # 获取查询嵌入
     response = openai_client.embeddings.create(
-        model="text-embedding-ada-002",
+        model="text-embedding-3-small",
         input=query
     )
     query_embedding = response.data[0].embedding

@@ -1,5 +1,7 @@
 # Agent核心技术详解
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 本章详细介绍Agent开发中的核心技术，包括ReAct、Chain-of-Thought、Tree-of-Thought、Plan-and-Execute等推理框架，以及这些技术的实现原理和应用方法。
@@ -34,7 +36,7 @@ class ReActAgent:
     """ReAct Agent实现"""
     
     def __init__(self, llm=None, tools=None):
-        self.llm = llm or ChatOpenAI(model="gpt-4")
+        self.llm = llm or ChatOpenAI(model="gpt-5-mini")
         self.tools = {t.name: t for t in (tools or [])}
         self.max_iterations = 10
     
@@ -201,7 +203,7 @@ def calculate(expression: str) -> str:
 
 # 创建ReAct Agent
 agent = ReActAgent(
-    llm=ChatOpenAI(model="gpt-4"),
+    llm=ChatOpenAI(model="gpt-5-mini"),
     tools=[search_web, get_weather, calculate]
 )
 
@@ -240,7 +242,7 @@ Chain-of-Thought（CoT）通过引导LLM进行逐步推理来提高复杂任务�
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from typing import List
 
 class ReasoningStep(BaseModel):
@@ -261,7 +263,7 @@ class ChainOfThoughtAgent:
     """思维链Agent"""
     
     def __init__(self, llm=None):
-        self.llm = llm or ChatOpenAI(model="gpt-4")
+        self.llm = llm or ChatOpenAI(model="gpt-5-mini")
         self.structured_llm = self.llm.with_structured_output(ChainOfThoughtResult)
     
     def reason(self, question: str, context: str = "") -> ChainOfThoughtResult:
@@ -320,7 +322,7 @@ class ZeroShotCoT:
     """零样本思维链 - 通过简单提示触发推理"""
     
     def __init__(self, llm=None):
-        self.llm = llm or ChatOpenAI(model="gpt-4")
+        self.llm = llm or ChatOpenAI(model="gpt-5-mini")
     
     def reason(self, question: str) -> str:
         """零样本思维链推理"""
@@ -362,7 +364,7 @@ Tree-of-Thought（ToT）将推理过程组织成树结构，探索多个可能�
 
 ```python
 from langchain_openai import ChatOpenAI
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 import heapq
 
@@ -379,7 +381,7 @@ class TreeOfThoughtAgent:
     """思维树Agent"""
     
     def __init__(self, llm=None, max_depth: int = 3, branching_factor: int = 3):
-        self.llm = llm or ChatOpenAI(model="gpt-4")
+        self.llm = llm or ChatOpenAI(model="gpt-5-mini")
         self.max_depth = max_depth
         self.branching_factor = branching_factor
         self.nodes: Dict[str, ThoughtNode] = {}
@@ -528,7 +530,7 @@ Plan-and-Execute模式将任务分为两个阶段：
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain_core.tools import tool
 from typing import List, Dict, Any, Optional
 import json
@@ -551,7 +553,7 @@ class PlanAndExecuteAgent:
     """先规划后执行Agent"""
     
     def __init__(self, llm=None, tools=None):
-        self.llm = llm or ChatOpenAI(model="gpt-4")
+        self.llm = llm or ChatOpenAI(model="gpt-5-mini")
         self.tools = {t.name: t for t in (tools or [])}
         self.plan: Optional[ExecutionPlan] = None
     
@@ -760,7 +762,7 @@ def generate_report(content: str) -> str:
     return f"报告: 基于 {content} 生成的报告..."
 
 agent = PlanAndExecuteAgent(
-    llm=ChatOpenAI(model="gpt-4"),
+    llm=ChatOpenAI(model="gpt-5-mini"),
     tools=[search_info, analyze_data, generate_report]
 )
 
@@ -807,7 +809,7 @@ class ReflexionAgent:
     """Reflexion Agent - 自我反思改进"""
     
     def __init__(self, llm=None, max_attempts: int = 3):
-        self.llm = llm or ChatOpenAI(model="gpt-4")
+        self.llm = llm or ChatOpenAI(model="gpt-5-mini")
         self.max_attempts = max_attempts
         self.reflections: List[Reflection] = []
     
@@ -963,7 +965,7 @@ class SelfConsistencyAgent:
     """自一致性Agent - 多次推理选择最一致的答案"""
     
     def __init__(self, llm=None, num_paths: int = 5):
-        self.llm = llm or ChatOpenAI(model="gpt-4")
+        self.llm = llm or ChatOpenAI(model="gpt-5-mini")
         self.num_paths = num_paths
     
     def single_reasoning(self, question: str, path_id: int) -> Dict[str, str]:

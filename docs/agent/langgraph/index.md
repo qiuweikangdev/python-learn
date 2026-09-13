@@ -1,5 +1,7 @@
 # LangGraph工作流
 
+> **版本基线**：本文基于 LangGraph 1.x（1.2.x，2026-08），更新于 2026-09。
+
 ## 概述
 
 LangGraph是LangChain团队开发的基于图的Agent工作流框架，用于构建复杂的、有状态的LLM应用。它提供了更灵活的控制流和状态管理能力，适合构建需要多步推理和决策的Agent系统。
@@ -103,7 +105,7 @@ def process_input(state: State) -> State:
 
 def generate_response(state: State) -> State:
     """生成响应节点"""
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     response = llm.invoke(state["messages"])
     return {"messages": [response], "current_step": "completed"}
 
@@ -184,7 +186,7 @@ class AgentState(TypedDict):
 # 定义节点
 def chat_node(state: AgentState) -> AgentState:
     """聊天节点"""
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     response = llm.invoke(state["messages"])
     return {
         "messages": state["messages"] + [response],
@@ -280,7 +282,7 @@ print(result["output"])
 ### 4. 人机交互示例
 ```python
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver  # 旧名 MemorySaver 仍可用
 from typing import TypedDict
 
 # 定义状态
@@ -329,7 +331,7 @@ graph.add_edge("human_approval", "final")
 graph.add_edge("final", END)
 
 # 使用检查点
-checkpointer = MemorySaver()
+checkpointer = InMemorySaver()
 app = graph.compile(checkpointer=checkpointer, interrupt_before=["human_approval"])
 
 # 执行
@@ -340,6 +342,30 @@ result = app.invoke({
     "approved": False
 }, config)
 ```
+
+::: tip 现行写法：interrupt() 函数
+上面的 `interrupt_before=["human_approval"]` 属于旧式但仍然兼容的静态中断写法。LangGraph 1.x 推荐在**节点内部**调用 `interrupt()` 函数实现动态中断，可以携带/恢复自定义数据：
+
+```python
+from langgraph.types import interrupt, Command
+
+def human_approval_node(state: HumanLoopState) -> HumanLoopState:
+    # 在节点内部暂停，等待人工输入；payload 会返回给调用方
+    answer = interrupt({"question": "是否批准该操作？", "messages": state["messages"]})
+    # 恢复执行时通过 Command(resume=...) 传入 answer
+    return {
+        "messages": state["messages"],
+        "human_input": str(answer),
+        "approved": bool(answer),
+    }
+
+# 调用方：
+# result = app.invoke(initial_state, config)               # 在 interrupt() 处暂停
+# result = app.invoke(Command(resume=True), config)        # 恢复执行
+```
+
+对比：`interrupt_before` 在**编译期**静态指定节点，粒度粗；`interrupt()` 在**运行期**节点内随时触发，可返回任意数据，是人机交互的现行推荐写法。两种方式都依赖 checkpointer。
+:::
 
 ## 最佳实践
 

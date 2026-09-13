@@ -1,5 +1,11 @@
 # RAG核心概念详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
+::: tip 模型说明
+文中模型示例统一使用 `gpt-5-mini`。模型迭代较快，请以官方文档为准。
+:::
+
 ## 概述
 
 RAG（Retrieval-Augmented Generation，检索增强生成）是一种结合外部知识库的生成技术。本章将深入介绍RAG的核心概念，包括检索、生成、向量化、索引等。
@@ -73,7 +79,8 @@ from langchain_community.document_loaders import (
     TextLoader,
     UnstructuredMarkdownLoader
 )
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+# 1.x：已从 langchain.text_splitter 迁移到独立包 langchain_text_splitters
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # 加载文档
 loader = PyPDFLoader("document.pdf")
@@ -91,11 +98,12 @@ chunks = text_splitter.split_documents(documents)
 ### 2. 嵌入生成
 ```python
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.embeddings import HuggingFaceEmbeddings
+# HuggingFace 嵌入已迁移到独立包 langchain-huggingface
+from langchain_huggingface import HuggingFaceEmbeddings
 
-# OpenAI嵌入
+# OpenAI嵌入（推荐使用新一代嵌入模型）
 embeddings = OpenAIEmbeddings(
-    model="text-embedding-ada-002",
+    model="text-embedding-3-small",  # 替代旧的 text-embedding-ada-002
     openai_api_key="your-api-key"
 )
 
@@ -111,13 +119,12 @@ vector = embeddings.embed_query(text)
 
 ### 3. 向量存储
 ```python
-from langchain_community.vectorstores import (
-    Chroma,
-    FAISS,
-    Pinecone,
-    Weaviate,
-    Milvus
-)
+# 向量库已拆分为官方独立集成包（1.x 起不再从 langchain_community.vectorstores 统一导入）
+from langchain_chroma import Chroma
+from langchain_community.vectorstores import FAISS  # FAISS 仍保留在 langchain-community
+from langchain_pinecone import PineconeVectorStore
+from langchain_weaviate import WeaviateVectorStore
+from langchain_milvus import Milvus
 
 # Chroma向量存储
 vectorstore = Chroma.from_documents(
@@ -141,8 +148,8 @@ results = vectorstore.similarity_search(
 
 ### 4. 检索器
 ```python
-from langchain.retrievers import (
-    VectorStoreRetriever,
+# 1.x 中旧版检索器已迁移到 langchain-classic 包
+from langchain_classic.retrievers import (
     MultiQueryRetriever,
     ContextualCompressionRetriever
 )
@@ -156,12 +163,18 @@ retriever = vectorstore.as_retriever(
 # 多查询检索器
 retriever = MultiQueryRetriever.from_llm(
     retriever=vectorstore.as_retriever(),
-    llm=ChatOpenAI(model="gpt-4o-mini")
+    llm=ChatOpenAI(model="gpt-5-mini")
 )
 
-# 上下文压缩检索器
-from langchain.retrievers.document_compressors import LLMChainExtractor
-compressor = LLMChainExtractor.from_llm(ChatOpenAI(model="gpt-4o-mini"))
+# 上下文压缩检索器：旧版 LLMChainExtractor 依赖已移除的 LLMChain，
+# 1.x 推荐用 LCEL 自定义压缩逻辑
+from langchain_core.runnables import RunnableLambda
+
+def compress_docs(docs):
+    # 这里可以实现自定义的文档过滤/压缩逻辑
+    return docs[:3]
+
+compressor = RunnableLambda(compress_docs)
 retriever = ContextualCompressionRetriever(
     base_compressor=compressor,
     base_retriever=vectorstore.as_retriever()
@@ -173,7 +186,7 @@ retriever = ContextualCompressionRetriever(
 ### 1. 环境准备
 ```bash
 # 安装必要的库
-pip install langchain langchain-openai langchain-community
+pip install -U langchain langchain-openai langchain-chroma langchain-community
 pip install chromadb faiss-cpu sentence-transformers
 
 # 设置环境变量
@@ -184,11 +197,11 @@ export OPENAI_API_KEY="your-openai-key"
 ```python
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.document_loaders import TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.output_parser import StrOutputParser
-from langchain.schema.runnable import RunnablePassthrough
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_chroma import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 
 # 1. 加载文档
 loader = TextLoader("document.txt", encoding="utf-8")
@@ -224,7 +237,7 @@ template = """基于以下上下文回答问题：
 回答："""
 
 prompt = ChatPromptTemplate.from_template(template)
-llm = ChatOpenAI(model="gpt-4o-mini")
+llm = ChatOpenAI(model="gpt-5-mini")
 
 rag_chain = (
     {"context": retriever, "question": RunnablePassthrough()}
@@ -320,7 +333,8 @@ documents.extend(text_loader.load())
 **代码示例**：
 
 ```python
-from langchain.text_splitter import (
+# 1.x：已从 langchain.text_splitter 迁移到独立包 langchain_text_splitters
+from langchain_text_splitters import (
     RecursiveCharacterTextSplitter,
     CharacterTextSplitter,
     TokenTextSplitter
@@ -423,8 +437,8 @@ def demonstrate_chunking_strategies():
 
 | 模型 | 维度 | 中文支持 | 价格 | 适用场景 |
 |------|------|----------|------|----------|
-| **OpenAI text-embedding-ada-002** | 1536 | 优秀 | 中等 | 通用场景 |
-| **OpenAI text-embedding-3-small** | 1536 | 优秀 | 低 | 成本敏感 |
+| **OpenAI text-embedding-ada-002**（旧模型，已不推荐） | 1536 | 优秀 | 中等 | 存量项目 |
+| **OpenAI text-embedding-3-small** | 1536 | 优秀 | 低 | 通用/成本敏感 |
 | **BGE-large-zh** | 1024 | 优秀 | 免费 | 中文场景 |
 | **M3E-base** | 768 | 优秀 | 免费 | 多语言 |
 
@@ -432,7 +446,8 @@ def demonstrate_chunking_strategies():
 
 ```python
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.embeddings import HuggingFaceEmbeddings
+# 1.x：HuggingFace 嵌入已迁移到独立包 langchain-huggingface
+from langchain_huggingface import HuggingFaceEmbeddings
 import numpy as np
 
 def demonstrate_embeddings():
@@ -445,7 +460,7 @@ def demonstrate_embeddings():
     # 1. OpenAI嵌入
     print("=== OpenAI嵌入 ===")
     openai_embeddings = OpenAIEmbeddings(
-        model="text-embedding-ada-002"
+        model="text-embedding-3-small"  # 新一代嵌入模型，替代旧的 ada-002
     )
     
     texts = ["人工智能", "机器学习", "今天天气"]
@@ -495,14 +510,15 @@ def demonstrate_embeddings():
 
 ```python
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
-from langchain.retrievers import (
-    VectorStoreRetriever,
-    BM25Retriever,
-    EnsembleRetriever
+from langchain_chroma import Chroma
+from langchain_core.vectorstores import VectorStoreRetriever
+# 1.x：BM25Retriever 仍在 langchain-community；EnsembleRetriever 等旧版检索器已迁移到 langchain-classic
+from langchain_community.retrievers import BM25Retriever
+from langchain_classic.retrievers import (
+    EnsembleRetriever,
+    ContextualCompressionRetriever
 )
-from langchain.retrievers.document_compressors import CrossEncoderReranker
-from langchain.retrievers import ContextualCompressionRetriever
+from langchain_classic.retrievers.document_compressors import CrossEncoderReranker
 
 def demonstrate_retrieval_strategies():
     """
@@ -580,10 +596,10 @@ def demonstrate_retrieval_strategies():
 
 ```python
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.output_parser import StrOutputParser
-from langchain.schema.runnable import RunnablePassthrough
+from langchain_chroma import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 from typing import List, Dict
 
 def create_rag_with_citations():
@@ -652,7 +668,7 @@ def create_rag_with_citations():
             "question": RunnablePassthrough()
         }
         | prompt
-        | ChatOpenAI(model="gpt-4o-mini")
+        | ChatOpenAI(model="gpt-5-mini")
         | StrOutputParser()
     )
     
@@ -691,9 +707,9 @@ def demonstrate_citation_validation():
 
 ```python
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.output_parser import StrOutputParser
+from langchain_chroma import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
 def create_robust_rag():
     """
@@ -753,7 +769,7 @@ def create_robust_rag():
             "question": lambda x: x
         }
         | prompt
-        | ChatOpenAI(model="gpt-4o-mini")
+        | ChatOpenAI(model="gpt-5-mini")
         | StrOutputParser()
     )
     

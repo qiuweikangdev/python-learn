@@ -1,5 +1,7 @@
 # Agent平台与服务概述
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 什么是Agent平台与服务？
 
 Agent平台与服务是提供AI Agent开发、部署和管理的云平台和服务。这些平台提供了完整的Agent生命周期管理，包括开发、测试、部署、监控和维护。
@@ -322,7 +324,7 @@ def create_customer_service_agent():
 def handle_conversation(messages: List[Dict]) -> str:
     """处理对话"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=messages,
         tools=tools,
         tool_choice="auto"
@@ -390,11 +392,12 @@ def customer_service():
 **实现：**
 ```python
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_chroma import Chroma                      # 1.x 起为独立集成包
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
-from langchain.chains import RetrievalQA
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 
 # 1. 加载文档
 def load_documents(doc_path: str):
@@ -415,15 +418,15 @@ def create_vectorstore(documents):
     )
     chunks = text_splitter.split_documents(documents)
     
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
     vectorstore = Chroma.from_documents(chunks, embeddings)
     
     return vectorstore
 
-# 3. 创建问答系统
+# 3. 创建问答系统（LCEL 链式写法，取代旧版 RetrievalQA）
 def create_qa_system(vectorstore):
     """创建问答系统"""
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     
     prompt_template = """基于以下文档内容回答问题。如果文档中没有相关信息，请说"我不知道"。
 
@@ -436,11 +439,13 @@ def create_qa_system(vectorstore):
     
     prompt = ChatPromptTemplate.from_template(prompt_template)
     
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=vectorstore.as_retriever(search_kwargs={"k": 3}),
-        chain_type_kwargs={"prompt": prompt}
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+    
+    qa_chain = (
+        {"context": retriever, "question": RunnablePassthrough()}
+        | prompt
+        | llm
+        | StrOutputParser()
     )
     
     return qa_chain
@@ -463,8 +468,8 @@ def knowledge_base_qa():
         if question.lower() == "quit":
             break
         
-        answer = qa_system.invoke({"query": question})
-        print(f"回答：{answer['result']}")
+        answer = qa_system.invoke(question)  # 直接返回答案字符串
+        print(f"回答：{answer}")
 
 # 运行
 # knowledge_base_qa()
@@ -501,7 +506,7 @@ class MultimodalAgent:
         })
         
         response = self.client.chat.completions.create(
-            model="gpt-4-vision-preview",
+            model="gpt-5-mini",
             messages=self.conversation_history
         )
         
@@ -533,7 +538,7 @@ class MultimodalAgent:
         })
         
         response = self.client.chat.completions.create(
-            model="gpt-4-vision-preview",
+            model="gpt-5-mini",
             messages=self.conversation_history
         )
         
@@ -590,7 +595,7 @@ agent = MultimodalAgent()
 
 **设计要点：**
 - 支持文本、图像、音频输入
-- 使用GPT-4 Vision处理图像
+- 使用 GPT-5 系列多模态模型处理图像（旧版 gpt-4-vision-preview 已下线）
 - 使用Whisper处理音频
 
 ## 下一步学习

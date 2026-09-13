@@ -1,8 +1,14 @@
 # 现代Agent Harness详解
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 Agent Harness是管理和运行AI Agent的基础设施框架，提供了模型抽象、工具管理、状态管理、执行引擎等核心功能。理解Agent Harness对于构建生产级Agent系统至关重要。
+
+::: tip 2026 现状
+Agent Harness 的理念在今天已成为主流产品形态：**Claude Code、OpenAI Codex** 这类编程 Agent 产品，本质就是一个完整的 agent harness——围绕模型提供工具执行、状态管理、权限控制与运行环境。学会用 harness 的视角拆解 Agent 系统，比记住某个框架的 API 更长期有效。
+:::
 
 ## 什么是Agent Harness？
 
@@ -63,10 +69,9 @@ Agent Harness = Agent运行环境 + 管理工具
 **代码示例**：
 
 ```python
-from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.agents import create_agent
 from langchain.tools import tool
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
 
 def create_langchain_agent():
     """
@@ -75,13 +80,13 @@ def create_langchain_agent():
     LangChain提供了：
     1. 统一的模型接口
     2. 丰富的工具集成
-    3. 灵活的链组合
-    4. 完善的记忆管理
+    3. 内置的执行循环（create_agent，取代旧版 AgentExecutor）
+    4. 基于 checkpointer 的记忆管理
     """
     
     # 1. 创建模型
     llm = ChatOpenAI(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         temperature=0.7
     )
     
@@ -95,40 +100,31 @@ def create_langchain_agent():
     def calculate(expression: str) -> str:
         """计算数学表达式"""
         try:
-            result = eval(expression)
+            result = eval(expression)  # ⚠️ 教学演示，生产环境请用白名单解析/沙箱
             return f"计算结果：{result}"
         except Exception as e:
             return f"计算错误：{e}"
     
     tools = [search, calculate]
     
-    # 3. 创建提示模板
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "你是一个有用的助手，可以使用工具来完成任务。"),
-        MessagesPlaceholder(variable_name="chat_history", optional=True),
-        ("user", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad")
-    ])
-    
-    # 4. 创建Agent
-    agent = create_openai_tools_agent(llm, tools, prompt)
-    
-    # 5. 创建Agent执行器
-    agent_executor = AgentExecutor(
-        agent=agent,
+    # 3. 创建Agent（内部是一条 LangGraph 执行图）
+    agent = create_agent(
+        llm,
         tools=tools,
-        verbose=True,
-        max_iterations=5,
-        handle_parsing_errors=True
+        system_prompt="你是一个有用的助手，可以使用工具来完成任务。",
     )
     
-    return agent_executor
+    return agent
 
 # 使用示例
 # agent = create_langchain_agent()
-# result = agent.invoke({"input": "搜索人工智能最新进展"})
-# print(result)
+# result = agent.invoke({"messages": [{"role": "user", "content": "搜索人工智能最新进展"}]})
+# print(result["messages"][-1].content)
 ```
+
+::: warning eval() 安全提示
+`eval()` 会执行任意代码，生产环境严禁对不可信输入使用。请改用 `ast.literal_eval`、基于 `ast` 的白名单解析，或在独立沙箱（容器/子进程 + 超时与资源限制）中执行。本文后文的 `ToolManager` 示例同理。
+:::
 
 ### 2. AutoGen
 
@@ -160,11 +156,12 @@ def create_langchain_agent():
 **代码示例**：
 
 ```python
-import autogen
+from autogen_agentchat.agents import AssistantAgent  # AutoGen v0.4+（pip install autogen-agentchat）
+from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 def create_autogen_agents():
     """
-    使用AutoGen创建多Agent系统
+    使用AutoGen v0.4+创建Agent
     
     AutoGen的特点：
     1. 对话式Agent协作
@@ -172,34 +169,26 @@ def create_autogen_agents():
     3. 人工反馈支持
     """
     
-    # 配置LLM
-    llm_config = {
-        "model": "gpt-4o-mini",
-        "api_key": "your-api-key"
-    }
+    # 配置模型（v0.4+ 使用 model client 抽象）
+    model_client = OpenAIChatCompletionClient(
+        model="gpt-5-mini",
+        api_key="your-api-key"
+    )
     
     # 创建助手Agent
-    assistant = autogen.AssistantAgent(
+    assistant = AssistantAgent(
         name="assistant",
-        llm_config=llm_config,
+        model_client=model_client,
         system_message="你是一个有用的AI助手。"
     )
     
-    # 创建用户代理
-    user_proxy = autogen.UserProxyAgent(
-        name="user_proxy",
-        human_input_mode="TERMINATE",
-        max_consecutive_auto_reply=10,
-        is_termination_msg=lambda x: x.get("content", "").rstrip().endswith("TERMINATE"),
-        code_execution_config={"work_dir": "coding"},
-        llm_config=llm_config
-    )
-    
-    return assistant, user_proxy
+    return assistant
 
 # 使用示例
-# assistant, user_proxy = create_autogen_agents()
-# user_proxy.initiate_chat(assistant, message="帮我写一个Python函数")
+# import asyncio
+# from autogen_agentchat.ui import Console
+# assistant = create_autogen_agents()
+# asyncio.run(Console(assistant.run_stream(task="帮我写一个Python函数")))
 ```
 
 ### 3. CrewAI
@@ -322,7 +311,7 @@ def create_semantic_kernel_agent():
         OpenAIChatCompletion(
             service_id="chat",
             api_key="your-api-key",
-            ai_model_id="gpt-4o-mini"
+            ai_model_id="gpt-5-mini"
         )
     )
     
@@ -380,7 +369,7 @@ class ModelProvider(ABC):
 class OpenAIProvider(ModelProvider):
     """OpenAI模型提供者"""
     
-    def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
+    def __init__(self, api_key: str, model: str = "gpt-5-mini"):
         from openai import OpenAI
         self.client = OpenAI(api_key=api_key)
         self.model = model
@@ -407,7 +396,7 @@ class OpenAIProvider(ModelProvider):
 class AnthropicProvider(ModelProvider):
     """Anthropic模型提供者"""
     
-    def __init__(self, api_key: str, model: str = "claude-3-sonnet-20240229"):
+    def __init__(self, api_key: str, model: str = "claude-sonnet-4-5"):
         import anthropic
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
@@ -519,7 +508,7 @@ def search(query: str) -> str:
 def calculate(expression: str) -> str:
     """计算表达式"""
     try:
-        result = eval(expression)
+        result = eval(expression)  # ⚠️ 教学演示，生产环境请用白名单解析/沙箱
         return f"计算结果：{result}"
     except Exception as e:
         return f"计算错误：{e}"

@@ -1,5 +1,11 @@
 # Weaviate详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
+::: warning 客户端版本说明
+2026 年 Weaviate 主推 v4 gRPC 客户端，本文基于 v4。旧版 v3 的 `weaviate.Client` 与 schema/class API 已弃用，请迁移到 `connect_to_local()` 与 collections API。
+:::
+
 ## 概述
 
 Weaviate是一个开源的向量数据库，支持语义搜索、多模态数据和GraphQL查询。它以灵活的数据模型、强大的多模态支持和易用的GraphQL接口著称。
@@ -36,7 +42,11 @@ docker run -d \
 ### Python客户端安装
 
 ```bash
+# v4 gRPC 客户端（weaviate-client >= 4）
 pip install weaviate-client
+
+# LangChain 集成包（1.x 起为官方独立集成包）
+pip install langchain-weaviate
 ```
 
 ### 配置选项
@@ -67,11 +77,10 @@ services:
 ```python
 import weaviate
 
-# 连接到Weaviate
-client = weaviate.Client(
-    url="http://localhost:8080",
-    additional_headers={
-        "X-OpenAI-Api-Key": "your-openai-key"  # 如果使用OpenAI模块
+# v4：连接到本地 Weaviate（REST 8080 + gRPC 50051）
+client = weaviate.connect_to_local(
+    headers={
+        "X-OpenAI-Api-Key": "your-openai-key"  # 如果使用OpenAI向量化模块
     }
 )
 
@@ -82,165 +91,122 @@ if client.is_ready():
 # 获取元数据
 meta = client.get_meta()
 print(f"Weaviate版本: {meta['version']}")
+
+# 使用完毕后关闭连接
+# client.close()
 ```
 
-### 2. 类（集合）管理
+### 2. 集合管理
 
 ```python
 import weaviate
+from weaviate.classes.config import Configure, Property, DataType
 
-client = weaviate.Client("http://localhost:8080")
+client = weaviate.connect_to_local()
 
-# 定义类（Schema）
-class_obj = {
-    "class": "Document",
-    "vectorizer": "text2vec-openai",  # 使用OpenAI向量化
-    "moduleConfig": {
-        "text2vec-openai": {
-            "model": "ada-002",
-            "modelVersion": "002",
-            "type": "text"
-        }
-    },
-    "properties": [
-        {
-            "name": "content",
-            "dataType": ["text"],
-            "moduleConfig": {
-                "text2vec-openai": {
-                    "skip": False,
-                    "vectorizePropertyName": False
-                }
-            }
-        },
-        {
-            "name": "source",
-            "dataType": ["string"]
-        },
-        {
-            "name": "year",
-            "dataType": ["int"]
-        },
-        {
-            "name": "category",
-            "dataType": ["string"]
-        }
+# 创建集合（v4 中不再需要手写 JSON Schema）
+# 方式1：自带向量化（使用 OpenAI 模块）
+collection = client.collections.create(
+    name="Document",
+    vectorizer_config=Configure.Vectorizer.text2vec_openai(
+        model="text-embedding-3-small",  # 替代旧的 ada-002
+    ),
+    properties=[
+        Property(name="content", data_type=DataType.TEXT),
+        Property(name="source", data_type=DataType.TEXT),
+        Property(name="year", data_type=DataType.INT),
+        Property(name="category", data_type=DataType.TEXT),
     ]
-}
+)
 
-# 创建类
-client.schema.create_class(class_obj)
+# 方式2：向量由外部生成（如 LangChain/OpenAIEmbeddings），关闭内置向量化
+collection = client.collections.create(
+    name="Doc",
+    vectorizer_config=Configure.Vectorizer.none(),
+    properties=[
+        Property(name="text", data_type=DataType.TEXT),
+    ]
+)
 
-# 获取Schema
-schema = client.schema.get()
-print(schema)
+# 获取已存在的集合
+collection = client.collections.get("Document")
 
-# 删除类
-client.schema.delete_class("Document")
+# 删除集合
+client.collections.delete("Document")
 ```
 
 ### 3. 数据操作
 
 ```python
-# 插入数据
-data_object = {
+collection = client.collections.get("Document")
+
+# 插入数据（配置了向量化模块时会自动向量化）
+collection.data.insert({
     "content": "这是第一篇文档的内容",
     "source": "web",
     "year": 2023,
     "category": "technology"
-}
+})
 
-# 自动向量化并插入
-client.data_object.create(
-    data_object,
-    "Document",
-    vector=None  # 如果配置了vectorizer，会自动向量化
+# 插入时自带向量（vectorizer 为 none 时）
+collection.data.insert(
+    {"text": "这是第一篇文档的内容"},
+    vector=[0.1, 0.2, 0.3]  # 预计算的嵌入向量
 )
 
 # 批量插入
-def batch_insert(client, class_name, objects, batch_size=100):
+def batch_insert(collection, objects, batch_size=100):
     """批量插入数据"""
-    for i in range(0, len(objects), batch_size):
-        batch = objects[i:i+batch_size]
-        
-        with client.batch as batch_client:
-            batch_client.batch_size = batch_size
-            
-            for obj in batch:
-                batch_client.add_data_object(
-                    obj,
-                    class_name
-                )
-        
-        print(f"已插入 {min(i+batch_size, len(objects))}/{len(objects)}")
+    with collection.batch.fixed_size(batch_size=batch_size) as batch:
+        for obj in objects:
+            batch.add_object(properties=obj)
+            if batch.number_errors > 10:
+                print("批量插入错误过多，中止")
+                break
+    print(f"失败对象数: {len(collection.batch.failed_objects)}")
 
 # 使用示例
 objects = [
     {"content": f"文档内容 {i}", "source": "web", "year": 2023}
     for i in range(1000)
 ]
-batch_insert(client, "Document", objects)
+batch_insert(client.collections.get("Document"), objects)
 ```
 
 ### 4. 查询操作
 
 ```python
-# 基础查询
-result = (
-    client.query
-    .get("Document", ["content", "source", "year"])
-    .with_limit(10)
-    .do()
-)
+collection = client.collections.get("Document")
+
+# 基础查询（获取对象列表）
+results = collection.query.fetch_objects(limit=10)
+for obj in results.objects:
+    print(obj.properties)
 
 # 向量搜索
-result = (
-    client.query
-    .get("Document", ["content", "source", "year"])
-    .with_near_vector({
-        "vector": query_vector
-    })
-    .with_limit(5)
-    .do()
+results = collection.query.near_vector(
+    near_vector=query_vector,
+    limit=5
 )
 
 # 文本搜索（自动向量化）
-result = (
-    client.query
-    .get("Document", ["content", "source", "year"])
-    .with_near_text({
-        "concepts": ["人工智能", "机器学习"]
-    })
-    .with_limit(5)
-    .do()
+results = collection.query.near_text(
+    query="人工智能",
+    limit=5
 )
+for obj in results.objects:
+    print(obj.properties["content"], obj.metadata.distance)
 
-# 带过滤的搜索
-import weaviate.classes as wvc
+# 带过滤的搜索（v4 使用 Filter 对象）
+from weaviate.classes.query import Filter
 
-result = (
-    client.query
-    .get("Document", ["content", "source", "year"])
-    .with_near_text({
-        "concepts": ["人工智能"]
-    })
-    .with_where({
-        "operator": "And",
-        "operands": [
-            {
-                "path": ["source"],
-                "operator": "Equal",
-                "valueString": "web"
-            },
-            {
-                "path": ["year"],
-                "operator": "GreaterThan",
-                "valueInt": 2022
-            }
-        ]
-    })
-    .with_limit(5)
-    .do()
+results = collection.query.near_text(
+    query="人工智能",
+    limit=5,
+    filters=(
+        Filter.by_property("source").equal("web")
+        & Filter.by_property("year").greater_than(2022)
+    )
 )
 ```
 
@@ -248,27 +214,17 @@ result = (
 
 ```python
 # 混合搜索（向量 + 关键词）
-result = (
-    client.query
-    .get("Document", ["content", "source", "year"])
-    .with_hybrid(
-        query="人工智能",
-        alpha=0.75  # 0=纯关键词, 1=纯向量
-    )
-    .with_limit(5)
-    .do()
+results = collection.query.hybrid(
+    query="人工智能",
+    alpha=0.75,  # 0=纯关键词, 1=纯向量
+    limit=5
 )
 
 # BM25搜索（纯关键词）
-result = (
-    client.query
-    .get("Document", ["content", "source", "year"])
-    .with_bm25(
-        query="人工智能",
-        properties=["content"]
-    )
-    .with_limit(5)
-    .do()
+results = collection.query.bm25(
+    query="人工智能",
+    query_properties=["content"],
+    limit=5
 )
 ```
 
@@ -276,54 +232,46 @@ result = (
 
 ```python
 # 使用Weaviate的生成式搜索
-result = (
-    client.query
-    .get("Document", ["content", "source"])
-    .with_near_text({
-        "concepts": ["人工智能"]
-    })
-    .with_generate(
-        single_prompt="请基于以下内容回答什么是人工智能: {content}"
-    )
-    .with_limit(3)
-    .do()
+results = collection.generate.near_text(
+    query="人工智能",
+    limit=3,
+    single_prompt="请基于以下内容回答什么是人工智能: {content}"
 )
 
 # 遍历结果
-for doc in result["data"]["Get"]["Document"]:
-    print(f"内容: {doc['content'][:50]}...")
-    print(f"生成答案: {doc['_additional']['generate']['singleResult']}")
+for obj in results.objects:
+    print(f"内容: {obj.properties['content'][:50]}...")
+    print(f"生成答案: {obj.generated}")
 ```
 
 ## 与LangChain集成
 
 ```python
-from langchain_community.vectorstores import Weaviate
+# 1.x：Weaviate 已拆分到官方独立集成包 langchain-weaviate
+# 旧写法（已废弃）：from langchain_community.vectorstores import Weaviate
+from langchain_weaviate import WeaviateVectorStore
 from langchain_openai import OpenAIEmbeddings
 
 # 创建向量存储
-embeddings = OpenAIEmbeddings()
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
-vectorstore = Weaviate.from_documents(
-    documents=docs,
-    embedding=embeddings,
-    weaviate_url="http://localhost:8080",
+vectorstore = WeaviateVectorStore(
+    client=client,  # v4 客户端实例
     index_name="Document",
-    text_key="content"
+    text_key="content",
+    embedding=embeddings
 )
 
 # 相似性搜索
 results = vectorstore.similarity_search("查询内容", k=3)
 
-# 带过滤的搜索
+# 带过滤的搜索（v4 使用 Filter 对象）
+from weaviate.classes.query import Filter
+
 results = vectorstore.similarity_search(
     "查询内容",
     k=3,
-    where_filter={
-        "path": ["source"],
-        "operator": "Equal",
-        "valueString": "web"
-    }
+    filters=Filter.by_property("source").equal("web")
 )
 
 # 检索器
@@ -337,42 +285,41 @@ retriever = vectorstore.as_retriever(
 ### 1. 向量化优化
 
 ```python
-# 使用本地嵌入模型（避免API调用）
-class_obj = {
-    "class": "Document",
-    "vectorizer": "text2vec-transformers",  # 使用本地模型
-    "moduleConfig": {
-        "text2vec-transformers": {
-            "poolingStrategy": "masked_mean",
-            "vectorizeClassName": False
-        }
-    }
-}
+# v4：使用本地嵌入模型（避免API调用）
+collection = client.collections.create(
+    name="DocumentLocal",
+    vectorizer_config=Configure.Vectorizer.text2vec_transformers(
+        pooling_strategy="masked_mean"
+    )
+)
+
+# 或者完全自带向量（外部生成，如 LangChain Embeddings）
+# vectorizer_config=Configure.Vectorizer.none()
 ```
 
 ### 2. 批量操作优化
 
 ```python
-# 优化批量插入
-client.batch.configure(
-    batch_size=100,
-    dynamic=True,  # 动态调整批次大小
-    timeout_retries=3,
-    num_workers=2  # 并发工作线程
-)
+# v4：固定批次大小（支持并发）
+with collection.batch.fixed_size(batch_size=100) as batch:
+    for obj in objects:
+        batch.add_object(properties=obj)
+
+# 动态批次大小
+with collection.batch.dynamic() as batch:
+    for obj in objects:
+        batch.add_object(properties=obj)
 ```
 
 ### 3. 查询优化
 
 ```python
-# 使用缓存
-result = (
-    client.query
-    .get("Document", ["content"])
-    .with_near_text({"concepts": ["AI"]})
-    .with_limit(10)
-    .with_additional("vector")  # 返回向量
-    .do()
+# v4：返回向量与距离元数据
+results = collection.query.near_text(
+    query="AI",
+    limit=10,
+    include_vector=True,  # 返回向量
+    return_metadata=["distance"]
 )
 ```
 
@@ -381,19 +328,20 @@ result = (
 ### 1. 数据建模
 
 ```python
-# 合理设计类结构
-schema = {
-    "classes": [
-        {
-            "class": "Document",
-            "properties": [
-                {"name": "content", "dataType": ["text"]},
-                {"name": "metadata", "dataType": ["object"]},
-                {"name": "references", "dataType": ["Document"]}
-            ]
-        }
+# v4：合理设计集合结构
+from weaviate.classes.config import Configure, Property, DataType, ReferenceProperty
+
+client.collections.create(
+    name="Document",
+    properties=[
+        Property(name="content", data_type=DataType.TEXT),
+        Property(name="metadata", data_type=DataType.OBJECT),
+        ReferenceProperty(
+            name="references",
+            target_collection="Document"  # 跨引用
+        )
     ]
-}
+)
 ```
 
 ### 2. 模块选择

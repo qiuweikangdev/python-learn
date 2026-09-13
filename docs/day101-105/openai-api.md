@@ -1,5 +1,7 @@
 # OpenAI API详解
 
+> **版本基线**：本文基于 OpenAI Python SDK ≥1.x（含 Responses API），示例模型为 gpt-5-mini，模型迭代快，以官方模型页为准。更新于 2026-09。
+
 ## 概述
 
 OpenAI API是OpenAI公司提供的大语言模型API服务，是目前最流行的LLM API之一。本章将详细介绍OpenAI API的核心概念、使用方法和最佳实践。
@@ -7,16 +9,17 @@ OpenAI API是OpenAI公司提供的大语言模型API服务，是目前最流行�
 ## 核心概念
 
 ### 1. 模型类型
-OpenAI提供多种模型类型：
-- **GPT-4系列**：最强大的多模态模型
-- **GPT-3.5系列**：性价比高的文本模型
-- **DALL-E**：图像生成模型
+OpenAI提供多种模型类型（模型迭代快，具体以官方模型页为准）：
+- **GPT-5 家族**：当前主力模型系列（gpt-5 / gpt-5-mini / gpt-5-nano，旗舰 gpt-5.4）
+- **o 系列推理模型**：o1、o3-mini 等为上一代推理模型，能力已逐步并入 GPT-5 家族
+- **DALL-E**：图像生成模型（dall-e-3 仍可用）
 - **Whisper**：语音识别模型
-- **Embeddings**：文本嵌入模型
+- **Embeddings**：文本嵌入模型（text-embedding-3-small / text-embedding-3-large）
 
 ### 2. API端点
 OpenAI API的主要端点：
-- **Chat Completions**：聊天补全API
+- **Responses**：2026 年的主力接口（推荐，见下文专门小节）
+- **Chat Completions**：聊天补全API（仍在维护，生态最广）
 - **Completions**：文本补全API（已弃用）
 - **Images**：图像生成API
 - **Audio**：音频处理API
@@ -35,10 +38,10 @@ OpenAI API的计费方式：
 
 在选择大模型API时，需要根据实际需求进行对比选择：
 
-| 对比维度 | OpenAI GPT-4 | Anthropic Claude | Google Gemini | 开源模型(Llama等) |
+| 对比维度 | OpenAI GPT-5 | Anthropic Claude | Google Gemini | 开源模型(Llama等) |
 |----------|--------------|------------------|---------------|-------------------|
 | **模型能力** | 综合能力最强 | 长文本处理优秀 | 多模态能力强 | 能力较弱但可定制 |
-| **上下文长度** | 128K | 200K | 128K | 4K-32K |
+| **上下文长度** | 超长上下文 | 超长上下文 | 超长上下文 | 4K-128K（视模型而定） |
 | **响应速度** | 中等 | 较快 | 较快 | 取决于部署 |
 | **价格** | 较高 | 中等 | 中等 | 免费(需自部署) |
 | **API稳定性** | 高 | 高 | 高 | 取决于部署 |
@@ -47,15 +50,15 @@ OpenAI API的计费方式：
 ### 如何选择合适的模型？
 
 **场景一：快速原型开发**
-- 推荐：OpenAI GPT-3.5-turbo
+- 推荐：OpenAI gpt-5-mini
 - 原因：价格便宜、响应快、API稳定
 
 **场景二：处理长文档**
 - 推荐：Anthropic Claude
-- 原因：支持200K上下文，适合长文本处理
+- 原因：支持超长上下文，适合长文本处理
 
 **场景三：多模态应用**
-- 推荐：Google Gemini 或 GPT-4V
+- 推荐：Google Gemini 或 GPT-5 家族
 - 原因：原生支持图像、音频等多模态输入
 
 **场景四：数据敏感场景**
@@ -63,7 +66,7 @@ OpenAI API的计费方式：
 - 原因：数据不出本地，安全性高
 
 **场景五：成本敏感场景**
-- 推荐：开源模型 或 GPT-3.5-turbo
+- 推荐：开源模型 或 gpt-5-mini
 - 原因：成本可控
 
 ## 设计原理与目的
@@ -167,7 +170,7 @@ def customer_service(query, history=[]):
     返回值：
         str: 模型生成的回答
     
-    功能：使用GPT-3.5-turbo模型回答用户问题
+    功能：使用gpt-5-mini模型回答用户问题
     """
     # 系统提示词：定义AI助手的角色和行为规则
     system_prompt = """
@@ -192,7 +195,7 @@ def customer_service(query, history=[]):
     #   messages：消息列表
     #   temperature：控制输出的随机性（0-2），越低越确定
     response = client.chat.completions.create(
-        model="gpt-4o-mini",  # 使用GPT-3.5-turbo模型
+        model="gpt-5-mini",  # 使用gpt-5-mini模型
         messages=messages,
         temperature=0.3  # 客服场景需要稳定输出，使用较低的temperature
     )
@@ -246,7 +249,7 @@ def generate_content(topic, content_type="article"):
     
     # 调用Chat Completions API
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[
             # 使用get方法获取对应的提示词，如果不存在则使用默认的article提示词
             {"role": "user", "content": prompts.get(content_type, prompts["article"])}
@@ -310,7 +313,7 @@ def code_assistant(task, code=None):
     
     # 调用Chat Completions API
     response = client.chat.completions.create(
-        model="gpt-4",  # 代码任务建议使用GPT-4，能力更强
+        model="gpt-5-mini",  # 代码任务建议使用能力更强的模型
         messages=[
             # 系统消息：定义AI助手的角色
             {"role": "system", "content": "你是一个专业的Python开发者。"},
@@ -332,7 +335,7 @@ print(explanation)
 ```
 
 **实现要点：**
-- 代码任务建议使用GPT-4，能力更强
+- 代码任务建议使用能力更强的模型（如 gpt-5 / gpt-5.4）
 - 使用低temperature保证代码正确性
 - 明确编程语言和功能需求
 
@@ -372,7 +375,7 @@ def analyze_data(data_description, analysis_type="insight"):
     
     # 调用Chat Completions API
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[
             # 系统消息：定义AI助手的角色
             {"role": "system", "content": "你是一个资深数据分析师。"},
@@ -417,7 +420,7 @@ client = OpenAI(api_key="your-api-key")
 #   temperature：控制输出的随机性（0-2）
 #   max_tokens：最大输出token数
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     messages=[
         # 系统消息：定义AI助手的角色
         {"role": "system", "content": "你是一个有用的助手。"},
@@ -433,7 +436,45 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-### 2. 流式响应
+### 2. Responses API（主力接口）
+
+Responses API 是 OpenAI 2026 年的主力接口：**有状态**（服务端可保存对话状态，用 `previous_response_id` 续写多轮），并**内置常用工具**——`web_search`（联网搜索）、`file_search`（文件检索）、`code_interpreter`（代码执行）。
+
+```python
+# 导入OpenAI库
+from openai import OpenAI
+
+# 创建OpenAI客户端实例
+client = OpenAI(api_key="your-api-key")
+
+# 内置 web_search 工具：模型自动联网检索并标注来源
+# client.responses.create()：创建 Responses API 请求
+# 参数：
+#   model：使用的模型名称
+#   input：输入内容（支持消息列表）
+#   tools：启用的内置工具列表
+response = client.responses.create(
+    model="gpt-5-mini",
+    input=[
+        {"role": "user", "content": "OpenAI 最近发布了哪些新模型？请给出信息来源。"}
+    ],
+    tools=[{"type": "web_search"}]
+)
+
+# response.output_text：直接获取最终文本输出
+print(response.output_text)
+```
+
+**Responses vs Chat Completions 如何选？**
+
+| 场景 | 推荐 |
+|------|------|
+| 需要联网搜索、文件检索、代码执行等内置能力 | Responses API |
+| 多轮对话不想自己维护 messages 历史 | Responses API（有状态） |
+| 需要兼容大量第三方库/自建框架（LangChain 等） | Chat Completions |
+| 只做简单的无状态补全、成本敏感 | 两者皆可，Chat Completions 生态更成熟 |
+
+### 3. 流式响应
 ```python
 # 导入OpenAI库
 from openai import OpenAI
@@ -446,7 +487,7 @@ client = OpenAI(api_key="your-api-key")
 # 流式响应：模型生成内容时逐步返回，而不是一次性返回全部内容
 # 优点：提升用户体验，减少等待时间
 stream = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     messages=[
         {"role": "user", "content": "写一个关于人工智能的故事"}
     ],
@@ -465,7 +506,7 @@ for chunk in stream:
         print(chunk.choices[0].delta.content, end="")
 ```
 
-### 3. Function Calling
+### 4. Tool Calling（函数调用）
 ```python
 # 导入OpenAI库和json模块
 from openai import OpenAI
@@ -474,58 +515,65 @@ import json
 # 创建OpenAI客户端实例
 client = OpenAI(api_key="your-api-key")
 
-# 定义函数（Function Calling）
-# functions参数：定义模型可以调用的函数列表
-functions = [
+# 定义工具（使用tools参数，替代旧的functions参数）
+tools = [
     {
-        "name": "get_weather",  # 函数名称
-        "description": "获取指定城市的天气信息",  # 函数描述
-        "parameters": {  # 函数参数定义
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "城市名称，如：北京"
+        "type": "function",
+        "function": {
+            "name": "get_weather",  # 函数名称
+            "description": "获取指定城市的天气信息",  # 函数描述
+            "parameters": {  # 函数参数定义
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "城市名称，如：北京"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "enum": ["celsius", "fahrenheit"],  # 枚举值
+                        "description": "温度单位"
+                    }
                 },
-                "unit": {
-                    "type": "string",
-                    "enum": ["celsius", "fahrenheit"],  # 枚举值
-                    "description": "温度单位"
-                }
-            },
-            "required": ["location"]  # 必需的参数
+                "required": ["location"]  # 必需的参数
+            }
         }
     }
 ]
 
 # 调用API
-# functions参数：传入函数定义
-# function_call参数：控制函数调用行为
-# "auto"：模型自动决定是否调用函数
+# tools参数：传入工具定义
+# tool_choice参数：控制工具调用行为
+# "auto"：模型自动决定是否调用工具
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     messages=[
         {"role": "user", "content": "北京今天天气怎么样？"}
     ],
-    functions=functions,
-    function_call="auto"
+    tools=tools,
+    tool_choice="auto"
 )
 
-# 处理函数调用
+# 处理工具调用
 message = response.choices[0].message
 
-# 检查模型是否决定调用函数
-if message.function_call:
+# 检查模型是否决定调用工具
+if message.tool_calls:
+    tool_call = message.tool_calls[0]
     # 获取函数名称
-    function_name = message.function_call.name
+    function_name = tool_call.function.name
     # 获取函数参数（JSON字符串）
     # json.loads()：将JSON字符串解析为Python字典
-    arguments = json.loads(message.function_call.arguments)
+    arguments = json.loads(tool_call.function.arguments)
     print(f"调用函数: {function_name}")
     print(f"参数: {arguments}")
 ```
 
-### 4. Embeddings API
+::: warning 旧写法对照
+旧的 `functions=` / `function_call="auto"` 参数已弃用，统一改用 `tools=` + `tool_choice="auto"`；模型返回的调用信息也从 `message.function_call` 变为 `message.tool_calls` 列表。
+:::
+
+### 5. Embeddings API
 ```python
 # 导入OpenAI库
 from openai import OpenAI
@@ -540,7 +588,7 @@ client = OpenAI(api_key="your-api-key")
 #   input：要嵌入的文本
 # 返回值：包含嵌入向量的响应对象
 response = client.embeddings.create(
-    model="text-embedding-ada-002",  # 使用Ada 002嵌入模型
+    model="text-embedding-3-small",  # 推荐使用3-small（ada-002已过时）
     input="这是一段测试文本"
 )
 
@@ -554,7 +602,7 @@ print(f"嵌入维度: {len(embedding)}")  # 嵌入向量的维度
 print(f"前5个值: {embedding[:5]}")  # 嵌入向量的前5个值
 ```
 
-### 5. 图像生成API
+### 6. 图像生成API
 ```python
 # 导入OpenAI库
 from openai import OpenAI
@@ -571,7 +619,7 @@ client = OpenAI(api_key="your-api-key")
 #   quality：图像质量
 #   n：生成图像的数量
 response = client.images.generate(
-    model="dall-e-3",  # 使用DALL-E 3模型
+    model="dall-e-3",  # dall-e-3 仍可用；图像模型迭代快，以官方模型页为准
     prompt="一只可爱的猫咪在花园里玩耍",  # 图像描述
     size="1024x1024",  # 图像尺寸：1024x1024像素
     quality="standard",  # 图像质量：标准
@@ -607,7 +655,7 @@ messages = [
 # 调用Chat Completions API
 # 传入完整的对话历史，模型会根据历史上下文生成回答
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     messages=messages
 )
 
@@ -649,7 +697,7 @@ class MovieReview(BaseModel):
 # response_format参数：指定输出格式
 # {"type": "json_object"}：要求模型以JSON格式输出
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     messages=[
         {"role": "system", "content": "你是一个电影评论家。请以JSON格式输出电影评论。"},
         {"role": "user", "content": "请评论电影《流浪地球》"}
@@ -682,7 +730,7 @@ client = OpenAI(api_key="your-api-key")
 try:
     # 调用Chat Completions API
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": "你好！"}]
     )
     # 获取模型生成的回答

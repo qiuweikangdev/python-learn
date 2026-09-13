@@ -1,8 +1,13 @@
 # ChatDev详解
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 ChatDev是一个基于角色的虚拟软件公司框架，模拟真实的软件开发团队。它通过角色扮演和对话协作，实现高效的软件开发。
+
+::: warning 项目状态（2026-09）
+ChatDev 是 2023 年由 OpenBMB 推出的早期探索项目，具历史价值；它是**开源项目而非 pip 库**（需克隆仓库运行），更新放缓，更适合教学演示。生产环境的多 Agent 协作建议使用 LangGraph、CrewAI 等。
 
 ## 核心概念
 
@@ -101,89 +106,37 @@ export OPENAI_API_KEY="your-api-key"
 
 ### 2. 基础使用示例
 ```bash
-# 运行ChatDev
+# 运行ChatDev（模型通过仓库内的模型配置选择，可用 --model 指定，取值以仓库 ModelConfig 为准；
+# 建议在配置中指向较新的模型，如 gpt-5-mini 系列）
 python run.py \
   --task "开发一个待办事项应用" \
-  --name "TodoAppCompany" \
-  --model "GPT_3_5_TURBO"
+  --name "TodoAppCompany"
 ```
 
 ### 3. 自定义开发流程
-```python
-from chatdev import ChatDev
 
-# 创建ChatDev实例
-chatdev = ChatDev(
-    company_name="MyCompany",
-    task="开发一个博客系统"
-)
+ChatDev 主要通过 **CLI + 配置文件**驱动，不提供稳定的 Python 库 API（`from chatdev import ChatDev` 之类的写法不可用）。自定义流程的官方方式是修改 `company_config/` 下的配置：
 
-# 自定义开发流程
-chatdev.set_phases([
-    "demand_analysis",  # 需求分析
-    "system_design",    # 系统设计
-    "code_writing",     # 代码编写
-    "code_review",      # 代码审查
-    "testing",          # 测试
-    "deployment"        # 部署
-])
+- `ChatChainConfig.json`：定义对话链的阶段与顺序
+- `PhaseConfig.json`：定义每个阶段（Phase）的提示词与角色分工
+- `RoleConfig.json`：定义角色（CEO、CTO、Programmer 等）的提示词
 
-# 运行开发流程
-chatdev.run()
+用 `--config`、`--phase` 参数指定自定义配置目录即可：
+
+```bash
+python run.py \
+  --task "开发一个博客系统" \
+  --name "BlogCompany" \
+  --config "company_config/custom"   # 自定义的对话链/阶段/角色配置
 ```
 
 ### 4. 角色协作
-```python
-from chatdev import Role, ChatChain
 
-# 定义角色
-ceo = Role(
-    name="CEO",
-    profile="负责项目决策和管理",
-    skills=["决策", "沟通", "协调"]
-)
-
-programmer = Role(
-    name="Programmer",
-    profile="负责代码实现",
-    skills=["Python", "JavaScript", "数据库"]
-)
-
-# 创建对话链
-chat_chain = ChatChain(
-    roles=[ceo, programmer],
-    task="开发一个Web应用"
-)
-
-# 运行对话链
-chat_chain.run()
-```
+角色协作由"对话链"自动驱动：CEO 提出需求 → CTO 拆解设计 → 程序员写代码 → 测试员审查，全部通过双 Agent 对话完成，产物（文档、代码）落在 `WareHouse` 目录。想调整角色能力，编辑 `RoleConfig.json` 中对应角色的 `system_prompt` 即可。
 
 ### 5. 文档生成
-```python
-from chatdev import DocumentGenerator
 
-# 创建文档生成器
-doc_generator = DocumentGenerator()
-
-# 生成需求文档
-requirements = doc_generator.generate_requirements(
-    task="开发一个博客系统",
-    roles=["CEO", "Programmer"]
-)
-
-# 生成设计文档
-design = doc_generator.generate_design(
-    requirements=requirements,
-    roles=["CTO", "Programmer"]
-)
-
-# 生成代码文档
-code_docs = doc_generator.generate_code_docs(
-    design=design,
-    roles=["Programmer"]
-)
-```
+文档生成是流程的副产品：每个阶段结束都会产出对应文档（需求文档、设计文档、代码文档），保存在 `WareHouse/<公司名>_默认套件/` 下，无需单独调用"文档生成器"。
 
 ## 最佳实践
 

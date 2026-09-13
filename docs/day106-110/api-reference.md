@@ -1,5 +1,7 @@
 # LangChain API参考手册
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 本章提供LangChain框架的详细API参考，包括核心模块、类和方法的说明。
@@ -69,9 +71,9 @@ OpenAI模型集成模块。
 ```python
 from langchain_openai import ChatOpenAI, OpenAI, OpenAIEmbeddings
 
-# ChatOpenAI
+# ChatOpenAI：OpenAI聊天模型（推荐）
 chat_model = ChatOpenAI(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     temperature=0.7,
     api_key="your-api-key",
     max_tokens=1000,
@@ -79,16 +81,17 @@ chat_model = ChatOpenAI(
     max_retries=2
 )
 
-# OpenAI (旧版)
+# OpenAI：文本补全模型类（遗留接口）
+# 新代码请优先使用 ChatOpenAI / ChatAnthropic 等对话模型
 llm = OpenAI(
-    model="gpt-4o-mini-instruct",
+    model="gpt-5-mini",
     temperature=0.7,
     api_key="your-api-key"
 )
 
 # OpenAIEmbeddings
 embeddings = OpenAIEmbeddings(
-    model="text-embedding-ada-002",
+    model="text-embedding-3-small",
     api_key="your-api-key"
 )
 ```
@@ -97,7 +100,7 @@ embeddings = OpenAIEmbeddings(
 ```python
 from langchain_openai import ChatOpenAI
 
-chat = ChatOpenAI(model="gpt-4o-mini")
+chat = ChatOpenAI(model="gpt-5-mini")
 
 # 同步调用
 response = chat.invoke("你好！")
@@ -119,7 +122,7 @@ Anthropic模型集成模块。
 from langchain_anthropic import ChatAnthropic
 
 chat = ChatAnthropic(
-    model="claude-3-sonnet-20240229",
+    model="claude-sonnet-4-5",
     temperature=0.7,
     api_key="your-api-key",
     max_tokens=1000,
@@ -151,14 +154,19 @@ documents = loader.load()
 ```
 
 #### 向量存储
+向量库已拆分为独立集成包，按需安装：`langchain-chroma`、`langchain-pinecone`、`langchain-qdrant`、`langchain-weaviate`、`langchain-milvus`（FAISS 与 pgvector 仍在 `langchain-community` 中）。
 ```python
-from langchain_community.vectorstores import (
-    Chroma,        # Chroma向量存储
-    FAISS,         # FAISS向量存储
-    Pinecone,      # Pinecone向量存储
-    Weaviate,      # Weaviate向量存储
-    Milvus         # Milvus向量存储
-)
+# Chroma：pip install langchain-chroma
+from langchain_chroma import Chroma
+
+# Pinecone：pip install langchain-pinecone
+from langchain_pinecone import PineconeVectorStore
+
+# Qdrant：pip install langchain-qdrant
+from langchain_qdrant import QdrantVectorStore
+
+# FAISS：仍在 langchain-community，pip install langchain-community faiss-cpu
+from langchain_community.vectorstores import FAISS
 
 # Chroma
 vectorstore = Chroma.from_documents(
@@ -207,23 +215,43 @@ chunks = splitter.split_documents(documents)
 ### 6. langchain.agents
 代理模块。
 
-#### 代理创建
+#### 代理创建（1.x）
 ```python
-from langchain.agents import (
-    AgentExecutor,
-    create_openai_tools_agent,
-    create_react_agent,
-    create_structured_chat_agent
-)
+# 导入1.x标准Agent构造函数
+from langchain.agents import create_agent
 
-# OpenAI Tools Agent
+# create_agent()：基于 LangGraph 运行时的标准 Agent 构造方式
+# 取代了 0.x 的 AgentExecutor + create_openai_tools_agent 组合
+agent = create_agent(llm, tools, system_prompt="你是一个有用的助手。")
+
+# 执行：输入输出均为消息列表
+result = agent.invoke(
+    {"messages": [{"role": "user", "content": "北京天气怎么样？"}]}
+)
+print(result["messages"][-1].content)
+
+# langgraph.prebuilt.create_react_agent 仍然可用（旧版 LangGraph 代码兼容）
+from langgraph.prebuilt import create_react_agent
+
+react_agent = create_react_agent(llm, tools)
+```
+
+::: warning 旧写法对照（0.x）
+`AgentExecutor`、`initialize_agent`、`create_openai_tools_agent`、`create_structured_chat_agent` 等已从 `langchain` 主包移除，迁入兼容包 `langchain-classic`（仅为维护旧代码存在，新代码禁止使用）：
+
+```python
+# ❌ 旧写法（仅存在于 langchain-classic）
+from langchain.agents import AgentExecutor, create_openai_tools_agent
 agent = create_openai_tools_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools)
 
-# ReAct Agent
-agent = create_react_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools)
+# ✅ 新写法（1.x）
+from langchain.agents import create_agent
+agent = create_agent(llm, tools)
 ```
+
+迁移指南：<https://docs.langchain.com/oss/python/migrate/langchain-v1>
+:::
 
 #### 工具定义
 ```python
@@ -235,11 +263,17 @@ from langchain_core.tools import Tool
 def search(query: str) -> str:
     """搜索互联网"""
     return f"搜索结果: {query}"
+```
 
+::: warning eval() 的安全风险
+`eval()` 会执行任意 Python 代码。当工具输入来自用户或模型输出时，可能被注入恶意表达式。下方示例仅为本地演示，生产环境请改用 `ast.literal_eval` 或 `simpleeval` 等受限求值方案。
+:::
+
+```python
 # StructuredTool
 def calculate(expression: str) -> str:
     """计算数学表达式"""
-    return str(eval(expression))
+    return str(eval(expression))  # 仅演示用，生产环境禁止
 
 calculator = StructuredTool.from_function(
     func=calculate,
@@ -259,72 +293,94 @@ processor = Tool(
 )
 ```
 
-### 7. langchain.memory
-记忆模块。
+### 7. 记忆：checkpointer 与 thread_id
+1.x 中记忆由 LangGraph checkpointer 统一管理，不再使用 `langchain.memory.*`。
 
-#### 记忆类型
+::: warning 旧写法对照（0.x）
+`ConversationBufferMemory`、`ConversationSummaryMemory`、`ConversationBufferWindowMemory`、`ConversationSummaryBufferMemory` 已从主包移除，迁入兼容包 `langchain-classic`（仅为维护旧代码存在，新代码禁止使用）。能力对应关系：
+
+| 0.x 记忆类 | 1.x 等效方案 |
+| --- | --- |
+| `ConversationBufferMemory` | checkpointer 默认保留完整消息历史 |
+| `ConversationBufferWindowMemory` | 自定义状态/提示中裁剪历史（保留最近 k 条） |
+| `ConversationSummaryMemory` | 定期用 LLM 摘要后覆盖旧历史 |
+
+:::
+
+#### 现行写法
 ```python
-from langchain.memory import (
-    ConversationBufferMemory,
-    ConversationSummaryMemory,
-    ConversationBufferWindowMemory,
-    ConversationSummaryBufferMemory
+# 安装：uv add langgraph
+from langgraph.checkpoint.memory import InMemorySaver
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+
+# InMemorySaver：内存检查点，适合开发测试
+# 生产环境可换用 SqliteSaver / PostgresSaver
+checkpointer = InMemorySaver()
+
+agent = create_agent(
+    ChatOpenAI(model="gpt-5-mini"),
+    tools=[],
+    checkpointer=checkpointer,
 )
 
-# ConversationBufferMemory
-memory = ConversationBufferMemory(
-    return_messages=True,
-    memory_key="history"
-)
+# thread_id：标识一个会话线程，同一 thread_id 自动共享消息历史
+config = {"configurable": {"thread_id": "user-001"}}
 
-# ConversationSummaryMemory
-memory = ConversationSummaryMemory(
-    llm=ChatOpenAI(model="gpt-4o-mini"),
-    return_messages=True,
-    memory_key="history"
+response = agent.invoke(
+    {"messages": [{"role": "user", "content": "你好，我叫小明"}]},
+    config=config,
 )
+print(response["messages"][-1].content)
 
-# ConversationBufferWindowMemory
-memory = ConversationBufferWindowMemory(
-    k=10,
-    return_messages=True,
-    memory_key="history"
+# 第二轮对话（同一个 thread_id，模型记得上下文）
+response = agent.invoke(
+    {"messages": [{"role": "user", "content": "我叫什么名字？"}]},
+    config=config,
 )
+print(response["messages"][-1].content)  # 回答"小明"
 ```
 
-### 8. langchain.chains
-链模块。
+### 8. 链：LCEL 常用组合
+1.x 中链统一使用 LCEL 管道语法，`langchain.chains` 中的链类已全部移除。
 
-#### 链类型
+::: warning 旧写法对照（0.x）
+`LLMChain`、`ConversationChain`、`SequentialChain`、`TransformChain` 已从主包移除，迁入兼容包 `langchain-classic`（仅为维护旧代码存在，新代码禁止使用）。对应关系：
+
+| 0.x 链类 | 1.x LCEL 等效写法 |
+| --- | --- |
+| `LLMChain(llm, prompt)` | `prompt \| model \| parser` |
+| `ConversationChain` | LCEL + checkpointer/消息历史 |
+| `SequentialChain` | 用 `\|` 直接串联多个 Runnable |
+| `TransformChain` | `RunnableLambda(func)` |
+
+:::
+
+#### 现行写法
 ```python
-from langchain.chains import (
-    LLMChain,
-    ConversationChain,
-    SequentialChain,
-    TransformChain
-)
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 
-# LLMChain
-chain = LLMChain(
-    llm=ChatOpenAI(model="gpt-4o-mini"),
-    prompt=prompt,
-    verbose=True
-)
+model = ChatOpenAI(model="gpt-5-mini")
 
-# ConversationChain
-conversation = ConversationChain(
-    llm=ChatOpenAI(model="gpt-4o-mini"),
-    memory=ConversationBufferMemory(),
-    verbose=True
+# 基础组合：提示 -> 模型 -> 解析（等效旧 LLMChain）
+chain = (
+    ChatPromptTemplate.from_messages([
+        ("system", "你是一个{role}。"),
+        ("user", "{input}")
+    ])
+    | model
+    | StrOutputParser()
 )
+result = chain.invoke({"role": "程序员", "input": "解释什么是递归"})
 
-# SequentialChain
-chain = SequentialChain(
-    chains=[chain1, chain2],
-    input_variables=["input"],
-    output_variables=["output"],
-    verbose=True
-)
+# 数据转换（等效旧 TransformChain）：用 RunnableLambda 包裹普通函数
+normalize = RunnableLambda(lambda x: x.strip().lower())
+
+# 顺序组合（等效旧 SequentialChain）：直接用管道串联
+pipeline = normalize | chain
 ```
 
 ## 常用方法
@@ -378,7 +434,7 @@ results = vectorstore.max_marginal_relevance_search(query, k=5)
 ### 1. 模型配置
 ```python
 model = ChatOpenAI(
-    model="gpt-4o-mini",           # 模型名称
+    model="gpt-5-mini",              # 模型名称
     temperature=0.7,                  # 温度参数
     max_tokens=1000,                  # 最大token数
     timeout=30,                       # 超时时间
@@ -404,16 +460,19 @@ chain = (
 
 ### 3. 代理配置
 ```python
-agent_executor = AgentExecutor(
-    agent=agent,
-    tools=tools,
-    verbose=True,                    # 详细输出
-    max_iterations=10,               # 最大迭代次数
-    max_execution_time=60,           # 最大执行时间
-    handle_parsing_errors=True,      # 处理解析错误
-    return_intermediate_steps=True   # 返回中间步骤
+# create_agent 的常用配置参数
+agent = create_agent(
+    model,                               # 语言模型（实例或 "openai:gpt-5-mini" 字符串）
+    tools,                               # 工具列表
+    system_prompt="你是一个有用的助手。",  # 系统提示，定义Agent行为
+    checkpointer=InMemorySaver(),        # LangGraph 检查点，提供多轮记忆
 )
 ```
+
+::: warning 旧写法对照（0.x）
+旧版 `AgentExecutor` 的 `verbose`、`max_iterations`、`max_execution_time`、`handle_parsing_errors`、`return_intermediate_steps` 等参数已随 `AgentExecutor` 移除（仅存在于 `langchain-classic`）。1.x 对应方案：执行观测用 LangSmith / LangGraph Studio；迭代上限由运行时内置；中间步骤包含在结果 `messages` 中。
+
+:::
 
 ## 错误处理
 

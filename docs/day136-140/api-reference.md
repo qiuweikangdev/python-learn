@@ -1,5 +1,7 @@
 # Deep-Agent API参考手册
 
+> **版本基线**：本章"Deep-Agent"为"深度学习 + Agent"的学术视角，代码基于 PyTorch，更新于 2026-09。
+
 ## 概述
 
 本章提供Deep-Agent框架的详细API参考，包括核心模块、类和方法的说明。

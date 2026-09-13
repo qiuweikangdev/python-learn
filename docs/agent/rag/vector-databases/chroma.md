@@ -1,5 +1,7 @@
 # Chroma详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
 ## 概述
 
 Chroma是一个轻量级、开源的向量数据库，专为AI应用设计。它以简单易用著称，支持嵌入式部署和客户端-服务器模式，是原型开发和小规模应用的理想选择。
@@ -23,8 +25,8 @@ Chroma是一个轻量级、开源的向量数据库，专为AI应用设计。它
 # 基础安装
 pip install chromadb
 
-# 带依赖的安装
-pip install chromadb --extra-index-url https://chroma-downloads.s3.amazonaws.com/latest
+# LangChain 集成包（1.x 起为官方独立集成包）
+pip install langchain-chroma
 ```
 
 ### 配置选项
@@ -241,9 +243,11 @@ collection.delete(
 ### 基础集成
 
 ```python
-from langchain_community.vectorstores import Chroma
+# 1.x：Chroma 已拆分到官方独立集成包 langchain-chroma
+# 旧写法（已废弃）：from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
 
 # 加载文档
@@ -258,7 +262,7 @@ text_splitter = RecursiveCharacterTextSplitter(
 docs = text_splitter.split_documents(documents)
 
 # 创建向量存储
-embeddings = OpenAIEmbeddings()
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 vectorstore = Chroma.from_documents(
     documents=docs,
     embedding=embeddings,
@@ -276,10 +280,11 @@ for doc in results:
 ### 高级用法
 
 ```python
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import LLMChainExtractor
+# 1.x：旧版检索器已迁移到 langchain-classic 包
+from langchain_classic.retrievers import ContextualCompressionRetriever
+from langchain_classic.retrievers.document_compressors import LLMChainExtractor
 
 # 创建带过滤的检索器
 retriever = vectorstore.as_retriever(
@@ -368,15 +373,17 @@ all_collection = client.create_collection("all_docs")
 ### 2. 持久化策略
 
 ```python
-# 定期持久化
+# 数据持久化说明
+# Chroma 自 0.4 版本起自动持久化数据（写入 ./chroma 数据目录），
+# 早期版本的 client.persist() 方法已被移除，无需也不应再手动调用。
+
 import time
 
-def periodic_persist(client, interval=300):
-    """定期持久化"""
+def periodic_backup_note(interval=300):
+    """如需异地备份，定期拷贝持久化目录或使用 Chroma 云端服务"""
     while True:
         time.sleep(interval)
-        client.persist()
-        print(f"数据已持久化: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"提示：如需备份，请拷贝持久化目录: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 ```
 
 ### 3. 错误处理

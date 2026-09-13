@@ -1,5 +1,7 @@
 # Pinecone详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
 ## 概述
 
 Pinecone是全托管的云原生向量数据库，专为机器学习应用设计。它以零运维、自动扩展和易用性著称，是快速上线生产环境的理想选择。
@@ -26,22 +28,24 @@ Pinecone是全托管的云原生向量数据库，专为机器学习应用设计
 ### Python客户端安装
 
 ```bash
-pip install pinecone-client
+# 包名已从 pinecone-client 更名为 pinecone
+pip install pinecone
+
+# LangChain 集成包（1.x 起为官方独立集成包）
+pip install langchain-pinecone
 ```
 
 ### 初始化配置
 
 ```python
-import pinecone
+import os
+from pinecone import Pinecone
 
-# 初始化Pinecone
-pinecone.init(
-    api_key="your-api-key",
-    environment="us-east1-aws"  # 或 gcp-starter, us-west1-gcp 等
-)
+# 新版 SDK：不再使用 pinecone.init()，改为实例化 Pinecone 客户端
+pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
 
-# 查看环境
-print(pinecone.list_indexes())
+# 查看索引列表
+print(pc.list_indexes())
 ```
 
 ## 核心API详解
@@ -49,38 +53,40 @@ print(pinecone.list_indexes())
 ### 1. 索引管理
 
 ```python
-import pinecone
+import os
+from pinecone import Pinecone, ServerlessSpec
 
-# 创建索引
-pinecone.create_index(
+pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+
+# 创建索引（新版默认推荐 Serverless）
+pc.create_index(
     name="documents",
     dimension=768,           # 向量维度
     metric="cosine",         # 距离度量: cosine, euclidean, dotproduct
-    pods=1,                  # Pod数量
-    replicas=1,              # 副本数
-    pod_type="p1.x1"         # Pod类型
+    spec=ServerlessSpec(
+        cloud="aws",
+        region="us-east-1"
+    )
 )
 
 # 列出所有索引
-indexes = pinecone.list_indexes()
+indexes = pc.list_indexes()
 print(f"索引列表: {indexes}")
 
 # 获取索引信息
-index_info = pinecone.describe_index("documents")
+index_info = pc.describe_index("documents")
 print(f"维度: {index_info.dimension}")
 print(f"度量: {index_info.metric}")
 
 # 删除索引
-pinecone.delete_index("documents")
+pc.delete_index("documents")
 ```
 
 ### 2. 连接索引
 
 ```python
-import pinecone
-
 # 连接到索引
-index = pinecone.Index("documents")
+index = pc.Index("documents")
 
 # 获取索引统计
 stats = index.describe_index_stats()
@@ -227,39 +233,41 @@ results = index.query(
 
 # 或使用async进行并发查询
 import asyncio
-from pinecone import AsyncioClient
+import os
+# 异步支持需要额外安装：pip install "pinecone[asyncio]"
+from pinecone import Pinecone
+
+pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
 
 async def batch_query(vectors, top_k=5):
     """批量并发查询"""
-    async with AsyncioClient() as client:
-        index = client.Index("documents")
-        
-        tasks = [
-            index.query(vector=v, top_k=top_k)
-            for v in vectors
-        ]
-        
-        results = await asyncio.gather(*tasks)
-        return results
+    async_index = pc.IndexAsyncio("documents")
+
+    tasks = [
+        async_index.query(vector=v, top_k=top_k)
+        for v in vectors
+    ]
+
+    results = await asyncio.gather(*tasks)
+    await async_index.close()
+    return results
 ```
 
 ## 与LangChain集成
 
 ```python
-from langchain_community.vectorstores import Pinecone
+import os
+from langchain_pinecone import PineconeVectorStore
 from langchain_openai import OpenAIEmbeddings
-import pinecone
+from pinecone import Pinecone
 
-# 初始化Pinecone
-pinecone.init(
-    api_key="your-api-key",
-    environment="us-east1-aws"
-)
+# 初始化Pinecone客户端（替代旧的 pinecone.init()）
+pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
 
 # 创建向量存储
-embeddings = OpenAIEmbeddings()
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
-vectorstore = Pinecone.from_documents(
+vectorstore = PineconeVectorStore.from_documents(
     documents=docs,
     embedding=embeddings,
     index_name="documents",
@@ -267,7 +275,7 @@ vectorstore = Pinecone.from_documents(
 )
 
 # 或从现有索引加载
-vectorstore = Pinecone.from_existing_index(
+vectorstore = PineconeVectorStore.from_existing_index(
     index_name="documents",
     embedding=embeddings,
     namespace="production"

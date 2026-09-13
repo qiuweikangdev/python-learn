@@ -1,5 +1,7 @@
 # LangChain API参考手册
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 本章提供LangChain框架的详细API参考，包括核心模块、类和方法的说明。
@@ -95,14 +97,14 @@ from langchain_openai import ChatOpenAI, OpenAI, OpenAIEmbeddings
 
 # ChatOpenAI：OpenAI聊天模型
 # 参数说明：
-#   model：模型名称，如"gpt-4o-mini"、"gpt-4"
+#   model：模型名称，如"gpt-5-mini"、"gpt-4o"
 #   temperature：控制输出随机性，0-2之间
 #   api_key：OpenAI API密钥
 #   max_tokens：最大输出token数
 #   timeout：请求超时时间（秒）
 #   max_retries：最大重试次数
 chat_model = ChatOpenAI(
-    model="gpt-4o-mini",  # 使用GPT-3.5-turbo模型
+    model="gpt-5-mini",  # 使用gpt-5-mini模型
     temperature=0.7,  # 中等随机性
     api_key="your-api-key",  # API密钥
     max_tokens=1000,  # 最大输出1000个token
@@ -110,10 +112,11 @@ chat_model = ChatOpenAI(
     max_retries=2  # 最多重试2次
 )
 
-# OpenAI：OpenAI文本补全模型（旧版）
-# 适用于文本补全任务
+# OpenAI：文本补全模型类（遗留接口）
+# 注意：OpenAI 补全类属于遗留接口，新代码请优先使用
+# ChatOpenAI / ChatAnthropic 等对话模型
 llm = OpenAI(
-    model="gpt-4o-mini-instruct",  # 使用instruct模型
+    model="gpt-5-mini",  # 使用gpt-5-mini（对话模型走 ChatOpenAI 更佳）
     temperature=0.7,
     api_key="your-api-key"
 )
@@ -124,7 +127,7 @@ llm = OpenAI(
 #   model：嵌入模型名称
 #   api_key：OpenAI API密钥
 embeddings = OpenAIEmbeddings(
-    model="text-embedding-ada-002",  # 使用Ada 002模型
+    model="text-embedding-3-small",  # 使用 text-embedding-3-small 模型
     api_key="your-api-key"
 )
 ```
@@ -135,7 +138,7 @@ embeddings = OpenAIEmbeddings(
 from langchain_openai import ChatOpenAI
 
 # 创建模型实例
-chat = ChatOpenAI(model="gpt-4o-mini")
+chat = ChatOpenAI(model="gpt-5-mini")
 
 # 同步调用
 # invoke()：发送请求并获取完整响应
@@ -170,14 +173,14 @@ from langchain_anthropic import ChatAnthropic
 # 创建Anthropic模型实例
 # ChatAnthropic：Anthropic Claude模型的LangChain封装
 # 参数说明：
-#   model：模型名称，如"claude-3-sonnet-20240229"
+#   model：模型名称，如"claude-sonnet-4-5"
 #   temperature：控制输出随机性
 #   api_key：Anthropic API密钥
 #   max_tokens：最大输出token数
 #   timeout：请求超时时间
 #   max_retries：最大重试次数
 chat = ChatAnthropic(
-    model="claude-3-sonnet-20240229",  # 使用Claude 3 Sonnet模型
+    model="claude-sonnet-4-5",  # 使用Claude Sonnet 4.5模型
     temperature=0.7,
     api_key="your-api-key",
     max_tokens=1000,
@@ -216,15 +219,19 @@ documents = loader.load()
 ```
 
 #### 向量存储
+向量库已拆分为独立集成包，按需安装：`langchain-chroma`、`langchain-pinecone`、`langchain-qdrant`、`langchain-weaviate`、`langchain-milvus`（FAISS 与 pgvector 仍在 `langchain-community` 中）。
 ```python
-# 导入向量存储
-from langchain_community.vectorstores import (
-    Chroma,        # Chroma向量存储：轻量级，适合开发和测试
-    FAISS,         # FAISS向量存储：Facebook的向量搜索库，性能优秀
-    Pinecone,      # Pinecone向量存储：云服务，适合生产环境
-    Weaviate,      # Weaviate向量存储：开源向量数据库
-    Milvus         # Milvus向量存储：开源向量数据库，适合大规模数据
-)
+# Chroma：pip install langchain-chroma
+from langchain_chroma import Chroma
+
+# Pinecone：pip install langchain-pinecone
+from langchain_pinecone import PineconeVectorStore
+
+# Qdrant：pip install langchain-qdrant
+from langchain_qdrant import QdrantVectorStore
+
+# FAISS：仍在 langchain-community，pip install langchain-community faiss-cpu
+from langchain_community.vectorstores import FAISS
 
 # Chroma向量存储
 # Chroma.from_documents()：从文档创建向量存储
@@ -288,34 +295,48 @@ chunks = splitter.split_documents(documents)
 ### 6. langchain.agents
 代理模块。
 
-#### 代理创建
+#### 代理创建（1.x）
 ```python
-# 导入代理相关模块
-from langchain.agents import (
-    AgentExecutor,  # Agent执行器：管理Agent的执行循环
-    create_openai_tools_agent,  # 创建OpenAI工具Agent
-    create_react_agent,  # 创建ReAct Agent
-    create_structured_chat_agent  # 创建结构化聊天Agent
-)
+# 导入1.x标准Agent构造函数
+from langchain.agents import create_agent
 
-# OpenAI Tools Agent
-# create_openai_tools_agent()：创建支持OpenAI工具调用的Agent
+# create_agent()：基于 LangGraph 运行时的标准 Agent 构造方式
+# 取代了 0.x 的 AgentExecutor + create_openai_tools_agent 组合
 # 参数：
-#   llm：语言模型
+#   model：语言模型（模型实例或 "openai:gpt-5-mini" 形式的字符串）
 #   tools：工具列表
-#   prompt：提示模板
-agent = create_openai_tools_agent(llm, tools, prompt)
+#   system_prompt：系统提示（可选），定义Agent行为
+agent = create_agent(llm, tools, system_prompt="你是一个有用的助手。")
 
-# AgentExecutor：Agent执行器
-# 管理Agent的执行循环，包括工具调用和结果处理
-agent_executor = AgentExecutor(agent=agent, tools=tools)
+# 执行：输入输出均为消息列表
+result = agent.invoke(
+    {"messages": [{"role": "user", "content": "北京天气怎么样？"}]}
+)
+print(result["messages"][-1].content)
 
-# ReAct Agent
-# create_react_agent()：创建ReAct Agent
-# ReAct：Reasoning and Acting，推理和行动
-agent = create_react_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools)
+# langgraph.prebuilt.create_react_agent 仍然可用（旧版 LangGraph 代码兼容）
+# 新项目推荐统一使用 langchain.agents.create_agent
+from langgraph.prebuilt import create_react_agent
+
+react_agent = create_react_agent(llm, tools)
 ```
+
+::: warning 旧写法对照（0.x）
+`AgentExecutor`、`initialize_agent`、`create_openai_tools_agent` 等已从 `langchain` 主包移除，迁入兼容包 `langchain-classic`（仅为维护旧代码存在，新代码禁止使用）：
+
+```python
+# ❌ 旧写法（仅存在于 langchain-classic）
+from langchain.agents import AgentExecutor, create_openai_tools_agent
+agent = create_openai_tools_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools)
+
+# ✅ 新写法（1.x）
+from langchain.agents import create_agent
+agent = create_agent(llm, tools)
+```
+
+迁移指南：<https://docs.langchain.com/oss/python/migrate/langchain-v1>
+:::
 
 #### 工具定义
 ```python
@@ -344,9 +365,16 @@ def search(query: str) -> str:
 #   func：工具函数
 #   name：工具名称
 #   description：工具描述
+```
+
+::: warning eval() 的安全风险
+`eval()` 会执行任意 Python 代码。当工具输入来自用户或模型输出时，攻击者可注入恶意表达式导致数据泄露或系统被控。下方示例仅为本地演示，生产环境请改用 `ast.literal_eval` 或 `simpleeval` 等受限求值方案。
+:::
+
+```python
 def calculate(expression: str) -> str:
     """计算数学表达式"""
-    return str(eval(expression))
+    return str(eval(expression))  # 仅演示用，生产环境禁止
 
 calculator = StructuredTool.from_function(
     func=calculate,
@@ -370,96 +398,103 @@ processor = Tool(
 )
 ```
 
-### 7. langchain.memory
-记忆模块。
+### 7. 记忆：checkpointer 与 thread_id
+1.x 中记忆由 LangGraph checkpointer 统一管理，不再使用 `langchain.memory.*`。
 
-#### 记忆类型
+::: warning 旧写法对照（0.x）
+`ConversationBufferMemory`、`ConversationSummaryMemory`、`ConversationBufferWindowMemory`、`ConversationSummaryBufferMemory` 等记忆类已从主包移除，迁入兼容包 `langchain-classic`（仅为维护旧代码存在，新代码禁止使用）。下表给出能力对应关系：
+
+| 0.x 记忆类 | 1.x 等效方案 |
+| --- | --- |
+| `ConversationBufferMemory` | checkpointer 默认保留完整消息历史 |
+| `ConversationBufferWindowMemory` | 自定义状态/提示中裁剪历史（保留最近 k 条） |
+| `ConversationSummaryMemory` | 定期用 LLM 摘要后覆盖旧历史 |
+
+:::
+
+#### 现行写法
 ```python
-# 导入记忆模块
-from langchain.memory import (
-    ConversationBufferMemory,  # 对话缓冲记忆：保存完整对话历史
-    ConversationSummaryMemory,  # 对话摘要记忆：保存对话摘要
-    ConversationBufferWindowMemory,  # 对话缓冲窗口记忆：保存最近k轮对话
-    ConversationSummaryBufferMemory  # 对话摘要缓冲记忆：结合摘要和缓冲
+# 安装：uv add langgraph
+from langgraph.checkpoint.memory import InMemorySaver
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+
+# InMemorySaver：内存检查点，适合开发测试
+# 生产环境可换用 SqliteSaver / PostgresSaver（langgraph-checkpoint-*）
+checkpointer = InMemorySaver()
+
+# 通过 checkpointer 参数挂载记忆
+agent = create_agent(
+    ChatOpenAI(model="gpt-5-mini"),
+    tools=[],
+    checkpointer=checkpointer,
 )
 
-# ConversationBufferMemory：对话缓冲记忆
-# 保存完整的对话历史
-# 参数：
-#   return_messages=True：以消息列表形式返回记忆
-#   memory_key：记忆在链中的键名
-memory = ConversationBufferMemory(
-    return_messages=True,
-    memory_key="history"
-)
+# thread_id：标识一个会话线程，同一 thread_id 自动共享消息历史
+config = {"configurable": {"thread_id": "user-001"}}
 
-# ConversationSummaryMemory：对话摘要记忆
-# 使用LLM生成对话摘要，节省token
-# 参数：
-#   llm：用于生成摘要的LLM
-#   return_messages=True：以消息列表形式返回
-#   memory_key：记忆在链中的键名
-memory = ConversationSummaryMemory(
-    llm=ChatOpenAI(model="gpt-4o-mini"),
-    return_messages=True,
-    memory_key="history"
+# 第一轮对话
+response = agent.invoke(
+    {"messages": [{"role": "user", "content": "你好，我叫小明"}]},
+    config=config,
 )
+print(response["messages"][-1].content)
 
-# ConversationBufferWindowMemory：对话缓冲窗口记忆
-# 只保存最近k轮对话
-# 参数：
-#   k：保存的对话轮数
-memory = ConversationBufferWindowMemory(
-    k=10,  # 保存最近10轮对话
-    return_messages=True,
-    memory_key="history"
+# 第二轮对话（同一个 thread_id，模型记得上下文）
+response = agent.invoke(
+    {"messages": [{"role": "user", "content": "我叫什么名字？"}]},
+    config=config,
 )
+print(response["messages"][-1].content)  # 回答"小明"
 ```
 
-### 8. langchain.chains
-链模块。
+### 8. 链：LCEL 常用组合
+1.x 中链统一使用 LCEL 管道语法，`langchain.chains` 中的链类已全部移除。
 
-#### 链类型
+::: warning 旧写法对照（0.x）
+`LLMChain`、`ConversationChain`、`SequentialChain`、`TransformChain` 已从主包移除，迁入兼容包 `langchain-classic`（仅为维护旧代码存在，新代码禁止使用）。对应关系：
+
+| 0.x 链类 | 1.x LCEL 等效写法 |
+| --- | --- |
+| `LLMChain(llm, prompt)` | `prompt \| model \| parser` |
+| `ConversationChain` | LCEL + checkpointer/消息历史 |
+| `SequentialChain` | 用 `\|` 直接串联多个 Runnable |
+| `TransformChain` | `RunnableLambda(func)` |
+
+:::
+
+#### 现行写法
 ```python
-# 导入链模块
-from langchain.chains import (
-    LLMChain,  # LLM链：基础的LLM调用链
-    ConversationChain,  # 对话链：带记忆的对话链
-    SequentialChain,  # 顺序链：多个链顺序执行
-    TransformChain  # 转换链：数据转换链
-)
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 
-# LLMChain：LLM链
-# 最基础的链，将提示模板和LLM组合
-# 参数：
-#   llm：语言模型
-#   prompt：提示模板
-#   verbose=True：打印详细执行过程
-chain = LLMChain(
-    llm=ChatOpenAI(model="gpt-4o-mini"),
-    prompt=prompt,
-    verbose=True
-)
+model = ChatOpenAI(model="gpt-5-mini")
 
-# ConversationChain：对话链
-# 带记忆的对话链，自动管理对话历史
-conversation = ConversationChain(
-    llm=ChatOpenAI(model="gpt-4o-mini"),
-    memory=ConversationBufferMemory(),
-    verbose=True
+# 基础组合：提示 -> 模型 -> 解析（等效旧 LLMChain）
+chain = (
+    ChatPromptTemplate.from_messages([
+        ("system", "你是一个{role}。"),
+        ("user", "{input}")
+    ])
+    | model
+    | StrOutputParser()
 )
+result = chain.invoke({"role": "程序员", "input": "解释什么是递归"})
 
-# SequentialChain：顺序链
-# 多个链顺序执行，前一个链的输出作为后一个链的输入
-# 参数：
-#   chains：链列表
-#   input_variables：输入变量列表
-#   output_variables：输出变量列表
-chain = SequentialChain(
-    chains=[chain1, chain2],
-    input_variables=["input"],
-    output_variables=["output"],
-    verbose=True
+# 数据转换（等效旧 TransformChain）：用 RunnableLambda 包裹普通函数
+normalize = RunnableLambda(lambda x: x.strip().lower())
+
+# 顺序组合（等效旧 SequentialChain）：直接用管道串联
+pipeline = normalize | chain
+
+# 并行分支 + 透传：检索问答的常见结构（等效旧 RouterChain 场景可用 RunnableBranch）
+from langchain_core.runnables import RunnableBranch
+
+router = RunnableBranch(
+    (lambda x: "翻译" in x["input"], chain),   # 条件分支1
+    RunnablePassthrough(),                      # 默认分支
 )
 ```
 
@@ -551,7 +586,7 @@ results = vectorstore.max_marginal_relevance_search(query, k=5)
 # 创建模型实例
 # ChatOpenAI的配置参数
 model = ChatOpenAI(
-    model="gpt-4o-mini",           # 模型名称
+    model="gpt-5-mini",             # 模型名称
     temperature=0.7,                  # 温度参数：控制输出随机性（0-2）
     max_tokens=1000,                  # 最大token数：限制输出长度
     timeout=30,                       # 超时时间：请求超时（秒）
@@ -580,26 +615,33 @@ chain = (
 
 ### 3. 代理配置
 ```python
-# Agent执行器配置
-# AgentExecutor：管理Agent的执行循环
+# create_agent 的常用配置参数
 # 参数说明：
-#   agent：Agent实例
+#   model：语言模型（实例或 "openai:gpt-5-mini" 字符串）
 #   tools：工具列表
-#   verbose=True：打印详细执行过程
-#   max_iterations=10：最大迭代次数，防止死循环
-#   max_execution_time=60：最大执行时间（秒）
-#   handle_parsing_errors=True：自动处理解析错误
-#   return_intermediate_steps=True：返回中间步骤，便于调试
-agent_executor = AgentExecutor(
-    agent=agent,
-    tools=tools,
-    verbose=True,                    # 详细输出
-    max_iterations=10,               # 最大迭代次数
-    max_execution_time=60,           # 最大执行时间
-    handle_parsing_errors=True,      # 处理解析错误
-    return_intermediate_steps=True   # 返回中间步骤
+#   system_prompt：系统提示，定义Agent行为
+#   checkpointer：LangGraph 检查点，提供多轮记忆
+#   response_format：结构化输出（Pydantic 模型）
+agent = create_agent(
+    model,
+    tools,
+    system_prompt="你是一个有用的助手。",   # 系统提示
+    checkpointer=InMemorySaver(),           # 挂载记忆
 )
 ```
+
+::: warning 旧写法对照（0.x）
+旧版 `AgentExecutor` 的 `verbose`、`max_iterations`、`max_execution_time`、`handle_parsing_errors`、`return_intermediate_steps` 等参数已随 `AgentExecutor` 移除（仅存在于 `langchain-classic`）。1.x 的对应方案：
+
+| 0.x AgentExecutor 参数 | 1.x 对应方案 |
+| --- | --- |
+| `verbose=True` | LangSmith 追踪 / LangGraph Studio |
+| `max_iterations` | Agent 内置安全上限，可用 LangGraph 自定义图精细控制 |
+| `max_execution_time` | 应用层超时（如 `asyncio.wait_for`） |
+| `handle_parsing_errors` | 运行时已内置处理 |
+| `return_intermediate_steps` | 结果的 `messages` 列表包含全部中间消息 |
+
+:::
 
 ## 错误处理
 

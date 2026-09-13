@@ -1,5 +1,7 @@
 # Agent平台与服务概述
 
+> **版本基线**：本文示例模型 gpt-5-mini，SDK 以 2026-09 现状为准，更新于 2026-09。
+
 ## 什么是Agent平台与服务？
 
 Agent平台与服务是提供AI Agent开发、部署和管理的云平台和服务。这些平台提供了完整的Agent生命周期管理，包括开发、测试、部署、监控和维护。
@@ -39,7 +41,7 @@ Agent运维管理：
 ### 1. OpenAI平台
 OpenAI提供的Agent开发平台：
 - **GPT API**：GPT系列模型API
-- **Assistants API**：助手API
+- **Responses API**：新一代 Agent 交互接口（旧 **Assistants API 已宣布停用，2026 年内下线**，官方推荐迁移到 Responses API）
 - **Function Calling**：函数调用功能
 - **Fine-tuning**：模型微调服务
 
@@ -125,7 +127,7 @@ import openai
 client = openai.OpenAI(api_key="your-api-key")
 
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     messages=[
         {"role": "system", "content": "你是一个有用的助手。"},
         {"role": "user", "content": "你好！"}
@@ -254,9 +256,9 @@ class MonitoringService:
 monitoring = MonitoringService()
 
 # 记录指标
-monitoring.record_metric("response_time", 0.5, {"model": "gpt-4o-mini"})
-monitoring.record_metric("response_time", 0.3, {"model": "gpt-4o-mini"})
-monitoring.record_metric("token_usage", 100, {"model": "gpt-4o-mini"})
+monitoring.record_metric("response_time", 0.5, {"model": "gpt-5-mini"})
+monitoring.record_metric("response_time", 0.3, {"model": "gpt-5-mini"})
+monitoring.record_metric("token_usage", 100, {"model": "gpt-5-mini"})
 
 # 获取指标
 avg_response_time = monitoring.calculate_average("response_time")
@@ -267,8 +269,8 @@ print(f"平均响应时间: {avg_response_time}")
 
 ### 1. 环境准备
 ```bash
-# 安装必要的库
-pip install openai anthropic google-generativeai
+# 安装必要的库（Google SDK 已换新包：google-genai，google.generativeai 包已弃用）
+pip install openai anthropic google-genai
 pip install boto3 azure-storage-blob
 pip install prometheus-client grafana-api
 
@@ -316,7 +318,7 @@ class AgentService:
     def calculate_tool(self, expression):
         """计算工具"""
         try:
-            result = eval(expression)
+            result = eval(expression)  # ⚠️ 教学演示，生产环境请用白名单解析/沙箱
             return str(result)
         except:
             return "计算错误"
@@ -338,7 +340,7 @@ class AgentService:
         
         # 调用模型
         response = self.client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=messages
         )
         
@@ -372,10 +374,14 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
 
+::: warning eval() 安全提示
+`calculate_tool` 中的 `eval()` 仅供教学演示。**生产环境严禁对不可信输入使用 `eval()`**——它可执行任意代码。请改用 `ast.literal_eval`、基于 `ast` 的白名单解析，或在独立沙箱（容器/子进程 + 超时与资源限制）中执行。
+:::
+
 ### 3. 容器化部署示例
 ```dockerfile
 # Dockerfile
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 

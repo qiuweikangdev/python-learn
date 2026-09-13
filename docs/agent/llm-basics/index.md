@@ -1,5 +1,7 @@
 # LLM应用开发基础
 
+> **版本基线**：本文基于 OpenAI Python SDK ≥1.x（含 Chat Completions 与 Responses API），示例模型为 gpt-5-mini，模型迭代快，以官方模型页为准。更新于 2026-09。
+
 ## 概述
 
 大语言模型（LLM）应用开发是构建AI Agent的基础。本章将介绍LLM应用开发的核心概念、技术原理和实践方法。
@@ -63,10 +65,12 @@ OpenAI API是最常用的LLM API，主要接口包括：
 
 #### 1. Chat Completions API
 ```python
-import openai
+from openai import OpenAI
 
-response = openai.ChatCompletion.create(
-    model="gpt-4o-mini",
+client = OpenAI()  # 自动读取环境变量 OPENAI_API_KEY
+
+response = client.chat.completions.create(
+    model="gpt-5-mini",
     messages=[
         {"role": "system", "content": "你是一个有用的助手。"},
         {"role": "user", "content": "你好！"}
@@ -76,34 +80,47 @@ response = openai.ChatCompletion.create(
 )
 ```
 
-#### 2. Function Calling API
-```python
-import openai
+::: warning 旧写法对照
+`openai.ChatCompletion.create(...)` 是 1.0 之前旧版 SDK 的写法，在现行 SDK（≥1.x）中已不存在。迁移方式：创建 `client = OpenAI()` 客户端对象，改为 `client.chat.completions.create(...)`。
+:::
 
-functions = [
+#### 2. Tool Calling API
+```python
+from openai import OpenAI
+
+client = OpenAI()
+
+tools = [
     {
-        "name": "get_weather",
-        "description": "获取指定城市的天气信息",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "城市名称"
-                }
-            },
-            "required": ["location"]
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "获取指定城市的天气信息",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "城市名称"
+                    }
+                },
+                "required": ["location"]
+            }
         }
     }
 ]
 
-response = openai.ChatCompletion.create(
-    model="gpt-4o-mini",
+response = client.chat.completions.create(
+    model="gpt-5-mini",
     messages=[{"role": "user", "content": "北京天气怎么样？"}],
-    functions=functions,
-    function_call="auto"
+    tools=tools,
+    tool_choice="auto"
 )
 ```
+
+::: warning 旧写法对照
+旧的 `functions=` / `function_call="auto"` 参数已弃用，统一改用 `tools=` + `tool_choice="auto"`；工具结果回传时使用 `role: "tool"`（而非旧的 `role: "function"`）。
+:::
 
 ### 其他LLM API
 #### 1. Anthropic Claude API
@@ -112,7 +129,7 @@ import anthropic
 
 client = anthropic.Anthropic(api_key="your-api-key")
 message = client.messages.create(
-    model="claude-3-sonnet-20240229",
+    model="claude-sonnet-4-5",
     max_tokens=1000,
     messages=[
         {"role": "user", "content": "你好！"}
@@ -122,19 +139,26 @@ message = client.messages.create(
 
 #### 2. Google Gemini API
 ```python
-import google.generativeai as genai
+from google import genai
 
-genai.configure(api_key="your-api-key")
-model = genai.GenerativeModel('gemini-pro')
-response = model.generate_content("你好！")
+client = genai.Client()  # 自动读取环境变量 GOOGLE_API_KEY / GEMINI_API_KEY
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents="你好！"
+)
+print(response.text)
 ```
+
+::: warning 旧写法对照
+`import google.generativeai as genai` 是已弃用的旧包，现行 SDK 为 `google-genai`（`pip install google-genai`），通过 `genai.Client()` 统一调用。
+:::
 
 ## 实践指南
 
 ### 1. 环境准备
 ```bash
 # 安装必要的库
-pip install openai anthropic google-generativeai
+pip install openai anthropic google-genai
 
 # 设置API密钥
 export OPENAI_API_KEY="your-openai-key"
@@ -153,7 +177,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # 简单对话
 def chat_with_gpt(prompt):
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content
@@ -172,7 +196,7 @@ client = OpenAI()
 
 try:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": "你好！"}]
     )
     print(response.choices[0].message.content)
@@ -216,7 +240,7 @@ except Exception as e:
 - **优化提示**：改进提示设计
 - **调整参数**：调整temperature等参数
 - **提供示例**：添加Few-shot示例
-- **使用更高级模型**：考虑使用GPT-4等更高级模型
+- **使用更高级模型**：考虑使用 GPT-5 家族等更高级模型
 
 ### 3. 响应速度慢
 - **减少token数量**：精简输入输出

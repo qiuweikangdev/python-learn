@@ -1,5 +1,7 @@
 # FAISS详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
 ## 概述
 
 FAISS（Facebook AI Similarity Search）是Facebook开源的高性能相似性搜索库，专门用于高效搜索和密集向量的聚类。它是目前最流行的向量搜索库之一，以极致的性能著称。
@@ -202,10 +204,15 @@ index_from_bytes = faiss.deserialize_index(index_bytes)
 
 ## 与LangChain集成
 
+::: tip
+FAISS 的 LangChain 集成仍保留在 `langchain-community` 包中（未拆分独立集成包）。`faiss-cpu` 需另行安装：`pip install faiss-cpu`。
+:::
+
 ```python
+# FAISS 仍在 langchain-community（1.x 现行写法）
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
 
 # 加载文档
@@ -220,7 +227,7 @@ text_splitter = RecursiveCharacterTextSplitter(
 docs = text_splitter.split_documents(documents)
 
 # 创建向量存储
-embeddings = OpenAIEmbeddings()
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 vectorstore = FAISS.from_documents(
     documents=docs,
     embedding=embeddings

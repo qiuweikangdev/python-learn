@@ -1,8 +1,14 @@
 # CAMEL详解
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
-CAMEL（Communicative Agents for “Mind” Exploration of Large Language Model Society）是一个通信Agent框架，专注于Agent间的通信和协作机制研究。
+CAMEL（Communicative Agents for "Mind" Exploration of Large Language Model Society）是一个通信Agent框架，专注于Agent间的通信和协作机制研究。
+
+::: warning 项目状态（2026-09）
+CAMEL 是 2023 年兴起的研究型框架（可通过 `pip install camel-ai` 安装），对"角色扮演 + Inception 提示"范式的开创性研究具历史价值；相比 LangGraph/OpenAI Agents SDK 等生产框架，更新放缓，更适合研究与教学场景。具体 API 以官方文档为准。
+:::
 
 ## 核心概念
 
@@ -38,7 +44,7 @@ CAMEL的社会模拟能力：
 
 ### 1. 安装和配置
 ```bash
-# 安装CAMEL
+# 安装CAMEL（包名为 camel-ai）
 pip install camel-ai
 
 # 配置环境变量
@@ -48,83 +54,77 @@ export OPENAI_API_KEY="your-api-key"
 ### 2. 创建Agent
 ```python
 from camel.agents import ChatAgent
-from camel.messages import BaseMessage
-from camel.types import RoleType
 
 # 创建助手Agent
 assistant = ChatAgent(
-    system_message=BaseMessage.make_assistant_message(
-        role_name="Assistant",
-        content="你是一个有用的AI助手。"
-    ),
-    model="gpt-4o-mini"
+    system_message="你是一个有用的AI助手。",
+    model="gpt-5-mini",
 )
 
 # 创建用户Agent
 user = ChatAgent(
-    system_message=BaseMessage.make_user_message(
-        role_name="User",
-        content="我需要帮助。"
-    ),
-    model="gpt-4o-mini"
+    system_message="你是一个提出需求的用户。",
+    model="gpt-5-mini",
 )
 ```
 
 ### 3. 角色扮演对话
 ```python
-from camel.agents import RolePlaying
+from camel.societies import RolePlaying  # 注意：RolePlaying 位于 camel.societies
 
-# 创建角色扮演实例
+# 创建角色扮演会话
 role_playing = RolePlaying(
     assistant_role_name="Python程序员",
     user_role_name="项目经理",
-    task_prompt="开发一个Web应用",
+    task_prompt="开发一个命令行待办事项应用",
     with_task_specify=True,
-    model="gpt-4o-mini"
+    assistant_agent_kwargs=dict(model="gpt-5-mini"),
+    user_agent_kwargs=dict(model="gpt-5-mini"),
 )
 
-# 运行角色扮演
-chat_history = role_playing.chat(max_turns=10)
+# 初始化对话
+task_prompt, init_msg = role_playing.init_chat()
 
-# 打印对话历史
-for message in chat_history:
-    print(f"{message.role}: {message.content}")
+# 逐步运行角色扮演循环
+output_msg = init_msg
+for turn in range(5):
+    assistant_response, user_response = role_playing.step(output_msg)
+    if assistant_response.terminated:
+        break
+    print(f"Turn {turn+1}: {assistant_response.msgs[0].content[:200]}")
+    output_msg = assistant_response.msg
 ```
 
 ### 4. 通信协议
 ```python
-from camel.messages import BaseMessage
-from camel.types import RoleType
+from camel.agents import ChatAgent
 
-# 创建消息
-message = BaseMessage.make_assistant_message(
-    role_name="Assistant",
-    content="这是一条测试消息"
+assistant = ChatAgent(
+    system_message="你是一个有用的AI助手。",
+    model="gpt-5-mini",
 )
 
-# 发送消息
-response = assistant.step(message)
+# 单步对话
+response = assistant.step("这是一条测试消息")
 
-# 打印响应
-print(response.msg.content)
+# 响应中的消息列表
+print(response.msgs[0].content)
 ```
 
 ### 5. 任务分解
 ```python
-from camel.agents import TaskAgent
+from camel.agents import ChatAgent
 
-# 创建任务Agent
-task_agent = TaskAgent(
-    model="gpt-4o-mini"
+# 用一个 ChatAgent 充当任务分解器
+task_agent = ChatAgent(
+    system_message="你是任务分解专家，把任务拆成编号的子任务列表，每行一个。",
+    model="gpt-5-mini",
 )
 
 # 分解任务
-task = "开发一个博客系统"
-subtasks = task_agent.decompose_task(task)
-
-# 打印子任务
-for i, subtask in enumerate(subtasks):
-    print(f"子任务 {i+1}: {subtask}")
+main_task = "开发一个博客系统"
+response = task_agent.step(f"请分解任务：{main_task}")
+print(response.msgs[0].content)
 ```
 
 ## 实践指南
@@ -141,32 +141,22 @@ export OPENAI_API_KEY="your-api-key"
 ### 2. 基础使用示例
 ```python
 from camel.agents import ChatAgent
-from camel.messages import BaseMessage
 
 # 创建Agent
 agent = ChatAgent(
-    system_message=BaseMessage.make_assistant_message(
-        role_name="Assistant",
-        content="你是一个有用的AI助手。"
-    ),
-    model="gpt-4o-mini"
+    system_message="你是一个有用的AI助手。",
+    model="gpt-5-mini",
 )
 
-# 创建消息
-message = BaseMessage.make_user_message(
-    role_name="User",
-    content="请介绍一下人工智能。"
-)
+# 单步对话
+response = agent.step("请介绍一下人工智能。")
 
-# 获取响应
-response = agent.step(message)
-
-print(f"Assistant: {response.msg.content}")
+print(f"Assistant: {response.msgs[0].content}")
 ```
 
 ### 3. 角色扮演
 ```python
-from camel.agents import RolePlaying
+from camel.societies import RolePlaying
 
 # 创建角色扮演实例
 role_playing = RolePlaying(
@@ -174,68 +164,67 @@ role_playing = RolePlaying(
     user_role_name="业务经理",
     task_prompt="分析销售数据并提供洞察",
     with_task_specify=True,
-    model="gpt-4o-mini"
+    assistant_agent_kwargs=dict(model="gpt-5-mini"),
+    user_agent_kwargs=dict(model="gpt-5-mini"),
 )
 
 # 运行对话
-chat_history = role_playing.chat(max_turns=5)
+task_prompt, init_msg = role_playing.init_chat()
 
-# 打印对话
-for i, message in enumerate(chat_history):
-    print(f"Turn {i+1} - {message.role}: {message.content}")
+output_msg = init_msg
+for i in range(5):
+    assistant_response, user_response = role_playing.step(output_msg)
+    if assistant_response.terminated:
+        break
+    print(f"Turn {i+1}: {assistant_response.msgs[0].content}")
+    output_msg = assistant_response.msg
 ```
 
 ### 4. 多Agent协作
 ```python
 from camel.agents import ChatAgent
-from camel.messages import BaseMessage
 
 # 创建多个Agent
 researcher = ChatAgent(
-    system_message=BaseMessage.make_assistant_message(
-        role_name="Researcher",
-        content="你是一个研究员，负责收集信息。"
-    ),
-    model="gpt-4o-mini"
+    system_message="你是一个研究员，负责收集信息。",
+    model="gpt-5-mini",
 )
 
 analyst = ChatAgent(
-    system_message=BaseMessage.make_assistant_message(
-        role_name="Analyst",
-        content="你是一个分析师，负责分析数据。"
-    ),
-    model="gpt-4o-mini"
+    system_message="你是一个分析师，负责分析数据。",
+    model="gpt-5-mini",
 )
 
 # 研究员收集信息
-research_query = BaseMessage.make_user_message(
-    role_name="User",
-    content="请研究人工智能最新进展。"
-)
-research_result = researcher.step(research_query)
+research_result = researcher.step("请研究人工智能最新进展。")
 
 # 分析师分析结果
-analysis_query = BaseMessage.make_user_message(
-    role_name="User",
-    content=f"请分析以下研究结果：{research_result.msg.content}"
+analysis_result = analyst.step(
+    f"请分析以下研究结果：{research_result.msgs[0].content}"
 )
-analysis_result = analyst.step(analysis_query)
 
-print(f"研究结果：{research_result.msg.content}")
-print(f"分析结果：{analysis_result.msg.content}")
+print(f"研究结果：{research_result.msgs[0].content}")
+print(f"分析结果：{analysis_result.msgs[0].content}")
 ```
+
+需要更复杂的协作分工时，可以了解 CAMEL 的 `Workforce`（多 Agent 劳动力编排），见官方文档。
 
 ### 5. 任务分解和执行
 ```python
-from camel.agents import TaskAgent, ChatAgent
-from camel.messages import BaseMessage
+from camel.agents import ChatAgent
 
-# 创建任务Agent
-task_agent = TaskAgent(model="gpt-4o-mini")
+# 创建任务分解Agent
+task_agent = ChatAgent(
+    system_message="你是任务分解专家，把任务拆成编号的子任务列表，每行一个。",
+    model="gpt-5-mini",
+)
 
 # 分解任务
 main_task = "开发一个电商平台"
-subtasks = task_agent.decompose_task(main_task)
+response = task_agent.step(f"请分解任务：{main_task}")
+subtasks = [
+    line.strip() for line in response.msgs[0].content.split("\n") if line.strip()
+]
 
 print("任务分解：")
 for i, subtask in enumerate(subtasks):
@@ -243,22 +232,15 @@ for i, subtask in enumerate(subtasks):
 
 # 创建执行Agent
 executor = ChatAgent(
-    system_message=BaseMessage.make_assistant_message(
-        role_name="Executor",
-        content="你是一个执行者，负责执行具体任务。"
-    ),
-    model="gpt-4o-mini"
+    system_message="你是一个执行者，负责执行具体任务。",
+    model="gpt-5-mini",
 )
 
 # 执行子任务
 for subtask in subtasks:
-    message = BaseMessage.make_user_message(
-        role_name="User",
-        content=f"请执行任务：{subtask}"
-    )
-    result = executor.step(message)
+    result = executor.step(f"请执行任务：{subtask}")
     print(f"\n执行任务：{subtask}")
-    print(f"执行结果：{result.msg.content}")
+    print(f"执行结果：{result.msgs[0].content}")
 ```
 
 ## 最佳实践

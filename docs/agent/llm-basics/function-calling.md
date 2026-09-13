@@ -1,5 +1,7 @@
 # 工具调用（Tool Calling）
 
+> **版本基线**：本文基于 OpenAI Python SDK ≥1.x，使用现行 `tools=` / `tool_choice` 参数，示例模型为 gpt-5-mini，模型迭代快，以官方模型页为准。更新于 2026-09。
+
 ## 什么是工具调用？
 
 工具调用（Tool Calling）是让大语言模型（LLM）调用外部工具和API的机制。通过工具调用，LLM可以获取实时信息、执行计算、操作数据等，从而扩展其能力范围。
@@ -84,7 +86,7 @@ tools = [
 
 # 调用API
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     messages=[
         {"role": "user", "content": "北京今天天气怎么样？"}
     ],
@@ -156,7 +158,7 @@ tools = [
 
 # 用户请求包含多个任务
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     messages=[
         {"role": "user", "content": "北京今天天气怎么样？顺便推荐几家川菜馆"}
     ],
@@ -208,7 +210,7 @@ tools = [
 
 # 强制调用指定工具
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     messages=[
         {"role": "user", "content": "张三在北京参加了2024年1月15日的会议"}
     ],
@@ -264,7 +266,7 @@ def execute_tool(name: str, arguments: dict) -> str:
 
 # 第一轮：获取工具调用
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     messages=[{"role": "user", "content": "北京天气怎么样？"}],
     tools=tools,
     tool_choice="auto"
@@ -283,7 +285,7 @@ if assistant_message.tool_calls:
     
     # 第二轮：将工具结果回传给模型
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[
             {"role": "user", "content": "北京天气怎么样？"},
             assistant_message,  # 模型的工具调用消息
@@ -368,7 +370,7 @@ def chat(user_input: str, conversation_history: list = None):
     
     # 调用API
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=conversation_history,
         tools=tools,
         tool_choice="auto"
@@ -391,7 +393,7 @@ def chat(user_input: str, conversation_history: list = None):
         
         # 再次调用API获取最终回答
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=conversation_history,
             tools=tools,
             tool_choice="auto"

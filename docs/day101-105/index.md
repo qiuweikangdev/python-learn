@@ -1,5 +1,7 @@
 # LLM应用开发基础
 
+> **版本基线**：本文基于 OpenAI Python SDK ≥1.x（含 Chat Completions 与 Responses API），示例模型为 gpt-5-mini，模型迭代快，以官方模型页为准。更新于 2026-09。
+
 ## 概述
 
 大语言模型（LLM）应用开发是构建AI Agent的基础。本章将介绍LLM应用开发的核心概念、技术原理和实践方法。
@@ -81,7 +83,7 @@ def simple_chatbot():
         
         # 调用LLM获取响应
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=messages
         )
         
@@ -137,7 +139,7 @@ def document_processing_workflow(document: str) -> Dict:
     def extract_summary(doc: str) -> str:
         """提取文档摘要"""
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "system", "content": "请提取以下文档的摘要，不超过100字。"},
                 {"role": "user", "content": doc}
@@ -150,7 +152,7 @@ def document_processing_workflow(document: str) -> Dict:
     def translate_text(text: str, target_lang: str = "英文") -> str:
         """翻译文本"""
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "system", "content": f"请将以下文本翻译成{target_lang}。"},
                 {"role": "user", "content": text}
@@ -236,6 +238,8 @@ class SimpleAgent:
     def calculate(self, expression: str) -> str:
         """计算工具"""
         try:
+            # 注意：生产环境禁止对 LLM 生成的表达式直接使用 eval，
+            # 应改用 ast.literal_eval 或白名单函数映射（见工具使用一章的安全提示）
             result = eval(expression)
             return f"计算结果：{result}"
         except Exception as e:
@@ -267,71 +271,83 @@ class SimpleAgent:
             
             # Think：让LLM决定下一步行动
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-5-mini",
                 messages=messages,
-                functions=[
+                tools=[
                     {
-                        "name": "search",
-                        "description": "搜索互联网信息",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "query": {"type": "string", "description": "搜索关键词"}
-                            },
-                            "required": ["query"]
+                        "type": "function",
+                        "function": {
+                            "name": "search",
+                            "description": "搜索互联网信息",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "query": {"type": "string", "description": "搜索关键词"}
+                                },
+                                "required": ["query"]
+                            }
                         }
                     },
                     {
-                        "name": "calculate",
-                        "description": "计算数学表达式",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "expression": {"type": "string", "description": "数学表达式"}
-                            },
-                            "required": ["expression"]
+                        "type": "function",
+                        "function": {
+                            "name": "calculate",
+                            "description": "计算数学表达式",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "expression": {"type": "string", "description": "数学表达式"}
+                                },
+                                "required": ["expression"]
+                            }
                         }
                     },
                     {
-                        "name": "save_note",
-                        "description": "保存笔记",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "content": {"type": "string", "description": "笔记内容"}
-                            },
-                            "required": ["content"]
+                        "type": "function",
+                        "function": {
+                            "name": "save_note",
+                            "description": "保存笔记",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "content": {"type": "string", "description": "笔记内容"}
+                                },
+                                "required": ["content"]
+                            }
                         }
                     }
-                ]
+                ],
+                tool_choice="auto"
             )
             
             message = response.choices[0].message
             
             # 检查是否需要调用工具
-            if message.function_call:
-                # Act：执行工具
-                func_name = message.function_call.name
-                func_args = json.loads(message.function_call.arguments)
-                
-                print(f"调用工具：{func_name}")
-                print(f"参数：{func_args}")
-                
-                # 执行工具
-                if func_name in self.tools:
-                    result = self.tools[func_name](**func_args)
-                else:
-                    result = f"未知工具：{func_name}"
-                
-                print(f"结果：{result}")
-                
-                # Observe：将结果添加到消息历史
+            if message.tool_calls:
+                # 先把模型的工具调用消息加入历史（只需一次）
                 messages.append(message)
-                messages.append({
-                    "role": "function",
-                    "name": func_name,
-                    "content": result
-                })
+                for tool_call in message.tool_calls:
+                    # Act：执行工具
+                    func_name = tool_call.function.name
+                    func_args = json.loads(tool_call.function.arguments)
+                    
+                    print(f"调用工具：{func_name}")
+                    print(f"参数：{func_args}")
+                    
+                    # 执行工具
+                    if func_name in self.tools:
+                        result = self.tools[func_name](**func_args)
+                    else:
+                        result = f"未知工具：{func_name}"
+                    
+                    print(f"结果：{result}")
+                    
+                    # Observe：将结果添加到消息历史
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": result
+                    })
             else:
                 # 没有工具调用，返回最终结果
                 return message.content
@@ -444,7 +460,7 @@ class MultiAgentSystem:
         agent = self.agents[role]
         
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "system", "content": f"你是{agent.name}，{agent.description}。你的技能包括：{', '.join(agent.skills)}"},
                 {"role": "user", "content": prompt}
@@ -564,10 +580,12 @@ OpenAI API是最常用的LLM API，主要接口包括：
 
 #### 1. Chat Completions API
 ```python
-import openai
+from openai import OpenAI
 
-response = openai.ChatCompletion.create(
-    model="gpt-4o-mini",
+client = OpenAI()  # 自动读取环境变量 OPENAI_API_KEY
+
+response = client.chat.completions.create(
+    model="gpt-5-mini",
     messages=[
         {"role": "system", "content": "你是一个有用的助手。"},
         {"role": "user", "content": "你好！"}
@@ -577,34 +595,47 @@ response = openai.ChatCompletion.create(
 )
 ```
 
-#### 2. Function Calling API
-```python
-import openai
+::: warning 旧写法对照
+`openai.ChatCompletion.create(...)` 是 1.0 之前旧版 SDK 的写法，在现行 SDK（≥1.x）中已不存在。迁移方式：创建 `client = OpenAI()` 客户端对象，改为 `client.chat.completions.create(...)`。
+:::
 
-functions = [
+#### 2. Tool Calling API
+```python
+from openai import OpenAI
+
+client = OpenAI()
+
+tools = [
     {
-        "name": "get_weather",
-        "description": "获取指定城市的天气信息",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "城市名称"
-                }
-            },
-            "required": ["location"]
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "获取指定城市的天气信息",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "城市名称"
+                    }
+                },
+                "required": ["location"]
+            }
         }
     }
 ]
 
-response = openai.ChatCompletion.create(
-    model="gpt-4o-mini",
+response = client.chat.completions.create(
+    model="gpt-5-mini",
     messages=[{"role": "user", "content": "北京天气怎么样？"}],
-    functions=functions,
-    function_call="auto"
+    tools=tools,
+    tool_choice="auto"
 )
 ```
+
+::: warning 旧写法对照
+旧的 `functions=` / `function_call="auto"` 参数已弃用，统一改用 `tools=` + `tool_choice="auto"`；工具结果回传时使用 `role: "tool"`（而非旧的 `role: "function"`）。
+:::
 
 ### 其他LLM API
 #### 1. Anthropic Claude API
@@ -613,7 +644,7 @@ import anthropic
 
 client = anthropic.Anthropic(api_key="your-api-key")
 message = client.messages.create(
-    model="claude-3-sonnet-20240229",
+    model="claude-sonnet-4-5",
     max_tokens=1000,
     messages=[
         {"role": "user", "content": "你好！"}
@@ -623,19 +654,26 @@ message = client.messages.create(
 
 #### 2. Google Gemini API
 ```python
-import google.generativeai as genai
+from google import genai
 
-genai.configure(api_key="your-api-key")
-model = genai.GenerativeModel('gemini-pro')
-response = model.generate_content("你好！")
+client = genai.Client()  # 自动读取环境变量 GOOGLE_API_KEY / GEMINI_API_KEY
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents="你好！"
+)
+print(response.text)
 ```
+
+::: warning 旧写法对照
+`import google.generativeai as genai` 是已弃用的旧包，现行 SDK 为 `google-genai`（`pip install google-genai`），通过 `genai.Client()` 统一调用。
+:::
 
 ## 实践指南
 
 ### 1. 环境准备
 ```bash
 # 安装必要的库
-pip install openai anthropic google-generativeai
+pip install openai anthropic google-genai
 
 # 设置API密钥
 export OPENAI_API_KEY="your-openai-key"
@@ -654,7 +692,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # 简单对话
 def chat_with_gpt(prompt):
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content
@@ -673,7 +711,7 @@ client = OpenAI()
 
 try:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": "你好！"}]
     )
     print(response.choices[0].message.content)
@@ -717,7 +755,7 @@ except Exception as e:
 - **优化提示**：改进提示设计
 - **调整参数**：调整temperature等参数
 - **提供示例**：添加Few-shot示例
-- **使用更高级模型**：考虑使用GPT-4等更高级模型
+- **使用更高级模型**：考虑使用 GPT-5 家族等更高级模型
 
 ### 3. 响应速度慢
 - **减少token数量**：精简输入输出

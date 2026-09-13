@@ -1,5 +1,7 @@
 # Pinecone详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
 ## 概述
 
 Pinecone是一个全托管的云原生向量数据库，专为机器学习应用设计。它提供了高性能的向量相似性搜索，支持实时更新和大规模部署。
@@ -60,29 +62,30 @@ Pinecone支持实时数据更新：
 
 ### 1. 安装和配置
 ```python
-# 安装Pinecone客户端
-pip install pinecone-client
+# 安装Pinecone客户端（包名已从 pinecone-client 更名为 pinecone）
+pip install pinecone
 
-# 初始化Pinecone
-import pinecone
+# 初始化Pinecone（新版 SDK 不再使用 pinecone.init()）
+import os
+from pinecone import Pinecone
 
-pinecone.init(
-    api_key="your-api-key",
-    environment="us-west1-gcp"  # 或其他环境
-)
+pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
 ```
 
 ### 2. 创建索引
 ```python
-# 创建索引
-pinecone.create_index(
+from pinecone import ServerlessSpec
+
+# 创建索引（新版默认推荐 Serverless）
+pc.create_index(
     name="my-index",
     dimension=1536,  # 向量维度
-    metric="cosine"  # 距离度量
+    metric="cosine",  # 距离度量
+    spec=ServerlessSpec(cloud="aws", region="us-east-1")
 )
 
 # 获取索引
-index = pinecone.Index("my-index")
+index = pc.Index("my-index")
 ```
 
 ### 3. 插入向量
@@ -148,7 +151,7 @@ index.delete(delete_all=True, namespace="my-namespace")
 ### 1. 环境准备
 ```bash
 # 安装必要的库
-pip install pinecone-client openai
+pip install pinecone langchain-pinecone openai
 
 # 设置环境变量
 export PINECONE_API_KEY="your-pinecone-api-key"
@@ -157,27 +160,30 @@ export OPENAI_API_KEY="your-openai-api-key"
 
 ### 2. 基础使用示例
 ```python
-import pinecone
+import os
+from pinecone import Pinecone, ServerlessSpec
 from openai import OpenAI
 
-# 初始化
-pinecone.init(api_key="your-api-key", environment="us-west1-gcp")
-openai_client = OpenAI(api_key="your-openai-key")
+# 初始化（替代旧的 pinecone.init(api_key=..., environment=...)）
+pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 # 创建索引
-if "my-index" not in pinecone.list_indexes():
-    pinecone.create_index(
+existing = [i["name"] for i in pc.list_indexes()]
+if "my-index" not in existing:
+    pc.create_index(
         name="my-index",
         dimension=1536,
-        metric="cosine"
+        metric="cosine",
+        spec=ServerlessSpec(cloud="aws", region="us-east-1")
     )
 
-index = pinecone.Index("my-index")
+index = pc.Index("my-index")
 
 # 生成嵌入
 def get_embedding(text):
     response = openai_client.embeddings.create(
-        model="text-embedding-ada-002",
+        model="text-embedding-3-small",
         input=text
     )
     return response.data[0].embedding
@@ -246,6 +252,7 @@ index.upsert(
 index.upsert(
     vectors=[("vec1", [0.4, 0.5, ...], {"type": "product"})],
     namespace="products"
+)
 
 # 在特定命名空间中查询
 results = index.query(
@@ -253,6 +260,27 @@ results = index.query(
     top_k=5,
     namespace="users"
 )
+```
+
+### 5. LangChain 集成
+```python
+import os
+from langchain_pinecone import PineconeVectorStore
+from langchain_openai import OpenAIEmbeddings
+from pinecone import Pinecone
+
+# 1.x：Pinecone 已拆分到官方独立集成包 langchain-pinecone
+# 旧写法（已废弃）：from langchain_community.vectorstores import Pinecone
+pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+
+vectorstore = PineconeVectorStore.from_existing_index(
+    index_name="my-index",
+    embedding=embeddings
+)
+
+results = vectorstore.similarity_search("查询内容", k=3)
 ```
 
 ## 最佳实践

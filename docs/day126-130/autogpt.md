@@ -1,8 +1,14 @@
 # AutoGPT详解
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 AutoGPT是一个自主AI代理，能够自主完成复杂任务。它是最早实现完全自主的AI Agent之一，展示了AI Agent的巨大潜力。
+
+::: warning 项目状态（2026-09）
+AutoGPT 属于 **2023 年爆火的早期探索项目，具历史意义**：它验证了"目标驱动的自主 Agent"路线，但循环不稳定、Token 成本高。目前项目已演进为 **AutoGPT Platform**（新一代平台版）与经典 CLI 两条线。特别注意：**AutoGPT 不是 pip 库，无法 `pip install autogpt`**——它是开源项目，需要克隆官方仓库按文档运行。
+:::
 
 ## 核心概念
 
@@ -64,40 +70,44 @@ AutoGPT的架构：
 ## 核心API
 
 ### 1. 安装和配置
+
+AutoGPT 是开源项目而非 pip 库，需克隆官方仓库运行：
+
 ```bash
-# 克隆AutoGPT仓库
+# 克隆AutoGPT官方仓库（不能 pip install autogpt）
 git clone https://github.com/Significant-Gravitas/AutoGPT.git
 cd AutoGPT
 
-# 安装依赖
-pip install -r requirements.txt
+# 仓库结构（以官方 README 为准）：
+#   autogpt_platform/  新一代平台版（Docker Compose 启动）
+#   classic/           经典 CLI 版（即 2023 年原版 AutoGPT）
+# 进入对应目录后，按官方文档安装依赖
 
 # 配置环境变量
 cp .env.template .env
-# 编辑.env文件，添加API密钥
+# 编辑 .env 文件，添加 OPENAI_API_KEY 等API密钥
 ```
 
 ### 2. 基础配置
-```python
-# .env文件配置
+```bash
+# .env文件配置（关键字段）
 OPENAI_API_KEY=your-openai-api-key
-ELEVENLABS_API_KEY=your-elevenlabs-api-key  # 可选
-GOOGLE_API_KEY=your-google-api-key  # 可选
+# 可选：记忆后端、语音、搜索等
+MEMORY_BACKEND=local
+GOOGLE_API_KEY=your-google-api-key
 ```
 
 ### 3. 运行AutoGPT
 ```bash
-# 运行AutoGPT
+# 运行经典版 AutoGPT（具体入口以官方文档为准）
 python -m autogpt
 
-# 使用特定参数运行
-python -m autogpt --gpt3only  # 使用GPT-3.5
-python -m autogpt --gpt4only  # 使用GPT-4
-python -m autogpt --continuous  # 连续运行
+# 连续模式（无人值守自主循环，务必设置循环上限并监控成本）
+python -m autogpt --continuous --continuous-limit 10
 ```
 
 ### 4. 自定义配置
-```python
+```yaml
 # ai_settings.yaml配置
 ai_goals:
   - "提高代码质量"
@@ -119,66 +129,70 @@ available_tools:
 
 ### 1. 环境准备
 ```bash
-# 安装AutoGPT
-pip install autogpt
-
-# 或者从源码安装
+# AutoGPT 需从源码运行，不能 pip 安装：
 git clone https://github.com/Significant-Gravitas/AutoGPT.git
 cd AutoGPT
-pip install -r requirements.txt
+# 按官方文档安装 classic/ 或 autogpt_platform/ 的依赖
 
 # 配置API密钥
 export OPENAI_API_KEY="your-api-key"
 ```
 
-### 2. 基础使用示例
-```python
-# 使用AutoGPT Python库
-from autogpt import Agent
+### 2. 在代码中实现 AutoGPT 式自主循环
 
-# 创建Agent
-agent = Agent(
-    name="ResearchAgent",
-    role="研究员",
-    goals=["研究人工智能最新进展", "撰写研究报告"]
+AutoGPT 没有可 `pip install` 的稳定 Python API（`from autogpt import Agent` 之类的写法不可用）。想在代码中实现同样的"目标驱动自主循环"，推荐用 LangChain 1.x / LangGraph 自己搭建：
+
+```python
+from langchain.agents import create_agent
+from langchain.tools import tool
+from langchain_openai import ChatOpenAI
+
+@tool
+def search_web(query: str) -> str:
+    """搜索互联网信息"""
+    return f"搜索结果：{query}"
+
+@tool
+def save_report(title: str, content: str) -> str:
+    """保存研究报告"""
+    with open(f"{title}.md", "w", encoding="utf-8") as f:
+        f.write(content)
+    return f"报告已保存：{title}.md"
+
+agent = create_agent(
+    ChatOpenAI(model="gpt-5-mini"),
+    tools=[search_web, save_report],
+    system_prompt=(
+        "你是自主研究员：围绕目标反复检索、整理、保存发现，"
+        "直到能产出完整报告。始终先思考再行动。"
+    ),
 )
 
-# 运行Agent
-agent.run()
+# "思考-行动-观察"循环由 LangGraph 图驱动，可用 recursion_limit 控制循环上限
+result = agent.invoke(
+    {"messages": [{"role": "user", "content": "研究人工智能最新进展并撰写报告"}]},
+    config={"recursion_limit": 50},
+)
+print(result["messages"][-1].content)
 ```
 
 ### 3. 自定义工具
+
+经典版 AutoGPT 通过官方 plugin 机制扩展工具，见仓库 `classic/` 内文档。若用上面的 LangGraph 方案，自定义工具只需一个 `@tool` 装饰器：
+
 ```python
-from autogpt.tools import BaseTool
+from langchain.tools import tool
 
-class CustomTool(BaseTool):
-    name = "custom_tool"
-    description = "自定义工具描述"
-    
-    def execute(self, query: str) -> str:
-        # 实现工具逻辑
-        return f"执行结果: {query}"
-
-# 注册工具
-agent.register_tool(CustomTool())
+@tool
+def custom_tool(query: str) -> str:
+    """自定义工具描述"""
+    # 实现工具逻辑
+    return f"执行结果: {query}"
 ```
 
 ### 4. 记忆管理
-```python
-from autogpt.memory import Memory
 
-# 创建记忆
-memory = Memory()
-
-# 存储记忆
-memory.store("key", "value")
-
-# 检索记忆
-value = memory.retrieve("key")
-
-# 搜索记忆
-results = memory.search("query")
-```
+经典版 AutoGPT 的记忆后端通过 `.env` 配置（如 `MEMORY_BACKEND=local` 或 `redis`，具体选项以官方文档为准）。在自己的 Agent 中实现类似能力，现代做法是使用 LangGraph checkpointer（详见[Agent核心API详解](/agent/agent-frameworks/core-apis)的记忆管理章节）。
 
 ## 最佳实践
 

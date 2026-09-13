@@ -1,5 +1,7 @@
 # Elasticsearch详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
 ## 概述
 
 Elasticsearch是一个分布式搜索和分析引擎，支持向量搜索功能。它结合了全文搜索和向量搜索能力，适合需要混合搜索的场景。
@@ -229,7 +231,7 @@ openai_client = OpenAI(api_key="your-api-key")
 # 生成嵌入
 def get_embedding(text):
     response = openai_client.embeddings.create(
-        model="text-embedding-ada-002",
+        model="text-embedding-3-small",
         input=text
     )
     return response.data[0].embedding

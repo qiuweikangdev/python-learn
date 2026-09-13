@@ -1,5 +1,7 @@
 # Deep-Agent核心概念
 
+> **版本基线**：本章"Deep-Agent"为"深度学习 + Agent"的学术视角，代码基于 PyTorch，更新于 2026-09。
+
 ## 概述
 
 Deep-Agent是结合深度学习技术的智能Agent系统。本章将深入介绍Deep-Agent的核心概念，包括神经网络、记忆机制、规划算法等。

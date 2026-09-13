@@ -1,5 +1,7 @@
 # Qdrant详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
 ## 概述
 
 Qdrant是用Rust编写的高性能向量搜索引擎，专注于提供快速、可靠的向量相似性搜索服务。它以简洁的API、优秀的性能和易于部署著称。
@@ -33,6 +35,9 @@ docker run -p 6333:6333 -p 6334:6334 \
 
 ```bash
 pip install qdrant-client
+
+# LangChain 集成包（1.x 起为官方独立集成包）
+pip install langchain-qdrant
 ```
 
 ### 配置文件
@@ -176,21 +181,21 @@ def batch_insert(client, collection_name, texts, embeddings, metadatas, batch_si
 ```python
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
-# 向量搜索
-results = client.search(
+# 向量搜索（qdrant-client ≥1.10 推荐使用 query_points，旧的 client.search 已弃用）
+results = client.query_points(
     collection_name="documents",
-    query_vector=np.random.random(768).tolist(),
+    query=np.random.random(768).tolist(),
     limit=5
-)
+).points
 
 for result in results:
     print(f"ID: {result.id}, 分数: {result.score:.4f}")
     print(f"文本: {result.payload.get('text', '')[:50]}...")
 
 # 带过滤的搜索
-results = client.search(
+results = client.query_points(
     collection_name="documents",
-    query_vector=np.random.random(768).tolist(),
+    query=np.random.random(768).tolist(),
     query_filter=Filter(
         must=[
             FieldCondition(
@@ -204,7 +209,7 @@ results = client.search(
         ]
     ),
     limit=5
-)
+).points
 
 # 使用scroll遍历所有数据
 records, next_page_offset = client.scroll(
@@ -246,12 +251,12 @@ complex_filter = Filter(
     ]
 )
 
-results = client.search(
+results = client.query_points(
     collection_name="documents",
-    query_vector=query_vector,
+    query=query_vector,
     query_filter=complex_filter,
     limit=10
-)
+).points
 ```
 
 ### 6. Payload索引
@@ -281,13 +286,15 @@ client.create_payload_index(
 ## 与LangChain集成
 
 ```python
-from langchain_community.vectorstores import Qdrant
+# 1.x：Qdrant 已拆分到官方独立集成包 langchain-qdrant
+# 旧写法（已废弃）：from langchain_community.vectorstores import Qdrant
+from langchain_qdrant import QdrantVectorStore
 from langchain_openai import OpenAIEmbeddings
 
 # 创建向量存储
-embeddings = OpenAIEmbeddings()
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
-vectorstore = Qdrant.from_documents(
+vectorstore = QdrantVectorStore.from_documents(
     documents=docs,
     embedding=embeddings,
     url="http://localhost:6333",
@@ -357,15 +364,15 @@ client.upsert(
 
 ```python
 # 使用搜索参数优化
-results = client.search(
+results = client.query_points(
     collection_name="documents",
-    query_vector=query_vector,
+    query=query_vector,
     limit=10,
     search_params={
         "exact": False,  # 使用近似搜索
         "hnsw_ef": 128   # HNSW搜索参数
     }
-)
+).points
 ```
 
 ## 最佳实践

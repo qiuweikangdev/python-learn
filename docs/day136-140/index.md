@@ -1,5 +1,7 @@
 # Deep-Agent开发
 
+> **版本基线**：本章"Deep-Agent"为"深度学习 + Agent"的学术视角（与 LangChain 的 deepagents 框架同名不同物），代码基于 PyTorch，更新于 2026-09。
+
 ## 什么是Deep-Agent？
 
 Deep-Agent是结合深度学习技术的智能Agent系统，通过深度神经网络实现更复杂的推理、决策和学习能力。与传统的基于规则的Agent不同，Deep-Agent能够从数据中学习，处理更复杂的任务。

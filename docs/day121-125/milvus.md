@@ -1,5 +1,7 @@
 # Milvus详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
 ## 概述
 
 Milvus是一个开源的高性能向量数据库，专为大规模向量搜索设计。它支持多种索引类型，提供分布式部署能力，是目前最流行的向量数据库之一。
@@ -212,6 +214,10 @@ pip install milvus
 
 # 安装Python客户端
 pip install pymilvus
+
+# LangChain 集成包（1.x 起为官方独立集成包）
+# 用法：from langchain_milvus import Milvus
+pip install langchain-milvus
 ```
 
 ### 2. 连接Milvus
@@ -443,7 +449,7 @@ collection.create_index("embedding", index_params)
 # 获取嵌入向量
 def get_embedding(text):
     response = openai_client.embeddings.create(
-        model="text-embedding-ada-002",
+        model="text-embedding-3-small",
         input=text
     )
     return response.data[0].embedding

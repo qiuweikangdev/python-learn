@@ -1,5 +1,7 @@
 # Milvus详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
 ## 概述
 
 Milvus是云原生分布式向量数据库，专为大规模向量搜索和管理设计。它支持多种索引类型、GPU加速、混合搜索，是大规模生产环境的首选方案。
@@ -34,6 +36,9 @@ docker-compose ps
 
 ```bash
 pip install pymilvus
+
+# LangChain 集成包（1.x 起为官方独立集成包）
+pip install langchain-milvus
 ```
 
 ### Kubernetes安装
@@ -285,12 +290,14 @@ results = collection.search(
 ## 与LangChain集成
 
 ```python
-from langchain_community.vectorstores import Milvus
+# 1.x：Milvus 已拆分到官方独立集成包 langchain-milvus
+# 旧写法（已废弃）：from langchain_community.vectorstores import Milvus
+from langchain_milvus import Milvus
 from langchain_openai import OpenAIEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # 创建向量存储
-embeddings = OpenAIEmbeddings()
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
 vectorstore = Milvus.from_documents(
     documents=docs,

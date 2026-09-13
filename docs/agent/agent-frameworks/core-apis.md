@@ -1,5 +1,7 @@
 # Agent核心API详解
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 本章详细介绍Agent开发中的核心API，包括LLM引擎、工具注册、记忆管理、规划器、执行器等关键组件的API设计和使用方法。
@@ -16,7 +18,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 # 创建LLM实例
 llm = ChatOpenAI(
-    model="gpt-4",                    # 模型名称
+    model="gpt-5-mini",                # 模型名称
     temperature=0.7,                   # 温度参数（0-2），控制随机性
     max_tokens=2000,                   # 最大输出token数
     timeout=30,                        # 请求超时时间（秒）
@@ -39,7 +41,7 @@ print(response.content)
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
-llm = ChatOpenAI(model="gpt-4", streaming=True)
+llm = ChatOpenAI(model="gpt-5-mini", streaming=True)
 
 # 流式调用
 for chunk in llm.stream([HumanMessage(content="写一个关于AI的故事")]):
@@ -50,7 +52,7 @@ for chunk in llm.stream([HumanMessage(content="写一个关于AI的故事")]):
 
 ```python
 from langchain_openai import ChatOpenAI
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from typing import List
 
 # 定义输出结构
@@ -62,7 +64,7 @@ class AgentDecision(BaseModel):
     confidence: float = Field(description="置信度 0-1")
 
 # 创建支持结构化输出的LLM
-llm = ChatOpenAI(model="gpt-4")
+llm = ChatOpenAI(model="gpt-5-mini")
 structured_llm = llm.with_structured_output(AgentDecision)
 
 # 调用
@@ -88,12 +90,12 @@ class LLMManager:
     
     def __init__(self):
         self.models = {
-            "gpt-4": ChatOpenAI(model="gpt-4"),
-            "gpt-4o-mini": ChatOpenAI(model="gpt-4o-mini"),
-            "claude-3": ChatAnthropic(model="claude-3-sonnet-20240229"),
-            "gemini": ChatGoogleGenerativeAI(model="gemini-pro")
+            "gpt-5-mini": ChatOpenAI(model="gpt-5-mini"),          # 日常任务
+            "gpt-5.4": ChatOpenAI(model="gpt-5.4"),                # 旗舰，复杂推理
+            "claude-sonnet-4-5": ChatAnthropic(model="claude-sonnet-4-5"),
+            "gemini": ChatGoogleGenerativeAI(model="gemini-2.5-flash")
         }
-        self.default_model = "gpt-4"
+        self.default_model = "gpt-5-mini"
     
     def get_model(self, model_name: str = None):
         """获取模型实例"""
@@ -109,7 +111,7 @@ class LLMManager:
 manager = LLMManager()
 response = manager.invoke(
     [HumanMessage(content="你好")],
-    model_name="claude-3"
+    model_name="claude-sonnet-4-5"
 )
 ```
 
@@ -352,102 +354,106 @@ class DynamicToolLoader:
 
 ### 3.1 对话记忆
 
+LangChain 1.x 移除了 `langchain.memory.*`，对话记忆统一交给 **LangGraph checkpointer** 管理：给 Agent 挂载一个 checkpointer，再用 `thread_id` 区分会话，每轮对话状态会自动保存和恢复。
+
 ```python
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import InMemorySaver
+
+# 1. 创建 checkpointer（对话记忆的载体）
+checkpointer = InMemorySaver()  # 内存版；生产可用 SqliteSaver / PostgresSaver
+
+# 2. 创建 Agent 时挂载 checkpointer
+agent = create_agent(
+    ChatOpenAI(model="gpt-5-mini"),
+    tools=[],
+    system_prompt="你是一个贴心的助手。",
+    checkpointer=checkpointer,
+)
+
+# 3. 用 thread_id 区分不同会话，记忆自动持久化
+config = {"configurable": {"thread_id": "user-zhangsan"}}
+
+agent.invoke(
+    {"messages": [{"role": "user", "content": "你好，我叫张三"}]},
+    config,
+)
+agent.invoke(
+    {"messages": [{"role": "user", "content": "我叫什么名字？"}]},
+    config,
+)
+# → Agent 能答出"张三"，因为同一 thread_id 的消息历史被自动恢复
+
+# 查看该会话的完整消息历史
+state = agent.get_state(config)
+for msg in state.values["messages"]:
+    print(type(msg).__name__, ":", msg.content)
+```
+
+::: tip 旧写法对照（LangChain 0.x）
+旧版通过 `langchain.memory` 的各类 Memory 类手动管理对话历史，这些类在 1.x 中已移除（兼容实现迁入 `langchain-classic` 包）：
+
+```python
+# ❌ 旧写法（LangChain 0.x，已移除）
 from langchain.memory import (
     ConversationBufferMemory,
     ConversationSummaryMemory,
     ConversationBufferWindowMemory
 )
-from langchain_openai import ChatOpenAI
-
-# 1. 缓冲记忆 - 保存完整对话历史
-buffer_memory = ConversationBufferMemory(
-    return_messages=True,      # 返回消息列表格式
-    memory_key="history",      # 在提示中的变量名
-    input_key="input",         # 输入变量名
-    output_key="output"        # 输出变量名
-)
-
-# 2. 窗口记忆 - 只保留最近K轮对话
-window_memory = ConversationBufferWindowMemory(
-    k=10,                      # 保留最近10轮对话
-    return_messages=True,
-    memory_key="history"
-)
-
-# 3. 摘要记忆 - 使用LLM压缩对话历史
-summary_memory = ConversationSummaryMemory(
-    llm=ChatOpenAI(model="gpt-4o-mini"),
-    return_messages=True,
-    memory_key="history"
-)
-
-# 使用记忆
-memory = ConversationBufferMemory(return_messages=True)
-
-# 保存上下文
-memory.save_context(
-    {"input": "你好，我叫张三"},
-    {"output": "你好张三！很高兴认识你。"}
-)
-
-# 加载记忆变量
+memory = ConversationBufferMemory(return_messages=True, memory_key="history")
+memory.save_context({"input": "..."}, {"output": "..."})
 variables = memory.load_memory_variables({})
-print(variables["history"])
 ```
+
+新方案把"存记忆"变成"存状态"：checkpointer 负责持久化，`thread_id` 负责隔离会话；窗口截断、历史摘要等策略可用自定义 middleware 实现。
+:::
 
 ### 3.2 向量记忆
 
+旧版 `VectorStoreRetrieverMemory` 已随 `langchain.memory` 移除。现代做法是直接使用**向量库集成包**存取记忆（Chroma 等已拆分为独立包），再把检索能力包装成工具交给 Agent：
+
 ```python
-from langchain.memory import VectorStoreRetrieverMemory
+# pip install langchain-chroma
+from langchain_chroma import Chroma          # 1.x 起为独立集成包
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
 
 class VectorMemory:
     """向量记忆 - 基于语义检索历史信息"""
-    
+
     def __init__(self, collection_name: str = "agent_memory"):
-        self.embeddings = OpenAIEmbeddings()
+        self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
         self.vectorstore = Chroma(
             collection_name=collection_name,
-            embedding_function=self.embeddings
+            embedding_function=self.embeddings,
         )
-        self.retriever = self.vectorstore.as_retriever(
-            search_kwargs={"k": 5}
-        )
-        self.memory = VectorStoreRetrieverMemory(
-            retriever=self.retriever,
-            memory_key="history",
-            input_key="input"
-        )
-    
-    def save(self, input_text: str, output_text: str):
-        """保存对话到向量存储"""
-        self.memory.save_context(
-            {"input": input_text},
-            {"output": output_text}
-        )
-    
-    def recall(self, query: str, k: int = 5) -> List[str]:
+
+    def save(self, text: str, metadata: dict | None = None):
+        """把一条记忆写入向量库"""
+        self.vectorstore.add_texts(texts=[text], metadatas=[metadata or {}])
+
+    def recall(self, query: str, k: int = 5) -> list[str]:
         """根据语义相似度召回相关记忆"""
         docs = self.vectorstore.similarity_search(query, k=k)
         return [doc.page_content for doc in docs]
-    
-    def clear(self):
-        """清空记忆"""
-        self.vectorstore.delete_collection()
 
 # 使用示例
 vector_memory = VectorMemory()
 
 # 保存记忆
-vector_memory.save("我喜欢吃苹果", "了解，你喜欢苹果")
-vector_memory.save("我住在北京", "好的，你住在北京")
+vector_memory.save("用户喜欢吃苹果", {"type": "偏好"})
+vector_memory.save("用户住在北京", {"type": "信息"})
 
 # 召回相关记忆
 relevant_memories = vector_memory.recall("我喜欢什么水果？")
 print(f"相关记忆: {relevant_memories}")
 ```
+
+把 `recall` 用 `@tool` 包装后挂到 `create_agent` 上，Agent 就能在需要时主动"回忆"相关上下文。
+
+::: tip 向量库去哪了
+`langchain_community.vectorstores` 中的主流向量库已陆续拆分为独立集成包：Chroma → `langchain-chroma`、MongoDB → `langchain-mongodb` 等；FAISS、PGVector 等仍在 `langchain_community` 中维护。
+:::
 
 ### 3.3 长期记忆
 
@@ -584,7 +590,7 @@ print(f"用户相关记忆: {[m.content for m in user_memories]}")
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from typing import List
 
 class TaskStep(BaseModel):
@@ -604,7 +610,7 @@ class TaskPlanner:
     """任务规划器"""
     
     def __init__(self, llm=None):
-        self.llm = llm or ChatOpenAI(model="gpt-4")
+        self.llm = llm or ChatOpenAI(model="gpt-5-mini")
         self.structured_llm = self.llm.with_structured_output(TaskPlan)
     
     def create_plan(self, task: str, available_tools: List[str]) -> TaskPlan:
@@ -662,7 +668,7 @@ class TaskPlanner:
         chain = prompt | self.structured_llm
         
         new_plan = chain.invoke({
-            "original_plan": original_plan.json(),
+            "original_plan": original_plan.model_dump_json(),
             "completed_steps": str(completed_steps),
             "error_info": error_info or "无"
         })
@@ -696,7 +702,7 @@ class ReActPlanner:
     """ReAct规划器 - 推理与行动交替执行"""
     
     def __init__(self, llm=None):
-        self.llm = llm or ChatOpenAI(model="gpt-4")
+        self.llm = llm or ChatOpenAI(model="gpt-5-mini")
     
     def think(self, task: str, context: str, 
               available_tools: List[str]) -> Tuple[str, str, Dict]:
@@ -783,83 +789,58 @@ for i in range(5):  # 最多5轮
 ### 5.1 基础执行器
 
 ```python
-from langchain.agents import AgentExecutor
-from langchain_openai import ChatOpenAI
-from langchain.agents import create_openai_tools_agent
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from typing import List, Dict, Any
 
-class AgentExecutorManager:
-    """Agent执行器管理器"""
-    
+from langchain.agents import create_agent
+from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
+
+class AgentManager:
+    """Agent管理器（LangChain 1.x：create_agent 取代 AgentExecutor）"""
+
     def __init__(self, llm=None, tools=None):
-        self.llm = llm or ChatOpenAI(model="gpt-4")
+        self.llm = llm or ChatOpenAI(model="gpt-5-mini")
         self.tools = tools or []
-        self.executor = None
-    
-    def create_executor(self, system_prompt: str) -> AgentExecutor:
-        """创建Agent执行器
-        
+        self.agent = None
+
+    def create(self, system_prompt: str):
+        """创建 Agent
+
         Args:
             system_prompt: 系统提示词
-        
+
         Returns:
-            AgentExecutor实例
+            可调用的 Agent（LangGraph 图）
         """
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            MessagesPlaceholder(variable_name="chat_history", optional=True),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad")
-        ])
-        
-        agent = create_openai_tools_agent(self.llm, self.tools, prompt)
-        
-        self.executor = AgentExecutor(
-            agent=agent,
+        self.agent = create_agent(
+            self.llm,
             tools=self.tools,
-            verbose=True,                  # 打印详细执行过程
-            max_iterations=10,             # 最大迭代次数
-            max_execution_time=60,         # 最大执行时间（秒）
-            handle_parsing_errors=True,    # 处理解析错误
-            return_intermediate_steps=True # 返回中间步骤
+            system_prompt=system_prompt,
         )
-        
-        return self.executor
-    
-    def execute(self, input_text: str, 
-                chat_history: List = None) -> Dict[str, Any]:
+        return self.agent
+
+    def execute(self, input_text: str) -> Dict[str, Any]:
         """执行任务
-        
+
         Args:
             input_text: 用户输入
-            chat_history: 聊天历史
-        
+
         Returns:
             执行结果
         """
-        if not self.executor:
-            raise ValueError("请先调用 create_executor 创建执行器")
-        
-        result = self.executor.invoke({
-            "input": input_text,
-            "chat_history": chat_history or []
+        if not self.agent:
+            raise ValueError("请先调用 create 创建 Agent")
+
+        result = self.agent.invoke({
+            "messages": [{"role": "user", "content": input_text}]
         })
-        
+
         return {
-            "output": result["output"],
-            "intermediate_steps": [
-                {
-                    "action": step[0].tool,
-                    "input": step[0].tool_input,
-                    "output": step[1]
-                }
-                for step in result.get("intermediate_steps", [])
-            ]
+            "output": result["messages"][-1].content,
+            "messages": result["messages"],  # 完整消息轨迹（含工具调用过程）
         }
 
 # 使用示例
-from langchain_core.tools import tool
-
 @tool
 def search(query: str) -> str:
     """搜索信息"""
@@ -868,75 +849,87 @@ def search(query: str) -> str:
 @tool
 def calculate(expression: str) -> str:
     """计算表达式"""
-    return str(eval(expression))
+    return str(eval(expression))  # ⚠️ 教学演示，生产环境请改用白名单解析/沙箱
 
 # 创建执行器
-manager = AgentExecutorManager(
+manager = AgentManager(
     tools=[search, calculate]
 )
 
-executor = manager.create_executor(
+manager.create(
     system_prompt="你是一个有用的AI助手，可以使用搜索和计算工具。"
 )
 
 # 执行任务
 result = manager.execute("搜索今天的新闻，然后计算3+5等于多少")
 print(f"输出: {result['output']}")
-print(f"中间步骤: {result['intermediate_steps']}")
+print(f"消息数: {len(result['messages'])}")
 ```
+
+::: tip 旧写法对照（AgentExecutor 常用参数）
+旧版 `AgentExecutor` 的常用控制参数在 LangChain 1.x 中的对应做法：
+
+| 旧参数 | 新做法 |
+|--------|--------|
+| `max_iterations=10` | LangGraph 的 `config={"recursion_limit": 10}` |
+| `verbose=True` | 用 `graph.stream()` 逐步观察，或接入 LangSmith |
+| `handle_parsing_errors=True` | 在 middleware 中捕获并兜底处理 |
+| `return_intermediate_steps=True` | 直接读取结果中的完整 `messages` 轨迹 |
+:::
 
 ### 5.2 错误处理和重试
 
 ```python
-from langchain.agents import AgentExecutor
 from typing import Any, Dict
 import time
 
-class RobustAgentExecutor:
-    """健壮的Agent执行器 - 支持错误处理和重试"""
-    
-    def __init__(self, executor: AgentExecutor, max_retries: int = 3):
-        self.executor = executor
+class RobustAgent:
+    """健壮的Agent执行 - 支持错误处理和重试"""
+
+    def __init__(self, agent, max_retries: int = 3):
+        self.agent = agent  # create_agent 返回的 Agent（LangGraph 图）
         self.max_retries = max_retries
-    
-    def execute_with_retry(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+
+    def execute_with_retry(self, input_text: str) -> Dict[str, Any]:
         """带重试的执行
-        
+
         Args:
-            input_data: 输入数据
-        
+            input_text: 用户输入
+
         Returns:
             执行结果
         """
         last_error = None
-        
+
         for attempt in range(self.max_retries):
             try:
-                result = self.executor.invoke(input_data)
+                result = self.agent.invoke({
+                    "messages": [{"role": "user", "content": input_text}]
+                })
                 return {
                     "success": True,
-                    "result": result,
+                    "result": result["messages"][-1].content,
                     "attempts": attempt + 1
                 }
             except Exception as e:
                 last_error = e
                 print(f"第 {attempt + 1} 次执行失败: {str(e)}")
-                
+
                 if attempt < self.max_retries - 1:
                     # 指数退避
                     wait_time = 2 ** attempt
                     print(f"等待 {wait_time} 秒后重试...")
                     time.sleep(wait_time)
-        
+
         return {
             "success": False,
             "error": str(last_error),
             "attempts": self.max_retries
         }
 
-# 使用示例
-robust_executor = RobustAgentExecutor(executor, max_retries=3)
-result = robust_executor.execute_with_retry({"input": "查询天气"})
+# 使用示例（agent 来自上一个示例中 manager.create(...) 创建的 Agent）
+robust_agent = RobustAgent(manager.agent, max_retries=3)
+result = robust_agent.execute_with_retry("查询天气")
 ```
 
 ## 6. 状态管理API
@@ -1075,9 +1068,9 @@ print(f"状态历史: {len(state_manager.get_history())} 条记录")
 |-----|------|------------|
 | **LLM引擎** | 模型调用、流式输出、结构化输出 | `ChatOpenAI`, `with_structured_output` |
 | **工具注册** | 定义、注册、管理工具 | `@tool`, `StructuredTool`, `ToolRegistry` |
-| **记忆管理** | 对话记忆、向量记忆、长期记忆 | `ConversationBufferMemory`, `VectorMemory` |
+| **记忆管理** | 对话记忆、向量记忆、长期记忆 | `InMemorySaver`(checkpointer), `VectorMemory` |
 | **规划器** | 任务分解、ReAct规划 | `TaskPlanner`, `ReActPlanner` |
-| **执行器** | 执行循环、错误处理、重试 | `AgentExecutor`, `RobustAgentExecutor` |
+| **执行器** | 执行循环、错误处理、重试 | `create_agent`, `RobustAgent` |
 | **状态管理** | 状态定义、更新、历史记录 | `AgentState`, `StateManager` |
 
 ## 下一步学习

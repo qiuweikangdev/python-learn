@@ -1,5 +1,7 @@
 # 云服务Agent平台
 
+> **版本基线**：本文示例模型 gpt-5-mini / claude-sonnet-4-5 / gemini-2.5-flash，SDK 以 2026-09 现状为准，更新于 2026-09。
+
 ## 概述
 
 云服务Agent平台是各大云服务商提供的AI Agent开发和部署服务。本章将介绍主流云服务商的Agent平台及其使用方法。
@@ -9,7 +11,7 @@
 ### 1. OpenAI平台
 OpenAI提供的Agent开发服务：
 - **GPT API**：GPT系列模型API
-- **Assistants API**：助手API，支持工具调用
+- **Responses API**：新一代 Agent 交互接口（旧 **Assistants API 已宣布停用，2026 年内下线**，官方推荐迁移到 Responses API）
 - **Function Calling**：函数调用功能
 - **Fine-tuning**：模型微调服务
 
@@ -19,51 +21,31 @@ from openai import OpenAI
 # 初始化客户端
 client = OpenAI(api_key="your-api-key")
 
-# 创建助手
-assistant = client.beta.assistants.create(
-    name="Math Tutor",
+# 使用 Responses API（取代旧版 Assistants API 的 beta.assistants/threads 全套接口）
+response = client.responses.create(
+    model="gpt-5-mini",
     instructions="You are a personal math tutor.",
-    model="gpt-4-turbo",
+    input="What is 2 + 2?",
     tools=[
         {
             "type": "function",
-            "function": {
-                "name": "calculate",
-                "description": "Calculate mathematical expressions",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "expression": {
-                            "type": "string",
-                            "description": "The mathematical expression to calculate"
-                        }
-                    },
-                    "required": ["expression"]
-                }
+            "name": "calculate",
+            "description": "Calculate mathematical expressions",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "expression": {
+                        "type": "string",
+                        "description": "The mathematical expression to calculate"
+                    }
+                },
+                "required": ["expression"]
             }
         }
-    ]
+    ],
 )
 
-# 创建线程
-thread = client.beta.threads.create()
-
-# 发送消息
-message = client.beta.threads.messages.create(
-    thread_id=thread.id,
-    role="user",
-    content="What is 2 + 2?"
-)
-
-# 运行助手
-run = client.beta.threads.runs.create(
-    thread_id=thread.id,
-    assistant_id=assistant.id
-)
-
-# 获取响应
-messages = client.beta.threads.messages.list(thread_id=thread.id)
-print(messages)
+print(response.output_text)
 ```
 
 ### 2. Anthropic平台
@@ -81,7 +63,7 @@ client = anthropic.Anthropic(api_key="your-api-key")
 
 # 创建消息
 message = client.messages.create(
-    model="claude-3-sonnet-20240229",
+    model="claude-sonnet-4-5",
     max_tokens=1024,
     messages=[
         {
@@ -102,16 +84,16 @@ Google提供的AI服务：
 - **Cloud Storage**：云存储服务
 
 ```python
-import google.generativeai as genai
+from google import genai  # 新包：pip install google-genai（旧包 google.generativeai 已弃用）
 
-# 配置API密钥
-genai.configure(api_key="your-api-key")
-
-# 创建模型
-model = genai.GenerativeModel('gemini-pro')
+# 初始化客户端
+client = genai.Client(api_key="your-api-key")
 
 # 生成内容
-response = model.generate_content("Hello, Gemini!")
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents="Hello, Gemini!",
+)
 print(response.text)
 ```
 
@@ -128,13 +110,13 @@ from openai import AzureOpenAI
 # 初始化客户端
 client = AzureOpenAI(
     api_key="your-api-key",
-    api_version="2024-02-01",
+    api_version="2024-10-21",
     azure_endpoint="https://your-resource.openai.azure.com/"
 )
 
-# 创建聊天完成
+# 创建聊天完成（model 填部署名，如部署了 gpt-5-mini 则写部署名）
 response = client.chat.completions.create(
-    model="gpt-35-turbo",
+    model="gpt-5-mini",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "Hello!"}
@@ -164,33 +146,39 @@ print(response.choices[0].message.content)
 
 ### 2. 多平台集成
 ```python
+from openai import OpenAI
+import anthropic
+from google import genai  # 新包：pip install google-genai
+
 class MultiPlatformAgent:
     """多平台Agent"""
     def __init__(self):
         self.platforms = {
             'openai': OpenAI(api_key="openai-key"),
             'anthropic': anthropic.Anthropic(api_key="anthropic-key"),
-            'google': genai
+            'google': genai.Client(api_key="google-key")
         }
     
     def call_platform(self, platform: str, prompt: str) -> str:
         """调用指定平台"""
         if platform == 'openai':
             response = self.platforms['openai'].chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-5-mini",
                 messages=[{"role": "user", "content": prompt}]
             )
             return response.choices[0].message.content
         elif platform == 'anthropic':
             message = self.platforms['anthropic'].messages.create(
-                model="claude-3-sonnet-20240229",
+                model="claude-sonnet-4-5",
                 max_tokens=1024,
                 messages=[{"role": "user", "content": prompt}]
             )
             return message.content[0].text
         elif platform == 'google':
-            model = self.platforms['google'].GenerativeModel('gemini-pro')
-            response = model.generate_content(prompt)
+            response = self.platforms['google'].models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+            )
             return response.text
         else:
             raise ValueError(f"Unknown platform: {platform}")

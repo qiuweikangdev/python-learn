@@ -1,5 +1,7 @@
 # 模型微调详解
 
+> **版本基线**：本文 OpenAI 微调示例基于 OpenAI Python SDK ≥1.x 的 `client.fine_tuning.jobs` 接口（旧版 `openai.FineTune` 已弃用），示例模型为 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 模型微调（Fine-tuning）是在预训练模型的基础上，使用特定任务的数据进行进一步训练，使模型适应特定领域或任务的技术。微调是LLM应用开发中的重要技术，可以让通用模型在特定场景下表现更好。
@@ -722,7 +724,7 @@ def openai_fine_tuning():
     # 步骤3：创建微调任务
     job = client.fine_tuning.jobs.create(
         training_file=file.id,
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         hyperparameters={
             "n_epochs": 3,
         }

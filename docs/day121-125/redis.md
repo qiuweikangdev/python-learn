@@ -1,5 +1,7 @@
 # Redis详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
 ## 概述
 
 Redis向量搜索模块（RediSearch）为Redis提供了向量搜索能力。它结合了Redis的高性能和向量搜索功能，适合需要低延迟的实时应用。
@@ -199,7 +201,7 @@ openai_client = OpenAI(api_key="your-api-key")
 # 生成嵌入
 def get_embedding(text):
     response = openai_client.embeddings.create(
-        model="text-embedding-ada-002",
+        model="text-embedding-3-small",
         input=text
     )
     return response.data[0].embedding

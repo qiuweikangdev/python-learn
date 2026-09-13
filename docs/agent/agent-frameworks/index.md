@@ -1,5 +1,7 @@
 # Agent框架概述
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 什么是Agent框架？
 
 Agent框架是用于构建AI Agent的软件框架，提供了工具调用、记忆管理、规划决策等核心功能，帮助开发者快速构建能够自主完成任务的智能系统。
@@ -99,17 +101,27 @@ Agent的学习能力：
 └── 工具层
 ```
 
-## 主流Agent框架对比
+## 主流Agent框架对比（2026）
 
-| 框架 | 特点 | 优势 | 劣势 | 适用场景 |
-|------|------|------|------|----------|
-| **AutoGPT** | 自主Agent | 完全自主、持续运行 | 不稳定、成本高 | 探索性任务 |
-| **BabyAGI** | 任务驱动 | 简单、易理解 | 功能有限 | 任务管理 |
-| **MetaGPT** | 多角色协作 | 角色明确、协作高效 | 复杂度高 | 软件开发 |
-| **CrewAI** | 多Agent协作 | 易用、灵活 | 相对较新 | 团队协作 |
-| **AutoGen** | 对话式Agent | 微软支持、企业级 | 学习曲线陡 | 企业应用 |
-| **ChatDev** | 虚拟公司 | 场景明确、易于理解 | 限制较多 | 软件开发 |
-| **CAMEL** | 通信Agent | 通信机制完善 | 应用场景窄 | 研究探索 |
+| 框架 | 出品方 | 特点 | 适用场景 | 状态 |
+|------|--------|------|----------|------|
+| **LangGraph** | LangChain | 图编排、checkpointer 持久化、人机协同 | 生产级 Agent / 多 Agent 编排 | 活跃，事实标准之一 |
+| **OpenAI Agents SDK** | OpenAI | 轻量、Handoffs、Guardrails | 快速构建单/多 Agent | 活跃 |
+| **Pydantic AI** | Pydantic 团队 | 类型安全、结构化输出 | 工程化 Agent 应用 | 活跃 |
+| **Google ADK** | Google | 与 Gemini / Vertex AI 深度集成 | GCP 生态 Agent | 活跃 |
+| **CrewAI** | CrewAI | 角色化多 Agent 协作 | 团队协作类任务 | 活跃 |
+| **AutoGen（AG2）** | 微软/社区 | 对话式多 Agent | 企业级多 Agent 应用 | 活跃（v0.4+ 全新架构） |
+| **smolagents** | HuggingFace | 极简、Code Agent | 轻量 Agent 原型 | 活跃 |
+| **MCP 生态** | Anthropic 等 | Model Context Protocol，工具/上下文接入标准 | Agent 工具接入的事实标准 | 持续扩展 |
+| **MetaGPT** | 社区 | 多角色"软件公司"模拟 | 软件开发流程演示 | 2023 年早期探索项目，具历史意义 |
+| **AutoGPT** | 社区 | 完全自主循环 Agent | 自主性概念验证 | 2023 年早期探索项目，具历史意义 |
+| **BabyAGI** | 社区 | 极简任务队列 Agent | 学习参考 | 2023 年早期探索项目，具历史意义 |
+| **ChatDev** | 社区 | 虚拟软件公司 | 教学演示 | 更新放缓，具历史价值 |
+| **CAMEL** | 社区 | 角色扮演通信 Agent | 研究探索 | 更新放缓，具历史价值 |
+
+::: tip 2026 年怎么选
+生产项目优先考虑 **LangGraph / OpenAI Agents SDK / Pydantic AI / Google ADK**，多角色协作看 **CrewAI / AutoGen**，工具接入统一走 **MCP（Model Context Protocol）**。AutoGPT、BabyAGI、MetaGPT、ChatDev、CAMEL 属于 2023 年的早期探索项目，适合用来理解 Agent 思想的演进，不建议作为新项目的底座。
+:::
 
 ## 选型指南
 
@@ -135,21 +147,24 @@ Agent的学习能力：
 
 ### 1. 环境准备
 ```bash
-# 安装基础库
-pip install langchain openai
+# 安装基础库（LangChain 1.x + LangGraph）
+pip install -U langchain langgraph langchain-openai
 
-# 安装特定框架
-pip install autogpt babyagi metagpt crewai
+# 可 pip 安装的多 Agent 框架
+pip install crewai              # CrewAI
+pip install metagpt             # MetaGPT
+pip install autogen-agentchat   # AutoGen v0.4+ 新包（旧包名 pyautogen 已停止演进）
 
-# 设置环境变量
-export OPENAI_API_KEY="your-openai-key"
+# 注意：AutoGPT / BabyAGI 是开源项目而非 pip 库，无法 pip install：
+#   AutoGPT：git clone https://github.com/Significant-Gravitas/AutoGPT 后按官方文档运行
+#   BabyAGI：仅数百行源码，建议直接阅读仓库代码作为学习参考
 ```
 
 ### 2. 基础Agent示例
 ```python
-from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.agents import create_agent
 from langchain.tools import tool
+from langchain_openai import ChatOpenAI
 
 # 定义工具
 @tool
@@ -161,34 +176,55 @@ def search(query: str) -> str:
 def calculate(expression: str) -> str:
     """计算数学表达式"""
     try:
-        result = eval(expression)
+        result = eval(expression)  # ⚠️ 仅教学演示，生产环境禁止
         return str(result)
-    except:
+    except Exception:
         return "计算错误"
 
-# 创建Agent
-llm = ChatOpenAI(model="gpt-4o-mini")
+# 创建Agent（LangChain 1.x：create_agent 取代 AgentExecutor）
+llm = ChatOpenAI(model="gpt-5-mini")
 tools = [search, calculate]
 
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "你是一个有用的助手，可以使用工具来完成任务。"),
-    ("user", "{input}"),
-    ("placeholder", "{agent_scratchpad}")
-])
-
-agent = create_openai_tools_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+agent = create_agent(
+    llm,
+    tools=tools,
+    system_prompt="你是一个有用的助手，可以使用工具来完成任务。",
+)
 
 # 使用Agent
-result = agent_executor.invoke({"input": "搜索最新科技新闻并计算相关数据"})
-print(result["output"])
+result = agent.invoke({
+    "messages": [{"role": "user", "content": "搜索最新科技新闻并计算相关数据"}]
+})
+print(result["messages"][-1].content)
 ```
+
+::: warning eval() 安全提示
+示例中的 `eval()` 仅供教学演示。**生产环境严禁对不可信输入使用 `eval()`**——它会执行任意代码，造成注入风险。替代方案：
+- 仅解析字面量：`ast.literal_eval`
+- 白名单解析：用 `ast` 模块解析表达式后，仅放行加减乘除等白名单节点
+- 沙箱执行：独立进程/容器运行，并施加资源与超时限制
+:::
+
+::: tip 旧写法对照（LangChain 0.x）
+旧版教程常用 `AgentExecutor` + `create_openai_tools_agent`：
+
+```python
+# ❌ 旧写法（LangChain 0.x，已移除）
+from langchain.agents import AgentExecutor, create_openai_tools_agent
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+result = agent_executor.invoke({"input": "..."})["output"]
+```
+
+LangChain 1.x 中它们已被 `from langchain.agents import create_agent` 取代，返回结果为消息列表，`messages[-1].content` 即最终回答。
+:::
 
 ### 3. 多Agent协作示例
 ```python
-from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.agents import create_agent
 from langchain.tools import tool
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(model="gpt-5-mini")
 
 # 创建研究员Agent
 @tool
@@ -196,15 +232,10 @@ def research(topic: str) -> str:
     """研究指定主题"""
     return f"关于{topic}的研究结果"
 
-research_llm = ChatOpenAI(model="gpt-4o-mini")
-research_tools = [research]
-research_prompt = ChatPromptTemplate.from_messages([
-    ("system", "你是一个研究员，负责收集和分析信息。"),
-    ("user", "{input}"),
-    ("placeholder", "{agent_scratchpad}")
-])
-research_agent = create_openai_tools_agent(research_llm, research_tools, research_prompt)
-research_executor = AgentExecutor(agent=research_agent, tools=research_tools)
+research_agent = create_agent(
+    llm, tools=[research],
+    system_prompt="你是一个研究员，负责收集和分析信息。",
+)
 
 # 创建分析师Agent
 @tool
@@ -212,32 +243,28 @@ def analyze(data: str) -> str:
     """分析数据"""
     return f"分析结果: {data}"
 
-analyst_llm = ChatOpenAI(model="gpt-4o-mini")
-analyst_tools = [analyze]
-analyst_prompt = ChatPromptTemplate.from_messages([
-    ("system", "你是一个分析师，负责分析数据并提供见解。"),
-    ("user", "{input}"),
-    ("placeholder", "{agent_scratchpad}")
-])
-analyst_agent = create_openai_tools_agent(analyst_llm, analyst_tools, analyst_prompt)
-analyst_executor = AgentExecutor(agent=analyst_agent, tools=analyst_tools)
+analyst_agent = create_agent(
+    llm, tools=[analyze],
+    system_prompt="你是一个分析师，负责分析数据并提供见解。",
+)
 
-# 协调器
-def coordinate(task):
+# 协调器：顺序编排两个 Agent
+def coordinate(task: str) -> str:
+    def _ask(agent, content: str) -> str:
+        result = agent.invoke({"messages": [{"role": "user", "content": content}]})
+        return result["messages"][-1].content
+
     # 研究阶段
-    research_result = research_executor.invoke({"input": f"研究: {task}"})
-    
+    research_result = _ask(research_agent, f"研究: {task}")
+
     # 分析阶段
-    analyst_result = analyst_executor.invoke({
-        "input": f"分析以下研究结果: {research_result['output']}"
-    })
-    
-    return analyst_result["output"]
+    return _ask(analyst_agent, f"分析以下研究结果: {research_result}")
 
 # 使用示例
-result = coordinate("人工智能在医疗领域的应用")
-print(result)
+print(coordinate("人工智能在医疗领域的应用"))
 ```
+
+更复杂的多 Agent 协作（如 supervisor 用结构化输出路由、LangGraph `StateGraph` 编排）参见[多Agent系统概述](/agent/multi-agent/)。
 
 ## 最佳实践
 
@@ -282,8 +309,8 @@ print(result)
 ## 下一步学习
 
 选择一个Agent框架深入学习：
-- [AutoGPT详解](/day126-130/autogpt) - 自主AI代理
-- [BabyAGI详解](/day126-130/babyagi) - 任务驱动的自主Agent
+- [AutoGPT详解](/day126-130/autogpt) - 自主AI代理（2023 年早期探索项目，需 clone 仓库运行）
+- [BabyAGI详解](/day126-130/babyagi) - 任务驱动的自主Agent（学习参考）
 - [MetaGPT详解](/day126-130/metagpt) - 多角色协作框架
 - [CrewAI详解](/day126-130/crewai) - 多Agent协作框架
 - [Microsoft AutoGen详解](/day126-130/autogen) - 多Agent对话框架

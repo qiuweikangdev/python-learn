@@ -1,5 +1,7 @@
 # Chroma详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
 ## 概述
 
 Chroma是一个轻量级的嵌入式向量数据库，专为AI应用设计。它提供了简单的API，支持本地和云端部署，适合原型开发和小规模应用。
@@ -32,14 +34,17 @@ Chroma的查询功能：
 # 安装Chroma
 pip install chromadb
 
+# LangChain 集成包（1.x 起为官方独立集成包）
+pip install langchain-chroma
+
 # 创建客户端
-import chroma
+import chromadb
 
 # 本地客户端
-client = chroma.Client()
+client = chromadb.Client()
 
 # 持久化客户端
-client = chroma.PersistentClient(path="./chroma_db")
+client = chromadb.PersistentClient(path="./chroma_db")
 ```
 
 ### 2. 创建集合
@@ -118,7 +123,7 @@ collection.delete(ids=["id1", "id2"])
 ### 1. 环境准备
 ```bash
 # 安装必要的库
-pip install chromadb openai
+pip install chromadb langchain-chroma openai
 
 # 设置环境变量
 export OPENAI_API_KEY="your-openai-api-key"
@@ -144,7 +149,7 @@ openai_client = OpenAI(api_key="your-api-key")
 # 生成嵌入
 def get_embedding(text):
     response = openai_client.embeddings.create(
-        model="text-embedding-ada-002",
+        model="text-embedding-3-small",
         input=text
     )
     return response.data[0].embedding

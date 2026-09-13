@@ -1,5 +1,7 @@
 # 部署与运维
 
+> **版本基线**：本文示例环境 Python 3.12 / Redis 7 / PostgreSQL 15，更新于 2026-09。
+
 ## 概述
 
 本章介绍Agent系统的部署和运维实践，包括容器化部署、Kubernetes部署、监控告警、日志管理等。
@@ -11,7 +13,7 @@
 
 ```dockerfile
 # Dockerfile
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -43,8 +45,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 ```yaml
-# docker-compose.yml
-version: '3.8'
+# docker-compose.yml（Compose v2 已不需要顶层 version 字段）
 
 services:
   agent-api:

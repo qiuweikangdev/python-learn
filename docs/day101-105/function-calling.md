@@ -1,5 +1,7 @@
 # 函数调用
 
+> **版本基线**：本文基于 OpenAI Python SDK ≥1.x，使用现行 `tools=` / `tool_choice` 参数（旧的 `functions=` / `function_call=` 已弃用），示例模型为 gpt-5-mini，模型迭代快，以官方模型页为准。更新于 2026-09。
+
 ## 什么是函数调用？
 
 函数调用（Function Calling）是让大语言模型（LLM）调用外部工具和API的机制。通过函数调用，LLM可以获取实时信息、执行计算、操作数据等，从而扩展其能力范围。
@@ -101,28 +103,31 @@ def demonstrate_parameter_extraction():
     展示模型如何从自然语言中提取函数参数
     """
     
-    # 定义函数
-    functions = [
+    # 定义工具（现行写法：tools 参数）
+    tools = [
         {
-            "name": "search_restaurant",
-            "description": "搜索餐厅",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "cuisine": {
-                        "type": "string",
-                        "description": "菜系类型，如中餐、西餐、日料等"
+            "type": "function",
+            "function": {
+                "name": "search_restaurant",
+                "description": "搜索餐厅",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "cuisine": {
+                            "type": "string",
+                            "description": "菜系类型，如中餐、西餐、日料等"
+                        },
+                        "location": {
+                            "type": "string",
+                            "description": "地点，如北京、上海等"
+                        },
+                        "price_range": {
+                            "type": "string",
+                            "description": "价格范围，如便宜、中等、昂贵"
+                        }
                     },
-                    "location": {
-                        "type": "string",
-                        "description": "地点，如北京、上海等"
-                    },
-                    "price_range": {
-                        "type": "string",
-                        "description": "价格范围，如便宜、中等、昂贵"
-                    }
-                },
-                "required": ["cuisine", "location"]
+                    "required": ["cuisine", "location"]
+                }
             }
         }
     ]
@@ -139,17 +144,17 @@ def demonstrate_parameter_extraction():
         
         # 让模型提取参数
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[{"role": "user", "content": user_input}],
-            functions=functions,
-            function_call="auto"
+            tools=tools,
+            tool_choice="auto"
         )
         
         message = response.choices[0].message
         
-        if message.function_call:
+        if message.tool_calls:
             # 模型成功提取了参数
-            args = json.loads(message.function_call.arguments)
+            args = json.loads(message.tool_calls[0].function.arguments)
             print(f"提取的参数：{json.dumps(args, ensure_ascii=False, indent=2)}")
         else:
             # 模型没有调用函数
@@ -194,60 +199,69 @@ def demonstrate_function_selection():
     当有多个函数可用时，模型如何选择合适的函数
     """
     
-    # 定义多个函数
-    functions = [
+    # 定义多个工具
+    tools = [
         {
-            "name": "get_weather",
-            "description": "获取指定城市的天气信息",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "location": {
-                        "type": "string",
-                        "description": "城市名称"
-                    }
-                },
-                "required": ["location"]
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "description": "获取指定城市的天气信息",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {
+                            "type": "string",
+                            "description": "城市名称"
+                        }
+                    },
+                    "required": ["location"]
+                }
             }
         },
         {
-            "name": "search_restaurant",
-            "description": "搜索餐厅",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "cuisine": {
-                        "type": "string",
-                        "description": "菜系类型"
+            "type": "function",
+            "function": {
+                "name": "search_restaurant",
+                "description": "搜索餐厅",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "cuisine": {
+                            "type": "string",
+                            "description": "菜系类型"
+                        },
+                        "location": {
+                            "type": "string",
+                            "description": "地点"
+                        }
                     },
-                    "location": {
-                        "type": "string",
-                        "description": "地点"
-                    }
-                },
-                "required": ["cuisine", "location"]
+                    "required": ["cuisine", "location"]
+                }
             }
         },
         {
-            "name": "book_hotel",
-            "description": "预订酒店",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "location": {
-                        "type": "string",
-                        "description": "地点"
+            "type": "function",
+            "function": {
+                "name": "book_hotel",
+                "description": "预订酒店",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {
+                            "type": "string",
+                            "description": "地点"
+                        },
+                        "check_in": {
+                            "type": "string",
+                            "description": "入住日期"
+                        },
+                        "check_out": {
+                            "type": "string",
+                            "description": "离店日期"
+                        }
                     },
-                    "check_in": {
-                        "type": "string",
-                        "description": "入住日期"
-                    },
-                    "check_out": {
-                        "type": "string",
-                        "description": "离店日期"
-                    }
-                },
-                "required": ["location", "check_in", "check_out"]
+                    "required": ["location", "check_in", "check_out"]
+                }
             }
         }
     ]
@@ -263,17 +277,17 @@ def demonstrate_function_selection():
         print(f"\n用户输入：{user_input}")
         
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[{"role": "user", "content": user_input}],
-            functions=functions,
-            function_call="auto"
+            tools=tools,
+            tool_choice="auto"
         )
         
         message = response.choices[0].message
         
-        if message.function_call:
-            print(f"选择的函数：{message.function_call.name}")
-            args = json.loads(message.function_call.arguments)
+        if message.tool_calls:
+            print(f"选择的函数：{message.tool_calls[0].function.name}")
+            args = json.loads(message.tool_calls[0].function.arguments)
             print(f"参数：{json.dumps(args, ensure_ascii=False)}")
         else:
             print(f"模型回复：{message.content}")
@@ -315,40 +329,49 @@ class FunctionCallingWithErrorHandling:
             "divide": self.divide
         }
         
-        # 函数定义（用于模型）
+        # 工具定义（用于模型，现行 tools 格式）
         self.function_definitions = [
             {
-                "name": "get_weather",
-                "description": "获取天气信息",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "location": {"type": "string", "description": "城市名称"}
-                    },
-                    "required": ["location"]
+                "type": "function",
+                "function": {
+                    "name": "get_weather",
+                    "description": "获取天气信息",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "location": {"type": "string", "description": "城市名称"}
+                        },
+                        "required": ["location"]
+                    }
                 }
             },
             {
-                "name": "calculate",
-                "description": "计算数学表达式",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "expression": {"type": "string", "description": "数学表达式"}
-                    },
-                    "required": ["expression"]
+                "type": "function",
+                "function": {
+                    "name": "calculate",
+                    "description": "计算数学表达式",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "expression": {"type": "string", "description": "数学表达式"}
+                        },
+                        "required": ["expression"]
+                    }
                 }
             },
             {
-                "name": "divide",
-                "description": "除法运算",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "a": {"type": "number", "description": "被除数"},
-                        "b": {"type": "number", "description": "除数"}
-                    },
-                    "required": ["a", "b"]
+                "type": "function",
+                "function": {
+                    "name": "divide",
+                    "description": "除法运算",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "a": {"type": "number", "description": "被除数"},
+                            "b": {"type": "number", "description": "除数"}
+                        },
+                        "required": ["a", "b"]
+                    }
                 }
             }
         ]
@@ -386,6 +409,8 @@ class FunctionCallingWithErrorHandling:
             计算结果
         """
         try:
+            # 注意：生产环境禁止对 LLM 生成的表达式直接使用 eval，
+            # 应改用 ast.literal_eval 或白名单函数映射（见工具使用一章的安全提示）
             result = eval(expression)
             return {"success": True, "result": result}
         except Exception as e:
@@ -429,18 +454,19 @@ class FunctionCallingWithErrorHandling:
             try:
                 # 调用模型
                 response = client.chat.completions.create(
-                    model="gpt-4o-mini",
+                    model="gpt-5-mini",
                     messages=messages,
-                    functions=self.function_definitions,
-                    function_call="auto"
+                    tools=self.function_definitions,
+                    tool_choice="auto"
                 )
                 
                 message = response.choices[0].message
                 
-                if message.function_call:
+                if message.tool_calls:
+                    tool_call = message.tool_calls[0]
                     # 执行函数
-                    func_name = message.function_call.name
-                    func_args = json.loads(message.function_call.arguments)
+                    func_name = tool_call.function.name
+                    func_args = json.loads(tool_call.function.arguments)
                     
                     # 检查函数是否存在
                     if func_name not in self.functions:
@@ -448,8 +474,8 @@ class FunctionCallingWithErrorHandling:
                         error_msg = f"函数 {func_name} 不存在"
                         messages.append(message)
                         messages.append({
-                            "role": "function",
-                            "name": func_name,
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
                             "content": json.dumps({"success": False, "error": error_msg})
                         })
                         continue
@@ -462,14 +488,14 @@ class FunctionCallingWithErrorHandling:
                         # 成功：返回结果给模型
                         messages.append(message)
                         messages.append({
-                            "role": "function",
-                            "name": func_name,
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
                             "content": json.dumps(result, ensure_ascii=False)
                         })
                         
                         # 让模型基于结果生成回答
                         final_response = client.chat.completions.create(
-                            model="gpt-4o-mini",
+                            model="gpt-5-mini",
                             messages=messages
                         )
                         return final_response.choices[0].message.content
@@ -478,8 +504,8 @@ class FunctionCallingWithErrorHandling:
                         error_msg = result.get("error", "未知错误")
                         messages.append(message)
                         messages.append({
-                            "role": "function",
-                            "name": func_name,
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
                             "content": json.dumps({"success": False, "error": error_msg})
                         })
                         
@@ -543,29 +569,35 @@ def multi_function_calling():
     演示如何在一个任务中调用多个函数
     """
     
-    # 定义函数
-    functions = [
+    # 定义工具
+    tools = [
         {
-            "name": "get_weather",
-            "description": "获取天气信息",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "location": {"type": "string", "description": "城市名称"}
-                },
-                "required": ["location"]
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "description": "获取天气信息",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {"type": "string", "description": "城市名称"}
+                    },
+                    "required": ["location"]
+                }
             }
         },
         {
-            "name": "book_hotel",
-            "description": "预订酒店",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "location": {"type": "string", "description": "城市"},
-                    "date": {"type": "string", "description": "日期"}
-                },
-                "required": ["location", "date"]
+            "type": "function",
+            "function": {
+                "name": "book_hotel",
+                "description": "预订酒店",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {"type": "string", "description": "城市"},
+                        "date": {"type": "string", "description": "日期"}
+                    },
+                    "required": ["location", "date"]
+                }
             }
         }
     ]
@@ -584,15 +616,16 @@ def multi_function_calling():
     messages = [{"role": "user", "content": user_input}]
     
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=messages,
-        functions=functions,
-        function_call="auto"
+        tools=tools,
+        tool_choice="auto"
     )
     
     message = response.choices[0].message
     
-    if message.function_call:
+    if message.tool_calls:
+        first_call = message.tool_calls[0]
         # 执行天气查询
         weather_result = get_weather("北京")
         print(f"天气结果：{weather_result}")
@@ -600,22 +633,23 @@ def multi_function_calling():
         # 将结果添加到消息
         messages.append(message)
         messages.append({
-            "role": "function",
-            "name": "get_weather",
+            "role": "tool",
+            "tool_call_id": first_call.id,
             "content": json.dumps(weather_result)
         })
         
         # 第二次调用：模型决定是否预订酒店
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=messages,
-            functions=functions,
-            function_call="auto"
+            tools=tools,
+            tool_choice="auto"
         )
         
         message = response.choices[0].message
         
-        if message.function_call:
+        if message.tool_calls:
+            second_call = message.tool_calls[0]
             # 执行酒店预订
             hotel_result = book_hotel("北京", "明天")
             print(f"酒店结果：{hotel_result}")
@@ -623,14 +657,14 @@ def multi_function_calling():
             # 将结果添加到消息
             messages.append(message)
             messages.append({
-                "role": "function",
-                "name": "book_hotel",
+                "role": "tool",
+                "tool_call_id": second_call.id,
                 "content": json.dumps(hotel_result)
             })
             
             # 最终回复
             final_response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-5-mini",
                 messages=messages
             )
             print(f"最终回复：{final_response.choices[0].message.content}")
@@ -776,20 +810,23 @@ def get_stock_price(symbol):
     prices = {"AAPL": 150.25, "GOOGL": 2800.50, "MSFT": 310.75}
     return {"symbol": symbol, "price": prices.get(symbol, "未找到")}
 
-# 函数定义
-functions = [
+# 工具定义
+tools = [
     {
-        "name": "get_stock_price",
-        "description": "获取指定股票的当前价格",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "symbol": {
-                    "type": "string",
-                    "description": "股票代码，如AAPL、GOOGL"
-                }
-            },
-            "required": ["symbol"]
+        "type": "function",
+        "function": {
+            "name": "get_stock_price",
+            "description": "获取指定股票的当前价格",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {
+                        "type": "string",
+                        "description": "股票代码，如AAPL、GOOGL"
+                    }
+                },
+                "required": ["symbol"]
+            }
         }
     }
 ]
@@ -797,26 +834,27 @@ functions = [
 def chat_with_stock(query):
     """带股票查询的对话"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": query}],
-        functions=functions,
-        function_call="auto"
+        tools=tools,
+        tool_choice="auto"
     )
     
     message = response.choices[0].message
     
-    if message.function_call:
+    if message.tool_calls:
+        tool_call = message.tool_calls[0]
         # 执行函数
-        args = json.loads(message.function_call.arguments)
+        args = json.loads(tool_call.function.arguments)
         result = get_stock_price(**args)
         
         # 将结果返回给模型
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "user", "content": query},
                 message,
-                {"role": "function", "name": "get_stock_price", "content": json.dumps(result)}
+                {"role": "tool", "tool_call_id": tool_call.id, "content": json.dumps(result)}
             ]
         )
         
@@ -860,24 +898,27 @@ def query_orders(user_id, status=None):
         orders = [o for o in orders if o["status"] == status]
     return {"orders": orders, "count": len(orders)}
 
-functions = [
+tools = [
     {
-        "name": "query_orders",
-        "description": "查询用户的订单信息",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "user_id": {
-                    "type": "string",
-                    "description": "用户ID"
+        "type": "function",
+        "function": {
+            "name": "query_orders",
+            "description": "查询用户的订单信息",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "user_id": {
+                        "type": "string",
+                        "description": "用户ID"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["待付款", "已付款", "已发货", "已完成"],
+                        "description": "订单状态筛选（可选）"
+                    }
                 },
-                "status": {
-                    "type": "string",
-                    "enum": ["待付款", "已付款", "已发货", "已完成"],
-                    "description": "订单状态筛选（可选）"
-                }
-            },
-            "required": ["user_id"]
+                "required": ["user_id"]
+            }
         }
     }
 ]
@@ -885,28 +926,29 @@ functions = [
 def chat_with_orders(query, user_id):
     """带订单查询的对话"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[
             {"role": "system", "content": f"当前用户ID：{user_id}"},
             {"role": "user", "content": query}
         ],
-        functions=functions,
-        function_call="auto"
+        tools=tools,
+        tool_choice="auto"
     )
     
     message = response.choices[0].message
     
-    if message.function_call:
-        args = json.loads(message.function_call.arguments)
+    if message.tool_calls:
+        tool_call = message.tool_calls[0]
+        args = json.loads(tool_call.function.arguments)
         result = query_orders(**args)
         
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "system", "content": f"当前用户ID：{user_id}"},
                 {"role": "user", "content": query},
                 message,
-                {"role": "function", "name": "query_orders", "content": json.dumps(result)}
+                {"role": "tool", "tool_call_id": tool_call.id, "content": json.dumps(result)}
             ]
         )
         
@@ -951,40 +993,49 @@ def add_schedule(date, time, event):
     """添加日程"""
     return {"success": True, "message": f"已添加{date} {time}的{event}"}
 
-functions = [
+tools = [
     {
-        "name": "get_weather",
-        "description": "获取指定城市的天气信息",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "location": {"type": "string", "description": "城市名称"}
-            },
-            "required": ["location"]
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "获取指定城市的天气信息",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {"type": "string", "description": "城市名称"}
+                },
+                "required": ["location"]
+            }
         }
     },
     {
-        "name": "get_schedule",
-        "description": "获取指定日期的日程安排",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "date": {"type": "string", "description": "日期，格式：YYYY-MM-DD"}
-            },
-            "required": ["date"]
+        "type": "function",
+        "function": {
+            "name": "get_schedule",
+            "description": "获取指定日期的日程安排",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "date": {"type": "string", "description": "日期，格式：YYYY-MM-DD"}
+                },
+                "required": ["date"]
+            }
         }
     },
     {
-        "name": "add_schedule",
-        "description": "添加新的日程",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "date": {"type": "string", "description": "日期"},
-                "time": {"type": "string", "description": "时间"},
-                "event": {"type": "string", "description": "事件名称"}
-            },
-            "required": ["date", "time", "event"]
+        "type": "function",
+        "function": {
+            "name": "add_schedule",
+            "description": "添加新的日程",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "date": {"type": "string", "description": "日期"},
+                    "time": {"type": "string", "description": "时间"},
+                    "event": {"type": "string", "description": "事件名称"}
+                },
+                "required": ["date", "time", "event"]
+            }
         }
     }
 ]
@@ -992,17 +1043,18 @@ functions = [
 def chat_with_assistant(query):
     """多功能助手"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": query}],
-        functions=functions,
-        function_call="auto"
+        tools=tools,
+        tool_choice="auto"
     )
     
     message = response.choices[0].message
     
-    if message.function_call:
-        func_name = message.function_call.name
-        args = json.loads(message.function_call.arguments)
+    if message.tool_calls:
+        tool_call = message.tool_calls[0]
+        func_name = tool_call.function.name
+        args = json.loads(tool_call.function.arguments)
         
         # 执行对应函数
         if func_name == "get_weather":
@@ -1015,11 +1067,11 @@ def chat_with_assistant(query):
             result = {"error": "未知函数"}
         
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "user", "content": query},
                 message,
-                {"role": "function", "name": func_name, "content": json.dumps(result)}
+                {"role": "tool", "tool_call_id": tool_call.id, "content": json.dumps(result)}
             ]
         )
         
@@ -1055,16 +1107,19 @@ def unreliable_api(query):
         raise ValueError("API调用失败")
     return {"result": f"处理结果：{query}"}
 
-functions = [
+tools = [
     {
-        "name": "unreliable_api",
-        "description": "调用可能失败的API",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {"type": "string", "description": "查询内容"}
-            },
-            "required": ["query"]
+        "type": "function",
+        "function": {
+            "name": "unreliable_api",
+            "description": "调用可能失败的API",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "查询内容"}
+                },
+                "required": ["query"]
+            }
         }
     }
 ]
@@ -1074,16 +1129,17 @@ def chat_with_retry(query, max_retries=3):
     for attempt in range(max_retries):
         try:
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-5-mini",
                 messages=[{"role": "user", "content": query}],
-                functions=functions,
-                function_call="auto"
+                tools=tools,
+                tool_choice="auto"
             )
             
             message = response.choices[0].message
             
-            if message.function_call:
-                args = json.loads(message.function_call.arguments)
+            if message.tool_calls:
+                tool_call = message.tool_calls[0]
+                args = json.loads(tool_call.function.arguments)
                 
                 try:
                     result = unreliable_api(**args)
@@ -1092,11 +1148,11 @@ def chat_with_retry(query, max_retries=3):
                     result = {"error": str(e)}
                 
                 response = client.chat.completions.create(
-                    model="gpt-4o-mini",
+                    model="gpt-5-mini",
                     messages=[
                         {"role": "user", "content": query},
                         message,
-                        {"role": "function", "name": "unreliable_api", "content": json.dumps(result)}
+                        {"role": "tool", "tool_call_id": tool_call.id, "content": json.dumps(result)}
                     ]
                 )
                 
@@ -1128,47 +1184,55 @@ import json
 
 client = OpenAI(api_key="your-api-key")
 
-# 定义函数
-functions = [
+# 定义工具（现行 tools 格式）
+tools = [
     {
-        "name": "get_weather",
-        "description": "获取指定城市的天气信息",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "城市名称，如：北京"
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "获取指定城市的天气信息",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "城市名称，如：北京"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "enum": ["celsius", "fahrenheit"],
+                        "description": "温度单位"
+                    }
                 },
-                "unit": {
-                    "type": "string",
-                    "enum": ["celsius", "fahrenheit"],
-                    "description": "温度单位"
-                }
-            },
-            "required": ["location"]
+                "required": ["location"]
+            }
         }
     }
 ]
 
 # 调用API
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     messages=[
         {"role": "user", "content": "北京今天天气怎么样？"}
     ],
-    functions=functions,
-    function_call="auto"
+    tools=tools,
+    tool_choice="auto"
 )
 
-# 处理函数调用
+# 处理工具调用
 message = response.choices[0].message
-if message.function_call:
-    function_name = message.function_call.name
-    arguments = json.loads(message.function_call.arguments)
+if message.tool_calls:
+    tool_call = message.tool_calls[0]
+    function_name = tool_call.function.name
+    arguments = json.loads(tool_call.function.arguments)
     print(f"调用函数: {function_name}")
     print(f"参数: {arguments}")
 ```
+
+::: warning 旧写法对照
+旧的写法是 `functions=[{...}]`（函数定义直接放顶层）+ `function_call="auto"`，返回值取 `message.function_call`。现行写法统一为 `tools=[{"type": "function", "function": {...}}]` + `tool_choice="auto"`，返回值取 `message.tool_calls` 列表。
+:::
 
 ### 2. 多函数调用
 ```python
@@ -1177,57 +1241,64 @@ import json
 
 client = OpenAI(api_key="your-api-key")
 
-# 定义多个函数
-functions = [
+# 定义多个工具
+tools = [
     {
-        "name": "get_weather",
-        "description": "获取指定城市的天气信息",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "城市名称"
-                }
-            },
-            "required": ["location"]
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "获取指定城市的天气信息",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "城市名称"
+                    }
+                },
+                "required": ["location"]
+            }
         }
     },
     {
-        "name": "search_restaurant",
-        "description": "搜索指定城市的餐厅",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "城市名称"
+        "type": "function",
+        "function": {
+            "name": "search_restaurant",
+            "description": "搜索指定城市的餐厅",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "城市名称"
+                    },
+                    "cuisine": {
+                        "type": "string",
+                        "description": "菜系类型"
+                    }
                 },
-                "cuisine": {
-                    "type": "string",
-                    "description": "菜系类型"
-                }
-            },
-            "required": ["location"]
+                "required": ["location"]
+            }
         }
     }
 ]
 
 # 调用API
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     messages=[
         {"role": "user", "content": "北京今天天气怎么样？顺便推荐几家川菜馆"}
     ],
-    functions=functions,
-    function_call="auto"
+    tools=tools,
+    tool_choice="auto"
 )
 
-# 处理多个函数调用
+# 处理多个工具调用（支持并行工具调用，一次可能返回多个 tool_calls）
 message = response.choices[0].message
-if message.function_call:
-    print(f"调用函数: {message.function_call.name}")
-    print(f"参数: {json.loads(message.function_call.arguments)}")
+if message.tool_calls:
+    for tool_call in message.tool_calls:
+        print(f"调用函数: {tool_call.function.name}")
+        print(f"参数: {json.loads(tool_call.function.arguments)}")
 ```
 
 ### 3. 强制函数调用
@@ -1237,43 +1308,49 @@ import json
 
 client = OpenAI(api_key="your-api-key")
 
-# 定义函数
-functions = [
+# 定义工具
+tools = [
     {
-        "name": "extract_info",
-        "description": "从文本中提取信息",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "text": {
-                    "type": "string",
-                    "description": "需要提取信息的文本"
+        "type": "function",
+        "function": {
+            "name": "extract_info",
+            "description": "从文本中提取信息",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "description": "需要提取信息的文本"
+                    },
+                    "info_type": {
+                        "type": "string",
+                        "enum": ["name", "date", "location"],
+                        "description": "要提取的信息类型"
+                    }
                 },
-                "info_type": {
-                    "type": "string",
-                    "enum": ["name", "date", "location"],
-                    "description": "要提取的信息类型"
-                }
-            },
-            "required": ["text", "info_type"]
+                "required": ["text", "info_type"]
+            }
         }
     }
 ]
 
-# 强制调用函数
+# 强制调用指定工具
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     messages=[
         {"role": "user", "content": "张三在北京参加了2024年1月15日的会议"}
     ],
-    functions=functions,
-    function_call={"name": "extract_info"}
+    tools=tools,
+    tool_choice={
+        "type": "function",
+        "function": {"name": "extract_info"}  # 强制调用extract_info
+    }
 )
 
 # 处理结果
 message = response.choices[0].message
-if message.function_call:
-    arguments = json.loads(message.function_call.arguments)
+if message.tool_calls:
+    arguments = json.loads(message.tool_calls[0].function.arguments)
     print(f"提取的信息: {arguments}")
 ```
 
@@ -1315,44 +1392,50 @@ def search_restaurant(location: str, cuisine: str) -> list:
         {"name": "川菜馆B", "rating": 4.2, "address": "北京市海淀区"}
     ]
 
-# 函数映射
-function_map = {
+# 工具映射
+tool_map = {
     "get_weather": get_weather,
     "search_restaurant": search_restaurant
 }
 
-# 定义函数描述
-functions = [
+# 定义工具描述（现行 tools 格式）
+tools = [
     {
-        "name": "get_weather",
-        "description": "获取指定城市的天气信息",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "城市名称"
-                }
-            },
-            "required": ["location"]
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "获取指定城市的天气信息",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "城市名称"
+                    }
+                },
+                "required": ["location"]
+            }
         }
     },
     {
-        "name": "search_restaurant",
-        "description": "搜索指定城市的餐厅",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "城市名称"
+        "type": "function",
+        "function": {
+            "name": "search_restaurant",
+            "description": "搜索指定城市的餐厅",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "城市名称"
+                    },
+                    "cuisine": {
+                        "type": "string",
+                        "description": "菜系类型"
+                    }
                 },
-                "cuisine": {
-                    "type": "string",
-                    "description": "菜系类型"
-                }
-            },
-            "required": ["location"]
+                "required": ["location"]
+            }
         }
     }
 ]
@@ -1361,34 +1444,35 @@ def chat_with_functions(user_input: str) -> str:
     """带函数调用的对话"""
     # 第一次调用
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[
             {"role": "user", "content": user_input}
         ],
-        functions=functions,
-        function_call="auto"
+        tools=tools,
+        tool_choice="auto"
     )
     
     message = response.choices[0].message
     
     # 检查是否需要调用函数
-    if message.function_call:
-        function_name = message.function_call.name
-        arguments = json.loads(message.function_call.arguments)
+    if message.tool_calls:
+        tool_call = message.tool_calls[0]
+        function_name = tool_call.function.name
+        arguments = json.loads(tool_call.function.arguments)
         
         # 执行函数
-        if function_name in function_map:
-            function_result = function_map[function_name](**arguments)
+        if function_name in tool_map:
+            function_result = tool_map[function_name](**arguments)
             
             # 第二次调用，将函数结果传回模型
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-5-mini",
                 messages=[
                     {"role": "user", "content": user_input},
                     message,
                     {
-                        "role": "function",
-                        "name": function_name,
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
                         "content": json.dumps(function_result, ensure_ascii=False)
                     }
                 ]
@@ -1414,27 +1498,28 @@ def safe_function_call(user_input: str) -> str:
     """安全的函数调用"""
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "user", "content": user_input}
             ],
-            functions=functions,
-            function_call="auto"
+            tools=tools,
+            tool_choice="auto"
         )
         
         message = response.choices[0].message
         
-        if message.function_call:
-            function_name = message.function_call.name
-            arguments = json.loads(message.function_call.arguments)
+        if message.tool_calls:
+            tool_call = message.tool_calls[0]
+            function_name = tool_call.function.name
+            arguments = json.loads(tool_call.function.arguments)
             
             # 验证函数是否存在
-            if function_name not in function_map:
+            if function_name not in tool_map:
                 return f"错误：函数 {function_name} 不存在"
             
             # 验证参数
             try:
-                function_result = function_map[function_name](**arguments)
+                function_result = tool_map[function_name](**arguments)
             except TypeError as e:
                 return f"错误：函数参数不正确 - {e}"
             except Exception as e:
@@ -1442,13 +1527,13 @@ def safe_function_call(user_input: str) -> str:
             
             # 将结果传回模型
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-5-mini",
                 messages=[
                     {"role": "user", "content": user_input},
                     message,
                     {
-                        "role": "function",
-                        "name": function_name,
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
                         "content": json.dumps(function_result, ensure_ascii=False)
                     }
                 ]

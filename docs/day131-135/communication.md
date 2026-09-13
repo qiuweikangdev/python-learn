@@ -1,5 +1,7 @@
 # Agent通信框架
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 Agent通信框架是多Agent系统中Agent之间进行信息交换的基础设施。本章将介绍常见的Agent通信机制和框架实现。

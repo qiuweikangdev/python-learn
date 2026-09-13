@@ -1,5 +1,11 @@
 # RAG实现与优化
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
+::: tip 模型说明
+文中模型示例统一使用 `gpt-5-mini`。模型迭代较快，请以官方文档为准。
+:::
+
 ## 概述
 
 本章将深入介绍RAG（Retrieval-Augmented Generation）的实现细节和优化技巧，包括文档处理、向量存储、检索策略、生成优化等方面。
@@ -36,7 +42,8 @@ documents = loader.load()
 ### 2. 文本分割
 文本分割是RAG的关键步骤：
 ```python
-from langchain.text_splitter import (
+# 1.x：已从 langchain.text_splitter 迁移到独立包 langchain_text_splitters
+from langchain_text_splitters import (
     RecursiveCharacterTextSplitter,
     CharacterTextSplitter,
     TokenTextSplitter,
@@ -103,11 +110,12 @@ cleaned_documents = clean_documents(documents)
 选择合适的嵌入模型：
 ```python
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.embeddings import HuggingFaceEmbeddings
+# 1.x：HuggingFace 嵌入已迁移到独立包 langchain-huggingface
+from langchain_huggingface import HuggingFaceEmbeddings
 
 # OpenAI嵌入模型
 embeddings = OpenAIEmbeddings(
-    model="text-embedding-ada-002",  # 模型名称
+    model="text-embedding-3-small",  # 新一代嵌入模型，替代旧的 text-embedding-ada-002
     openai_api_key="your-api-key"
 )
 
@@ -129,7 +137,9 @@ embeddings = HuggingFaceEmbeddings(
 ### 2. 向量存储配置
 配置向量存储：
 ```python
-from langchain_community.vectorstores import Chroma, FAISS
+# 1.x：Chroma 已拆分到官方独立集成包 langchain-chroma；FAISS 仍保留在 langchain-community
+from langchain_chroma import Chroma
+from langchain_community.vectorstores import FAISS
 
 # Chroma配置
 vectorstore = Chroma.from_documents(
@@ -197,7 +207,8 @@ results = vectorstore.max_marginal_relevance_search(
 ### 2. 混合检索
 结合多种检索方式：
 ```python
-from langchain.retrievers import EnsembleRetriever
+# 1.x：旧版检索器已迁移到 langchain-classic 包（安装：pip install langchain-classic）
+from langchain_classic.retrievers import EnsembleRetriever
 from langchain_community.retrievers import BM25Retriever
 
 # BM25检索器
@@ -220,8 +231,9 @@ results = ensemble_retriever.invoke("查询内容")
 ### 3. 重排序
 对检索结果进行重排序：
 ```python
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import CrossEncoderReranker
+# 1.x：ContextualCompressionRetriever 等旧版检索器已迁移到 langchain-classic 包
+from langchain_classic.retrievers import ContextualCompressionRetriever
+from langchain_classic.retrievers.document_compressors import CrossEncoderReranker
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 
 # 交叉编码器
@@ -241,12 +253,13 @@ results = compression_retriever.invoke("查询内容")
 ### 4. 查询扩展
 扩展查询以提高召回率：
 ```python
-from langchain.retrievers import MultiQueryRetriever
+# 1.x：已迁移到 langchain-classic 包
+from langchain_classic.retrievers import MultiQueryRetriever
 
 # 多查询检索器
 multi_query_retriever = MultiQueryRetriever.from_llm(
     retriever=vectorstore.as_retriever(),
-    llm=ChatOpenAI(model="gpt-4o-mini")
+    llm=ChatOpenAI(model="gpt-5-mini")
 )
 
 # 使用多查询检索器
@@ -258,7 +271,8 @@ results = multi_query_retriever.invoke("查询内容")
 ### 1. 提示工程
 设计有效的提示模板：
 ```python
-from langchain.prompts import ChatPromptTemplate
+# 1.x：已从 langchain.prompts 迁移到 langchain_core.prompts
+from langchain_core.prompts import ChatPromptTemplate
 
 # 基础RAG提示
 template = """基于以下上下文回答问题。如果上下文中没有相关信息，请说"我不知道"。
@@ -307,11 +321,11 @@ def select_relevant_context(query: str, contexts: List[str], top_k: int = 3) -> 
 优化生成策略：
 ```python
 from langchain_openai import ChatOpenAI
-from langchain.schema.output_parser import StrOutputParser
+from langchain_core.output_parsers import StrOutputParser
 
 # 使用不同的模型
 llm = ChatOpenAI(
-    model="gpt-4",
+    model="gpt-5-mini",  # 模型迭代快，请以官方文档为准
     temperature=0.7,
     max_tokens=1000
 )
@@ -329,15 +343,16 @@ answers = llm.batch(questions)
 
 ### 1. 缓存机制
 实现缓存以提高性能：
+::: warning 1.x 缓存变更
+旧版缓存模块 `langchain.cache` 在 LangChain 1.x 中已移除。全局缓存改用 `langchain_core.globals.set_llm_cache`，内置缓存类位于 `langchain_core.caches`（如 `InMemoryCache`）；SQLite/Redis 等持久化缓存位于社区包 `langchain_community.cache`，或直接在应用层实现（推荐使用 Redis 等外部缓存）。
+:::
 ```python
-from langchain.globals import set_llm_cache
-from langchain.cache import InMemoryCache, SQLiteCache
+# 1.x：从 langchain_core 导入全局缓存设置与内存缓存
+from langchain_core.globals import set_llm_cache
+from langchain_core.caches import InMemoryCache
 
 # 内存缓存
 set_llm_cache(InMemoryCache())
-
-# SQLite缓存
-set_llm_cache(SQLiteCache(database_path=".langchain.db"))
 
 # 自定义缓存
 from typing import Optional, Dict, Any
@@ -369,7 +384,7 @@ async def async_rag(query: str) -> str:
     docs = await retriever.ainvoke(query)
     
     # 异步生成
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     response = await llm.ainvoke(f"基于以下文档回答问题: {docs}")
     
     return response.content

@@ -1,5 +1,7 @@
 # 多Agent系统概述
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 什么是多Agent系统？
 
 多Agent系统（Multi-Agent System，MAS）是由多个自主Agent组成的分布式人工智能系统。这些Agent能够相互协作、通信和协调，共同完成复杂任务。
@@ -1046,10 +1048,9 @@ CEO（主Agent）
 ```python
 from typing import List, Dict
 from dataclasses import dataclass
-from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.agents import create_agent
 from langchain.tools import tool
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
 
 # 1. 定义角色
 @dataclass
@@ -1084,23 +1085,18 @@ def write_document(title: str, content: str) -> str:
         f.write(content)
     return f"文档已写入：{title}.md"
 
-# 3. 创建Agent工厂
-def create_agent(role: AgentRole, tools: List) -> AgentExecutor:
+# 3. 创建Agent工厂（LangChain 1.x：create_agent 取代 AgentExecutor）
+def build_role_agent(role: AgentRole, tools: List):
     """创建Agent"""
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", f"""你是{role.name}。
+    return create_agent(
+        ChatOpenAI(model="gpt-5-mini"),
+        tools=tools,
+        system_prompt=f"""你是{role.name}。
 职责：{role.description}
 技能：{', '.join(role.skills)}
 
-请根据你的职责完成工作。"""),
-        MessagesPlaceholder(variable_name="chat_history", optional=True),
-        ("human", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad")
-    ])
-    
-    llm = ChatOpenAI(model="gpt-4o-mini")
-    agent = create_openai_functions_agent(llm, tools, prompt)
-    return AgentExecutor(agent=agent, tools=tools, verbose=True)
+请根据你的职责完成工作。""",
+    )
 
 # 4. 定义角色
 pm_role = AgentRole(
@@ -1122,32 +1118,31 @@ reviewer_role = AgentRole(
 )
 
 # 5. 创建团队
-pm_agent = create_agent(pm_role, [write_document])
-dev_agent = create_agent(dev_role, [write_code])
-reviewer_agent = create_agent(reviewer_role, [review_code])
+pm_agent = build_role_agent(pm_role, [write_document])
+dev_agent = build_role_agent(dev_role, [write_code])
+reviewer_agent = build_role_agent(reviewer_role, [review_code])
 
 # 6. 协作流程
+def _ask(agent, content: str) -> str:
+    """调用 Agent 并取回最终回答（create_agent 返回消息列表）"""
+    result = agent.invoke({"messages": [{"role": "user", "content": content}]})
+    return result["messages"][-1].content
+
 def team_collaboration(task: str):
     """团队协作"""
     # 产品经理分析需求
-    pm_result = pm_agent.invoke({
-        "input": f"分析需求并输出需求文档：{task}"
-    })
-    
+    requirements = _ask(pm_agent, f"分析需求并输出需求文档：{task}")
+
     # 程序员实现代码
-    dev_result = dev_agent.invoke({
-        "input": f"根据需求实现代码：{pm_result['output']}"
-    })
-    
+    implementation = _ask(dev_agent, f"根据需求实现代码：{requirements}")
+
     # 审查员审查代码
-    review_result = reviewer_agent.invoke({
-        "input": "审查代码质量"
-    })
-    
+    review = _ask(reviewer_agent, "审查代码质量")
+
     return {
-        "requirements": pm_result["output"],
-        "implementation": dev_result["output"],
-        "review": review_result["output"]
+        "requirements": requirements,
+        "implementation": implementation,
+        "review": review,
     }
 
 # 7. 使用
@@ -1169,10 +1164,9 @@ print("代码审查：", result["review"])
 **实现：**
 ```python
 from typing import List, Dict
-from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.agents import create_agent
 from langchain.tools import tool
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
 
 # 1. 定义工具
 @tool
@@ -1208,25 +1202,20 @@ def search_knowledge_base(query: str) -> str:
     return "未找到相关信息"
 
 # 2. 创建不同专长的客服Agent
-def create_support_agent(specialty: str, tools: List) -> AgentExecutor:
+def create_support_agent(specialty: str, tools: List):
     """创建客服Agent"""
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", f"""你是一个专业的客服人员，专长：{specialty}。
+    return create_agent(
+        ChatOpenAI(model="gpt-5-mini"),
+        tools=tools,
+        system_prompt=f"""你是一个专业的客服人员，专长：{specialty}。
 
 工作原则：
 1. 保持友好专业
 2. 尽力解决问题
 3. 无法解决时升级给经理
 
-请使用提供的工具帮助客户。"""),
-        MessagesPlaceholder(variable_name="chat_history", optional=True),
-        ("human", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad")
-    ])
-    
-    llm = ChatOpenAI(model="gpt-4o-mini")
-    agent = create_openai_functions_agent(llm, tools, prompt)
-    return AgentExecutor(agent=agent, tools=tools, verbose=True)
+请使用提供的工具帮助客户。""",
+    )
 
 # 3. 创建团队
 order_agent = create_support_agent("订单查询", [lookup_order, search_knowledge_base])
@@ -1234,7 +1223,7 @@ refund_agent = create_support_agent("退款处理", [process_refund, escalate_to
 general_agent = create_support_agent("综合客服", [lookup_order, search_knowledge_base, escalate_to_manager])
 
 # 4. 路由逻辑
-def route_to_agent(query: str) -> AgentExecutor:
+def route_to_agent(query: str):
     """根据问题类型路由到合适的Agent"""
     if "订单" in query or "发货" in query:
         return order_agent
@@ -1247,8 +1236,8 @@ def route_to_agent(query: str) -> AgentExecutor:
 def handle_customer_query(query: str) -> str:
     """处理客户问题"""
     agent = route_to_agent(query)
-    result = agent.invoke({"input": query})
-    return result["output"]
+    result = agent.invoke({"messages": [{"role": "user", "content": query}]})
+    return result["messages"][-1].content
 
 # 测试
 print(handle_customer_query("我的订单ORD001发货了吗？"))
@@ -1268,10 +1257,9 @@ print(handle_customer_query("你们的保修政策是什么？"))
 **实现：**
 ```python
 from typing import List, Dict
-from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.agents import create_agent
 from langchain.tools import tool
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
 
 # 1. 定义工具
 @tool
@@ -1298,10 +1286,12 @@ def review_section(title: str) -> str:
     return f"审查{title}章节：内容完整，建议补充数据支持"
 
 # 2. 创建研究Agent
-def create_research_agent(role: str, tools: List) -> AgentExecutor:
+def create_research_agent(role: str, tools: List):
     """创建研究Agent"""
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", f"""你是一个{role}，负责研究报告的编写。
+    return create_agent(
+        ChatOpenAI(model="gpt-5-mini"),
+        tools=tools,
+        system_prompt=f"""你是一个{role}，负责研究报告的编写。
 
 工作流程：
 1. 收集相关资料
@@ -1309,15 +1299,8 @@ def create_research_agent(role: str, tools: List) -> AgentExecutor:
 3. 撰写章节
 4. 审查内容
 
-请使用提供的工具完成工作。"""),
-        MessagesPlaceholder(variable_name="chat_history", optional=True),
-        ("human", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad")
-    ])
-    
-    llm = ChatOpenAI(model="gpt-4o-mini")
-    agent = create_openai_functions_agent(llm, tools, prompt)
-    return AgentExecutor(agent=agent, tools=tools, verbose=True)
+请使用提供的工具完成工作。""",
+    )
 
 # 3. 创建团队
 literature_agent = create_research_agent("文献研究员", [search_papers, write_section])
@@ -1327,25 +1310,23 @@ review_agent = create_research_agent("审查员", [review_section])
 # 4. 协作流程
 def research_collaboration(topic: str):
     """研究团队协作"""
+    def _ask(agent, content: str) -> str:
+        result = agent.invoke({"messages": [{"role": "user", "content": content}]})
+        return result["messages"][-1].content
+
     # 文献研究
-    lit_result = literature_agent.invoke({
-        "input": f"研究{topic}的相关文献并撰写文献综述"
-    })
-    
+    literature = _ask(literature_agent, f"研究{topic}的相关文献并撰写文献综述")
+
     # 数据分析
-    data_result = data_agent.invoke({
-        "input": f"分析{topic}的相关数据并撰写分析章节"
-    })
-    
+    data_analysis = _ask(data_agent, f"分析{topic}的相关数据并撰写分析章节")
+
     # 审查
-    review_result = review_agent.invoke({
-        "input": "审查所有章节并提供修改建议"
-    })
-    
+    review = _ask(review_agent, "审查所有章节并提供修改建议")
+
     return {
-        "literature": lit_result["output"],
-        "data_analysis": data_result["output"],
-        "review": review_result["output"]
+        "literature": literature,
+        "data_analysis": data_analysis,
+        "review": review,
     }
 
 # 5. 使用

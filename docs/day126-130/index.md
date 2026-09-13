@@ -1,5 +1,7 @@
 # Agent框架概述
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 什么是Agent框架？
 
 Agent框架是用于构建AI Agent的软件框架，提供了工具调用、记忆管理、规划决策等核心功能，帮助开发者快速构建能够自主完成任务的智能系统。
@@ -364,7 +366,7 @@ def think(state: dict) -> dict:
     
     # 调用LLM进行思考
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": prompt}]
     )
     
@@ -512,7 +514,7 @@ class Agent:
 }}"""
         
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"}
         )
@@ -673,10 +675,9 @@ agent = Agent(
 
 **实现：**
 ```python
-from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.agents import create_agent
 from langchain.tools import tool
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
 
 # 1. 定义工具
 @tool
@@ -701,11 +702,11 @@ def read_notes() -> str:
     except:
         return "暂无笔记"
 
-# 2. 创建Agent
-tools = [search_web, save_notes, read_notes]
-
-prompt = ChatPromptTemplate.from_messages([
-    ("system", """你是一个专业的研究员。你的任务是研究指定主题并生成报告。
+# 2. 创建Agent（LangChain 1.x：create_agent 取代 AgentExecutor）
+agent = create_agent(
+    ChatOpenAI(model="gpt-5-mini"),
+    tools=[search_web, save_notes, read_notes],
+    system_prompt="""你是一个专业的研究员。你的任务是研究指定主题并生成报告。
 
 研究流程：
 1. 搜索相关信息
@@ -713,21 +714,14 @@ prompt = ChatPromptTemplate.from_messages([
 3. 整理和分析
 4. 生成报告
 
-请使用提供的工具完成研究。"""),
-    MessagesPlaceholder(variable_name="chat_history", optional=True),
-    ("human", "{input}"),
-    MessagesPlaceholder(variable_name="agent_scratchpad")
-])
-
-llm = ChatOpenAI(model="gpt-4o-mini")
-agent = create_openai_functions_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+请使用提供的工具完成研究。""",
+)
 
 # 3. 使用
-response = agent_executor.invoke({
-    "input": "请研究人工智能在医疗领域的应用，并生成一份报告"
+response = agent.invoke({
+    "messages": [{"role": "user", "content": "请研究人工智能在医疗领域的应用，并生成一份报告"}]
 })
-print(response["output"])
+print(response["messages"][-1].content)
 ```
 
 **设计要点：**
@@ -741,10 +735,9 @@ print(response["output"])
 
 **实现：**
 ```python
-from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.agents import create_agent
 from langchain.tools import tool
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
 from typing import List, Dict
 import json
 
@@ -785,30 +778,23 @@ def complete_task(task_id: int) -> str:
             return f"任务已完成：{task_id} - {task['title']}"
     return f"未找到任务：{task_id}"
 
-# 2. 创建Agent
-tools = [create_task, list_tasks, complete_task]
-
-prompt = ChatPromptTemplate.from_messages([
-    ("system", """你是一个任务管理助手。你可以帮助用户：
+# 2. 创建Agent（LangChain 1.x：create_agent 取代 AgentExecutor）
+agent = create_agent(
+    ChatOpenAI(model="gpt-5-mini"),
+    tools=[create_task, list_tasks, complete_task],
+    system_prompt="""你是一个任务管理助手。你可以帮助用户：
 1. 分解复杂任务为子任务
 2. 创建和管理任务列表
 3. 跟踪任务进度
 
-请使用提供的工具管理任务。"""),
-    MessagesPlaceholder(variable_name="chat_history", optional=True),
-    ("human", "{input}"),
-    MessagesPlaceholder(variable_name="agent_scratchpad")
-])
-
-llm = ChatOpenAI(model="gpt-4o-mini")
-agent = create_openai_functions_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+请使用提供的工具管理任务。""",
+)
 
 # 3. 使用
-response = agent_executor.invoke({
-    "input": "帮我分解这个任务：开发一个电商网站"
+response = agent.invoke({
+    "messages": [{"role": "user", "content": "帮我分解这个任务：开发一个电商网站"}]
 })
-print(response["output"])
+print(response["messages"][-1].content)
 ```
 
 **设计要点：**
@@ -822,10 +808,9 @@ print(response["output"])
 
 **实现：**
 ```python
-from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.agents import create_agent
 from langchain.tools import tool
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
 
 # 1. 定义工具
 @tool
@@ -862,36 +847,29 @@ def run_code(filename: str) -> str:
     except Exception as e:
         return f"运行错误：{e}"
 
-# 2. 创建Agent
-tools = [write_code, read_code, run_code]
-
-prompt = ChatPromptTemplate.from_messages([
-    ("system", """你是一个专业的Python程序员。你可以：
+# 2. 创建Agent（LangChain 1.x：create_agent 取代 AgentExecutor）
+agent = create_agent(
+    ChatOpenAI(model="gpt-5-mini"),  # 复杂代码任务可换用旗舰模型 gpt-5.4
+    tools=[write_code, read_code, run_code],
+    system_prompt="""你是一个专业的Python程序员。你可以：
 1. 编写Python代码
 2. 读取和分析代码
 3. 运行和测试代码
 4. 调试和修复错误
 
-请使用提供的工具完成编程任务。"""),
-    MessagesPlaceholder(variable_name="chat_history", optional=True),
-    ("human", "{input}"),
-    MessagesPlaceholder(variable_name="agent_scratchpad")
-])
-
-llm = ChatOpenAI(model="gpt-4")  # 代码任务建议使用GPT-4
-agent = create_openai_functions_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+请使用提供的工具完成编程任务。""",
+)
 
 # 3. 使用
-response = agent_executor.invoke({
-    "input": "请写一个Python函数，实现快速排序算法，并测试它"
+response = agent.invoke({
+    "messages": [{"role": "user", "content": "请写一个Python函数，实现快速排序算法，并测试它"}]
 })
-print(response["output"])
+print(response["messages"][-1].content)
 ```
 
 **设计要点：**
 - 定义代码相关工具
-- 使用GPT-4获得更好的代码生成效果
+- 使用 gpt-5-mini；复杂代码任务可换用旗舰模型 gpt-5.4
 - 支持代码编写、运行和调试
 
 ### 场景四：客服Agent
@@ -900,11 +878,10 @@ print(response["output"])
 
 **实现：**
 ```python
-from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.agents import create_agent
 from langchain.tools import tool
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.memory import ConversationBufferMemory
+from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import InMemorySaver
 
 # 1. 定义工具
 @tool
@@ -941,37 +918,39 @@ def search_faq(query: str) -> str:
             return value
     return "未找到相关问题，请联系人工客服"
 
-# 2. 创建Agent
-tools = [lookup_order, create_ticket, search_faq]
-
-prompt = ChatPromptTemplate.from_messages([
-    ("system", """你是一个专业的客服助手。你可以：
+# 2. 创建Agent（LangChain 1.x：create_agent 取代 AgentExecutor）
+# 记忆：用 checkpointer + thread_id 保持对话上下文（取代旧版 ConversationBufferMemory）
+agent = create_agent(
+    ChatOpenAI(model="gpt-5-mini"),
+    tools=[lookup_order, create_ticket, search_faq],
+    system_prompt="""你是一个专业的客服助手。你可以：
 1. 查询订单状态
 2. 创建客服工单
 3. 回答常见问题
 
-请用友好专业的语气与客户沟通。如果无法解决问题，请创建工单转接人工客服。"""),
-    MessagesPlaceholder(variable_name="chat_history"),
-    ("human", "{input}"),
-    MessagesPlaceholder(variable_name="agent_scratchpad")
-])
+请用友好专业的语气与客户沟通。如果无法解决问题，请创建工单转接人工客服。""",
+    checkpointer=InMemorySaver(),
+)
 
-llm = ChatOpenAI(model="gpt-4o-mini")
-memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
-agent = create_openai_functions_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, verbose=True)
+config = {"configurable": {"thread_id": "session-001"}}
 
 # 3. 使用
-response = agent_executor.invoke({"input": "我的订单ORD001发货了吗？"})
-print(response["output"])
+response = agent.invoke(
+    {"messages": [{"role": "user", "content": "我的订单ORD001发货了吗？"}]},
+    config,
+)
+print(response["messages"][-1].content)
 
-response = agent_executor.invoke({"input": "怎么退货？"})
-print(response["output"])
+response = agent.invoke(
+    {"messages": [{"role": "user", "content": "怎么退货？"}]},
+    config,
+)
+print(response["messages"][-1].content)
 ```
 
 **设计要点：**
 - 定义客服相关工具
-- 使用记忆保持对话上下文
+- 使用 checkpointer + `thread_id` 保持多轮对话上下文
 - 引导Agent友好专业地服务
 
 ## 选型指南

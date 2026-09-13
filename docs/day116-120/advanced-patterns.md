@@ -1,5 +1,11 @@
 # RAG高级模式
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
+::: tip 模型说明
+文中模型示例统一使用 `gpt-5-mini`。模型迭代较快，请以官方文档为准。
+:::
+
 ## 概述
 
 本章介绍RAG（Retrieval-Augmented Generation）的高级应用模式，包括多模态RAG、自适应RAG、多步RAG、图RAG等。
@@ -10,8 +16,10 @@
 处理图像数据的RAG：
 ```python
 from langchain_community.document_loaders import ImageCaptionLoader
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
+# 1.x：HuggingFace 嵌入已迁移到独立包 langchain-huggingface
+from langchain_huggingface import HuggingFaceEmbeddings
+# 1.x：Chroma 已拆分到官方独立集成包 langchain-chroma
+from langchain_chroma import Chroma
 
 # 图像描述加载器
 loader = ImageCaptionLoader(
@@ -149,7 +157,7 @@ class AdaptiveRetriever:
     def __init__(self, simple_retriever, complex_retriever):
         self.simple_retriever = simple_retriever
         self.complex_retriever = complex_retriever
-        self.llm = ChatOpenAI(model="gpt-4o-mini")
+        self.llm = ChatOpenAI(model="gpt-5-mini")
     
     def classify_complexity(self, query: str) -> str:
         """分类查询复杂度"""
@@ -182,7 +190,7 @@ class IterativeRAG:
     def __init__(self, vectorstore, max_iterations=3):
         self.vectorstore = vectorstore
         self.max_iterations = max_iterations
-        self.llm = ChatOpenAI(model="gpt-4o-mini")
+        self.llm = ChatOpenAI(model="gpt-5-mini")
     
     def retrieve(self, query: str) -> List[str]:
         """迭代检索"""
@@ -215,7 +223,7 @@ class IterativeRAG:
 使用分层策略进行检索：
 ```python
 from typing import List, Dict
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 
 class HierarchicalRetriever:
     def __init__(self, vectorstores: List[Chroma]):
@@ -340,7 +348,7 @@ from langchain_openai import ChatOpenAI
 
 class ContextCompressor:
     def __init__(self):
-        self.llm = ChatOpenAI(model="gpt-4o-mini")
+        self.llm = ChatOpenAI(model="gpt-5-mini")
     
     def compress(self, query: str, context: List[str], max_length: int = 1000) -> str:
         """压缩上下文"""
@@ -368,7 +376,7 @@ from langchain_openai import ChatOpenAI
 
 class ContextEnhancer:
     def __init__(self):
-        self.llm = ChatOpenAI(model="gpt-4o-mini")
+        self.llm = ChatOpenAI(model="gpt-5-mini")
     
     def enhance(self, query: str, context: List[str]) -> List[str]:
         """增强上下文"""
@@ -405,9 +413,9 @@ from langchain_openai import ChatOpenAI
 
 class CollaborativeRAG:
     def __init__(self):
-        self.retriever_llm = ChatOpenAI(model="gpt-4o-mini")
-        self.analyzer_llm = ChatOpenAI(model="gpt-4")
-        self.generator_llm = ChatOpenAI(model="gpt-4o-mini")
+        self.retriever_llm = ChatOpenAI(model="gpt-5-mini")
+        self.analyzer_llm = ChatOpenAI(model="gpt-5-mini")
+        self.generator_llm = ChatOpenAI(model="gpt-5-mini")
     
     def retrieve(self, query: str) -> List[str]:
         """检索智能体"""
@@ -452,8 +460,8 @@ from langchain_openai import ChatOpenAI
 
 class CompetitiveRAG:
     def __init__(self, num_agents=3):
-        self.agents = [ChatOpenAI(model="gpt-4o-mini") for _ in range(num_agents)]
-        self.judge = ChatOpenAI(model="gpt-4")
+        self.agents = [ChatOpenAI(model="gpt-5-mini") for _ in range(num_agents)]
+        self.judge = ChatOpenAI(model="gpt-5-mini")
     
     def generate_candidates(self, query: str, context: str) -> List[str]:
         """生成候选答案"""
@@ -490,14 +498,11 @@ class CompetitiveRAG:
 自动评估RAG系统：
 ```python
 from typing import List, Dict
-from langchain_openai import ChatOpenAuto评估RAG系统：
-```python
-from typing import List, Dict
 from langchain_openai import ChatOpenAI
 
 class RAGEvaluator:
     def __init__(self):
-        self.llm = ChatOpenAI(model="gpt-4")
+        self.llm = ChatOpenAI(model="gpt-5-mini")
     
     def evaluate_relevance(self, query: str, context: str) -> float:
         """评估相关性"""

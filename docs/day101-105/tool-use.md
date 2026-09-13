@@ -1,5 +1,7 @@
 # 工具使用
 
+> **版本基线**：本文基于 OpenAI Python SDK ≥1.x，使用现行 `tools=` / `tool_choice` 参数（旧的 `functions=` / `function_call=` 已弃用），示例模型为 gpt-5-mini，模型迭代快，以官方模型页为准。更新于 2026-09。
+
 ## 什么是工具使用？
 
 工具使用（Tool Use）是让大语言模型（LLM）调用外部工具和API来扩展其能力的技术。通过工具使用，LLM可以获取实时信息、执行计算、操作数据、控制设备等。
@@ -212,7 +214,7 @@ tools = [
 def chat_with_search(query):
     """带搜索功能的对话"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": query}],
         tools=tools,
         tool_choice="auto"
@@ -229,7 +231,7 @@ def chat_with_search(query):
             result = web_search(**args)
         
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "user", "content": query},
                 message,
@@ -310,7 +312,7 @@ tools = [
 def chat_with_calculator(query):
     """带计算功能的对话"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": query}],
         tools=tools,
         tool_choice="auto"
@@ -324,7 +326,7 @@ def chat_with_calculator(query):
         result = calculator(**args)
         
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "user", "content": query},
                 message,
@@ -438,7 +440,7 @@ tools = [
 def chat_with_files(query):
     """带文件操作的对话"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": query}],
         tools=tools,
         tool_choice="auto"
@@ -461,7 +463,7 @@ def chat_with_files(query):
             result = {"error": "未知工具"}
         
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "user", "content": query},
                 message,
@@ -550,7 +552,7 @@ def search_restaurant(location, cuisine="中餐"):
 def chat_with_multiple_tools(query):
     """多工具协作对话"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": query}],
         tools=tools,
         tool_choice="auto"
@@ -587,7 +589,7 @@ def chat_with_multiple_tools(query):
             })
         
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "user", "content": query},
                 message,
@@ -675,6 +677,11 @@ registry = ToolRegistry()
 ```
 
 ### 3. 工具执行器
+
+::: tip 说明
+LangChain / LangGraph 早期内置的 `ToolExecutor` 工具类已在框架迭代中移除；下面是一个**自建**的工具执行器示例，自己实现 Executor 类完全没有问题（框架内也可以直接使用各框架内置的 Agent 循环来执行工具）。
+:::
+
 ```python
 from typing import Dict, Any
 
@@ -763,6 +770,7 @@ class CalculatorTool:
     def execute(self, expression: str) -> dict:
         """执行计算"""
         try:
+            # 注意：本示例仅用于演示，生产环境禁止对 LLM 生成的表达式直接 eval，见下方安全提示
             result = eval(expression)
             return {"expression": expression, "result": result}
         except Exception as e:
@@ -791,12 +799,19 @@ calculator_tool = CalculatorTool()
 # 工具列表
 tools = [search_tool, calculator_tool]
 
-# 转换为OpenAI函数格式
-functions = [tool.to_dict() for tool in tools]
+# 转换为OpenAI工具格式（现行 tools 格式）
+tool_defs = [{"type": "function", "function": tool.to_dict()} for tool in tools]
 
 # 工具映射
 tool_map = {tool.name: tool for tool in tools}
 ```
+
+::: warning 安全提示
+上面的计算器工具直接用 `eval()` 执行 LLM 生成的表达式，**仅限本地演示**。生产环境绝对不要对 LLM 生成的字符串使用 `eval()`（存在任意代码执行风险）。应改用以下方案之一：
+- `ast.literal_eval`：只解析字面量，不能执行任意表达式；
+- 白名单函数映射：只允许调用预先注册的数学函数，或使用 `ast` 模块遍历表达式树并逐节点求值（本节前面"计算工具集成"场景即采用受限环境 + 白名单的思路）；
+- 沙箱执行：在受限容器/子进程中运行并限制资源与权限。
+:::
 
 ### 3. 带工具的对话
 ```python
@@ -809,20 +824,21 @@ def chat_with_tools(user_input: str) -> str:
     """带工具的对话"""
     # 第一次调用
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[
             {"role": "user", "content": user_input}
         ],
-        functions=functions,
-        function_call="auto"
+        tools=tool_defs,
+        tool_choice="auto"
     )
     
     message = response.choices[0].message
     
     # 检查是否需要调用工具
-    if message.function_call:
-        tool_name = message.function_call.name
-        arguments = json.loads(message.function_call.arguments)
+    if message.tool_calls:
+        tool_call = message.tool_calls[0]
+        tool_name = tool_call.function.name
+        arguments = json.loads(tool_call.function.arguments)
         
         # 执行工具
         if tool_name in tool_map:
@@ -830,13 +846,13 @@ def chat_with_tools(user_input: str) -> str:
             
             # 第二次调用，将工具结果传回模型
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-5-mini",
                 messages=[
                     {"role": "user", "content": user_input},
                     message,
                     {
-                        "role": "function",
-                        "name": tool_name,
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
                         "content": json.dumps(tool_result, ensure_ascii=False)
                     }
                 ]
@@ -867,33 +883,34 @@ def chat_with_multiple_tools(user_input: str) -> str:
     while True:
         # 调用API
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=messages,
-            functions=functions,
-            function_call="auto"
+            tools=tool_defs,
+            tool_choice="auto"
         )
         
         message = response.choices[0].message
         
         # 检查是否需要调用工具
-        if message.function_call:
-            tool_name = message.function_call.name
-            arguments = json.loads(message.function_call.arguments)
-            
-            # 执行工具
-            if tool_name in tool_map:
-                tool_result = tool_map[tool_name].execute(**arguments)
+        if message.tool_calls:
+            messages.append(message)  # 添加模型的响应（只需一次）
+            for tool_call in message.tool_calls:
+                tool_name = tool_call.function.name
+                arguments = json.loads(tool_call.function.arguments)
                 
-                # 将工具结果添加到消息
-                messages.append(message)
-                messages.append({
-                    "role": "function",
-                    "name": tool_name,
-                    "content": json.dumps(tool_result, ensure_ascii=False)
-                })
-                
-                # 继续对话
-                continue
+                # 执行工具
+                if tool_name in tool_map:
+                    tool_result = tool_map[tool_name].execute(**arguments)
+                    
+                    # 将工具结果添加到消息
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": json.dumps(tool_result, ensure_ascii=False)
+                    })
+                    
+                    # 继续对话
+                    continue
         
         # 返回最终结果
         return message.content
@@ -1039,6 +1056,11 @@ monitor = ToolMonitor()
 
 ## 下一步学习
 
+::: tip 接入工具生态
+生产环境中，与其为每个应用重复编写工具集成代码，推荐通过 **MCP 协议（Model Context Protocol）** 接入标准化的工具生态，详见《[MCP 协议](/agent/llm-basics/mcp)》。
+:::
+
+- [MCP协议](/agent/llm-basics/mcp) - 通过标准协议接入工具生态
 - [LangChain框架](/agent/langchain/) - 学习LLM应用开发框架
 - [Agent框架](/agent/agent-frameworks/) - 了解各种Agent框架
 - [RAG技术](/agent/rag/) - 掌握知识增强技术

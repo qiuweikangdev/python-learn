@@ -1,5 +1,7 @@
 # LangGraph API参考手册
 
+> **版本基线**：本文基于 LangGraph 1.x（1.2.x，2026-08），更新于 2026-09。
+
 ## 概述
 
 本章提供LangGraph框架的详细API参考，包括核心模块、类和方法的说明。
@@ -185,11 +187,12 @@ class BaseCheckpointSaver:
         pass
 ```
 
-#### MemorySaver
+#### InMemorySaver
 ```python
-from langgraph.checkpoint.memory import MemorySaver
+# InMemorySaver（旧名 MemorySaver，仍作为别名可用）
+from langgraph.checkpoint.memory import InMemorySaver
 
-class MemorySaver(BaseCheckpointSaver):
+class InMemorySaver(BaseCheckpointSaver):
     """内存检查点存储"""
     
     def __init__(self):
@@ -199,6 +202,7 @@ class MemorySaver(BaseCheckpointSaver):
 
 #### SqliteSaver
 ```python
+# 独立包：pip install langgraph-checkpoint-sqlite
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 class SqliteSaver(BaseCheckpointSaver):
@@ -243,32 +247,42 @@ class ToolNode:
         pass
 ```
 
-#### ToolExecutor
+#### 工具节点：ToolNode 与 tools_condition
 ```python
-from langgraph.prebuilt import ToolExecutor
+# 注意：旧版 langgraph.prebuilt.ToolExecutor 已从 LangGraph 1.x 移除。
+# 现行写法使用 ToolNode 搭配 tools_condition（预置的工具调用路由）：
+from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.graph import StateGraph, MessagesState, START, END
 
-class ToolExecutor:
-    """工具执行器"""
-    
-    def __init__(self, tools: List[BaseTool]):
-        """初始化工具执行器
-        
-        Args:
-            tools: 工具列表
-        """
-        pass
-    
-    def invoke(self, input: Any) -> Any:
-        """执行工具
-        
-        Args:
-            input: 输入数据
-        
-        Returns:
-            执行结果
-        """
-        pass
+def call_model(state: MessagesState):
+    """调用模型，模型可能发起工具调用"""
+    response = llm_with_tools.invoke(state["messages"])
+    return {"messages": [response]}
+
+graph = StateGraph(MessagesState)
+graph.add_node("agent", call_model)
+
+# ToolNode：批量执行模型请求的工具调用，结果以 ToolMessage 追加回状态
+tool_node = ToolNode(tools=tools)
+graph.add_node("tools", tool_node)
+
+graph.add_edge(START, "agent")
+# tools_condition：模型输出包含工具调用时路由到 "tools"，否则到 END
+graph.add_conditional_edges("agent", tools_condition)
+graph.add_edge("tools", "agent")
+
+app = graph.compile()
 ```
+
+::: tip ToolExecutor → ToolNode 迁移
+| 旧写法（已移除） | 现行写法（1.x） |
+| --- | --- |
+| `ToolExecutor(tools)` 手动编排 | `ToolNode(tools)` 作为图中节点 |
+| 手写"是否调用工具"条件函数 | `tools_condition` 预置路由 |
+| `tool_executor.invoke(tool_calls)` | 由 ToolNode 在节点内自动执行 |
+
+更高层的封装：如果只需要一个标准 ReAct Agent，直接用 `from langgraph.prebuilt import create_react_agent` 或 `from langchain.agents import create_agent`，无需手写上图结构。
+:::
 
 ## 常用方法
 
@@ -355,12 +369,12 @@ async for event in app.astream(input_data):
 ### 3. 检查点方法
 ```python
 # 导入检查点存储
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver
 
 # 创建检查点存储
-# MemorySaver()：内存检查点存储
+# InMemorySaver()：内存检查点存储（旧名 MemorySaver 仍可用）
 # 适用于开发和测试环境
-checkpointer = MemorySaver()
+checkpointer = InMemorySaver()
 
 # 编译图时使用检查点
 # checkpointer参数：指定检查点存储
@@ -404,11 +418,15 @@ graph_structure.draw_png("graph.png")
 # compile()方法的参数
 app = graph.compile(
     checkpointer=checkpointer,           # 检查点存储
-    interrupt_before=["node1", "node2"],  # 在指定节点前中断执行
+    interrupt_before=["node1", "node2"],  # 在指定节点前中断执行（静态中断，兼容旧式）
     interrupt_after=["node3"],            # 在指定节点后中断执行
     debug=True                            # 启用调试模式，打印详细日志
 )
 ```
+
+::: tip 静态中断与 interrupt()
+`interrupt_before` 属于旧式但兼容的静态中断。1.x 推荐在节点内部调用 `from langgraph.types import interrupt`，运行期动态暂停并可携带/恢复数据（用 `Command(resume=...)` 续跑），详见本节人机交互说明与 workflow-patterns 章。
+:::
 
 ### 2. 执行配置
 ```python

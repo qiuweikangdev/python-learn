@@ -1,5 +1,11 @@
 # RAG核心概念详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
+::: tip 模型说明
+文中模型示例统一使用 `gpt-5-mini`。模型迭代较快，请以官方文档为准。
+:::
+
 ## 概述
 
 RAG（Retrieval-Augmented Generation，检索增强生成）是一种结合外部知识库的生成技术。本章将深入介绍RAG的核心概念，包括检索、生成、向量化、索引等。
@@ -80,9 +86,10 @@ from langchain_community.document_loaders import (
 )
 
 # 导入文本分割器
-# langchain.text_splitter.RecursiveCharacterTextSplitter：递归字符文本分割器
+# RecursiveCharacterTextSplitter：递归字符文本分割器
 # 按照递归的规则分割文本，保持语义完整性
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+# 1.x：已从 langchain.text_splitter 迁移到独立包 langchain_text_splitters
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # 加载文档
 # PyPDFLoader：加载PDF文件
@@ -116,9 +123,10 @@ chunks = text_splitter.split_documents(documents)
 from langchain_openai import OpenAIEmbeddings
 
 # 导入Hugging Face嵌入模型
-# langchain_community.embeddings.HuggingFaceEmbeddings：Hugging Face的嵌入模型
+# HuggingFaceEmbeddings：Hugging Face的嵌入模型
 # 支持开源的句子嵌入模型
-from langchain_community.embeddings import HuggingFaceEmbeddings
+# 1.x：已从 langchain_community.embeddings 迁移到独立包 langchain-huggingface
+from langchain_huggingface import HuggingFaceEmbeddings
 
 # 创建OpenAI嵌入模型实例
 # OpenAIEmbeddings类：封装了OpenAI的嵌入API
@@ -150,19 +158,17 @@ vector = embeddings.embed_query(text)
 ### 3. 向量存储
 ```python
 # 导入向量存储
-# langchain_community.vectorstores：社区贡献的向量存储
+# 1.x 起向量库拆分为官方独立集成包，不再从 langchain_community.vectorstores 统一导入
 # Chroma：ChromaDB向量数据库
-# FAISS：Facebook的向量相似性搜索库
+# FAISS：Facebook的向量相似性搜索库（仍保留在 langchain-community）
 # Pinecone：Pinecone向量数据库
 # Weaviate：Weaviate向量数据库
 # Milvus：Milvus向量数据库
-from langchain_community.vectorstores import (
-    Chroma,
-    FAISS,
-    Pinecone,
-    Weaviate,
-    Milvus
-)
+from langchain_chroma import Chroma
+from langchain_community.vectorstores import FAISS
+from langchain_pinecone import PineconeVectorStore
+from langchain_weaviate import WeaviateVectorStore
+from langchain_milvus import Milvus
 
 # 创建Chroma向量存储
 # Chroma.from_documents()：从文档创建向量存储
@@ -200,12 +206,10 @@ results = vectorstore.similarity_search(
 ### 4. 检索器
 ```python
 # 导入检索器
-# langchain.retrievers：检索器模块
-# VectorStoreRetriever：向量存储检索器
+# 1.x：旧版检索器已迁移到 langchain-classic 包（安装：pip install langchain-classic）
 # MultiQueryRetriever：多查询检索器
 # ContextualCompressionRetriever：上下文压缩检索器
-from langchain.retrievers import (
-    VectorStoreRetriever,
+from langchain_classic.retrievers import (
     MultiQueryRetriever,
     ContextualCompressionRetriever
 )
@@ -231,17 +235,19 @@ retriever = vectorstore.as_retriever(
 #   llm：语言模型实例
 retriever = MultiQueryRetriever.from_llm(
     retriever=vectorstore.as_retriever(),  # 基础检索器
-    llm=ChatOpenAI(model="gpt-4o-mini")  # 用于生成查询的LLM
+    llm=ChatOpenAI(model="gpt-5-mini")  # 用于生成查询的LLM
 )
 
 # 创建上下文压缩检索器
 # ContextualCompressionRetriever：压缩检索结果
 # 优点：减少噪声，提高相关性
-from langchain.retrievers.document_compressors import LLMChainExtractor
+# 1.x：旧版 LLMChainExtractor 依赖已移除的 LLMChain，已迁移到
+# langchain_classic.retrievers.document_compressors，推荐改用 LCEL 自定义压缩逻辑
+from langchain_classic.retrievers.document_compressors import LLMChainExtractor
 
 # 创建压缩器
 # LLMChainExtractor.from_llm()：使用LLM提取关键信息
-compressor = LLMChainExtractor.from_llm(ChatOpenAI(model="gpt-4o-mini"))
+compressor = LLMChainExtractor.from_llm(ChatOpenAI(model="gpt-5-mini"))
 
 # 创建压缩检索器
 retriever = ContextualCompressionRetriever(
@@ -255,7 +261,7 @@ retriever = ContextualCompressionRetriever(
 ### 1. 环境准备
 ```bash
 # 安装必要的库
-pip install langchain langchain-openai langchain-community
+pip install -U langchain langchain-openai langchain-chroma langchain-community
 pip install chromadb faiss-cpu sentence-transformers
 
 # 设置环境变量
@@ -267,11 +273,11 @@ export OPENAI_API_KEY="your-openai-key"
 # 导入必要的组件
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings  # OpenAI模型和嵌入
 from langchain_community.document_loaders import TextLoader  # 文本加载器
-from langchain.text_splitter import RecursiveCharacterTextSplitter  # 文本分割器
-from langchain_community.vectorstores import Chroma  # 向量存储
-from langchain.prompts import ChatPromptTemplate  # 提示模板
-from langchain.schema.output_parser import StrOutputParser  # 输出解析器
-from langchain.schema.runnable import RunnablePassthrough  # 透传组件
+from langchain_text_splitters import RecursiveCharacterTextSplitter  # 文本分割器
+from langchain_chroma import Chroma  # 向量存储（官方独立集成包）
+from langchain_core.prompts import ChatPromptTemplate  # 提示模板
+from langchain_core.output_parsers import StrOutputParser  # 输出解析器
+from langchain_core.runnables import RunnablePassthrough  # 透传组件
 
 # 1. 加载文档
 # TextLoader：加载纯文本文件
@@ -323,7 +329,7 @@ template = """基于以下上下文回答问题：
 prompt = ChatPromptTemplate.from_template(template)
 
 # 创建语言模型
-llm = ChatOpenAI(model="gpt-4o-mini")
+llm = ChatOpenAI(model="gpt-5-mini")
 
 # 创建RAG链
 # 使用管道操作符连接组件

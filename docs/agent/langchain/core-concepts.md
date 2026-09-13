@@ -1,5 +1,7 @@
 # LangChain核心概念详解
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 LangChain是一个用于开发由大语言模型（LLM）驱动的应用程序的框架。本章将深入介绍LangChain的核心概念，包括模型、提示、链、记忆、索引和代理等。
@@ -8,7 +10,7 @@ LangChain是一个用于开发由大语言模型（LLM）驱动的应用程序�
 
 ### 1. 模型（Models）
 LangChain支持多种LLM模型：
-- **OpenAI**：GPT-3.5、GPT-4等
+- **OpenAI**：GPT-5、GPT-4o等（模型迭代快，以官方为准）
 - **Anthropic**：Claude系列模型
 - **Google**：Gemini系列模型
 - **开源模型**：Llama、Mistral等
@@ -20,33 +22,41 @@ LangChain支持多种LLM模型：
 - **FewShotPromptTemplate**：少样本提示模板
 - **提示组合**：多个提示的组合使用
 
-### 3. 链（Chains）
-链是LangChain的核心抽象：
-- **LLMChain**：基础LLM链
-- **SequentialChain**：顺序执行链
-- **RouterChain**：条件路由链
-- **自定义链**：根据需求自定义链
+### 3. 链（LCEL）
+1.x 中链统一使用 LCEL 管道语法组合组件：
+- **`prompt | model | parser`**：基础组合
+- **Runnable 组合子**：`RunnableParallel`、`RunnableLambda` 等编排
+- **条件路由**：`RunnableBranch` 实现分支逻辑
+- **自定义链**：任何 `Runnable` 都可以拼接
 
-### 4. 记忆（Memory）
-记忆组件用于管理对话历史：
-- **ConversationBufferMemory**：完整对话历史
-- **ConversationSummaryMemory**：对话摘要
-- **ConversationBufferWindowMemory**：滑动窗口记忆
-- **向量存储记忆**：基于向量数据库的记忆
+::: warning 旧写法对照
+0.x 的 `LLMChain`、`SequentialChain`、`RouterChain` 等类已从 `langchain` 主包移除，迁入兼容包 `langchain-classic`（仅为维护旧代码存在，新代码禁止使用）。现行写法一律使用 LCEL 管道。
+:::
 
-### 5. 索引（Indexes）
-索引组件用于文档检索：
-- **文档加载器**：加载各种格式的文档
-- **文本分割器**：将文档分割成小块
-- **向量存储**：存储文档向量
-- **检索器**：检索相关文档
+### 4. 工具（Tools）
+工具是 Agent 与外部世界交互的接口：
+- **@tool 装饰器**：把普通函数转换为工具
+- **StructuredTool**：从函数构建结构化工具
+- **工具类型注解**：参数类型自动生成工具 schema
+- **检索增强组件**：文档加载器、文本分割器、向量存储、检索器常封装为工具接入 Agent
 
-### 6. 代理（Agents）
-代理是LangChain的高级抽象：
-- **工具使用**：调用外部工具
-- **推理引擎**：决定下一步行动
-- **执行循环**：执行和观察结果
-- **错误处理**：处理执行失败
+### 5. 代理（Agents / create_agent）
+1.x 中代理的标准构造方式是 `create_agent`（基于 LangGraph 运行时）：
+- **create_agent**：内置推理与工具调用循环，取代 AgentExecutor
+- **工具使用**：模型自主决定调用哪些工具
+- **中间步骤**：结果中的消息列表包含完整的思考与工具调用轨迹
+- **错误处理**：模型与工具错误由运行时统一处理
+
+### 6. 记忆（Memory / Checkpointer）
+1.x 中记忆由 LangGraph checkpointer 统一管理：
+- **InMemorySaver**：内存检查点，适合开发测试
+- **SqliteSaver / PostgresSaver**：持久化存储，适合生产环境
+- **thread_id**：一个会话一个线程，自动保留消息历史
+- **摘要/窗口策略**：在提示或自定义状态中裁剪历史实现
+
+::: warning 旧写法对照
+0.x 的 `ConversationBufferMemory`、`ConversationSummaryMemory` 等 `langchain.memory.*` 类已从主包移除，迁入 `langchain-classic`。新代码请使用 checkpointer 方案。
+:::
 
 ## 技术原理
 
@@ -88,11 +98,11 @@ from langchain_anthropic import ChatAnthropic
 # 创建OpenAI模型实例
 # ChatOpenAI类：封装了OpenAI API的调用逻辑
 # 参数说明：
-#   model：模型名称，如"gpt-4o-mini"、"gpt-4o"
+#   model：模型名称，如"gpt-5-mini"、"gpt-4o"
 #   temperature：控制输出随机性，0-2之间，越低越确定
 #   api_key：OpenAI API密钥
 llm = ChatOpenAI(
-    model="gpt-4o-mini",  # 使用GPT-4o-mini模型（推荐）
+    model="gpt-5-mini",  # 使用gpt-5-mini模型（推荐）
     temperature=0.7,  # 中等随机性，平衡创造性和准确性
     api_key="your-api-key"  # 替换为真实的API密钥
 )
@@ -100,10 +110,10 @@ llm = ChatOpenAI(
 # 创建Anthropic模型实例
 # ChatAnthropic类：封装了Anthropic API的调用逻辑
 # 参数说明：
-#   model：模型名称，如"claude-3-sonnet-20240229"
+#   model：模型名称，如"claude-sonnet-4-5"
 #   api_key：Anthropic API密钥
 llm = ChatAnthropic(
-    model="claude-3-sonnet-20240229",  # 使用Claude 3 Sonnet模型
+    model="claude-sonnet-4-5",  # 使用Claude Sonnet 4.5模型
     api_key="your-api-key"  # 替换为真实的API密钥
 )
 
@@ -121,9 +131,9 @@ print(response.content)
 ### 2. 提示模板
 ```python
 # 导入LangChain的聊天提示模板
-# langchain.prompts.ChatPromptTemplate：用于创建聊天提示模板
+# langchain_core.prompts.ChatPromptTemplate：用于创建聊天提示模板
 # 提示模板可以包含系统消息、用户消息等
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 # 创建提示模板
 # ChatPromptTemplate.from_messages()：从消息列表创建提示模板
@@ -150,8 +160,8 @@ print(messages)
 ```python
 # 导入必要的LangChain组件
 from langchain_openai import ChatOpenAI  # OpenAI模型封装
-from langchain.prompts import ChatPromptTemplate  # 提示模板
-from langchain.schema.output_parser import StrOutputParser  # 字符串输出解析器
+from langchain_core.prompts import ChatPromptTemplate  # 提示模板
+from langchain_core.output_parsers import StrOutputParser  # 字符串输出解析器
 
 # 创建链（Chain）
 # 链是LangChain的核心抽象，将多个组件串联起来
@@ -164,7 +174,7 @@ chain = (
         ("user", "{input}")
     ])
     # 第二步：创建OpenAI模型
-    | ChatOpenAI(model="gpt-4o-mini")
+    | ChatOpenAI(model="gpt-5-mini")
     # 第三步：创建输出解析器
     # StrOutputParser()：将模型输出转换为字符串
     | StrOutputParser()
@@ -197,7 +207,7 @@ def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
     return store[session_id]
 
 # 创建模型
-llm = ChatOpenAI(model="gpt-4o-mini")
+llm = ChatOpenAI(model="gpt-5-mini")
 
 # 创建带历史的链
 # RunnableWithMessageHistory：自动管理对话历史
@@ -226,6 +236,10 @@ response = with_message_history.invoke(
 print(response.content)  # 模型会回答"小明"
 ```
 
+::: tip Agent 的记忆用 checkpointer
+`RunnableWithMessageHistory` 适合普通 LCEL 链。对于 `create_agent` 创建的 Agent，记忆统一由 LangGraph checkpointer 管理（`InMemorySaver` + `thread_id`），详见下文实践指南。
+:::
+
 ## 实践指南
 
 ### 1. 环境准备
@@ -241,8 +255,8 @@ export ANTHROPIC_API_KEY="your-anthropic-key"
 ### 2. 基础示例
 ```python
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.output_parser import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
 # 创建简单链的函数
 def simple_chain():
@@ -261,7 +275,7 @@ def simple_chain():
     ])
     
     # 创建OpenAI模型
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     
     # 创建输出解析器
     # StrOutputParser()：将模型输出转换为纯字符串
@@ -284,10 +298,14 @@ print(result)
 ```
 
 ### 3. 工具集成示例
+::: warning eval() 的安全风险
+示例中的 `calculate` 工具使用 `eval()` 直接执行字符串表达式，仅适用于本地演示。`eval()` 会执行任意 Python 代码，若工具输入来自用户或模型输出，可能被注入恶意代码导致数据泄露或系统被控。生产环境请改用 `ast.literal_eval`（仅解析字面量）或受限的表达式求值库（如 `simpleeval`），并遵循最小权限原则。
+:::
+
 ```python
 # 导入必要的LangChain组件
 from langchain_openai import ChatOpenAI  # OpenAI模型
-from langchain.agents import AgentExecutor, create_openai_tools_agent  # Agent执行器和创建函数
+from langchain.agents import create_agent  # 1.x 标准Agent构造函数
 from langchain.tools import tool  # 工具装饰器
 
 # 使用@tool装饰器定义工具
@@ -319,68 +337,81 @@ def calculate(expression: str) -> str:
         str: 计算结果
     """
     try:
-        # eval()函数：执行字符串形式的Python表达式
-        # 注意：生产环境中应使用更安全的计算方式
+        # 仅演示用：eval() 有代码注入风险，生产环境请使用
+        # ast.literal_eval 或 simpleeval 等受限求值方案
         result = eval(expression)
         return str(result)
     except:
         return "计算错误"
 
-def create_agent():
+def build_agent():
     """
-    创建Agent执行器
+    创建Agent
     
     返回值：
-        AgentExecutor: Agent执行器实例
+        agent: 基于 LangGraph 运行时的 Agent 实例
     
     Agent是能够使用工具的智能体
     """
     # 创建OpenAI模型
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     
     # 工具列表
     tools = [search, calculate]
     
-    # 导入提示模板
-    from langchain.prompts import ChatPromptTemplate
-    
-    # 创建提示模板
-    # Agent提示模板需要包含{agent_scratchpad}占位符
-    # agent_scratchpad：Agent的思考过程和工具调用历史
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "你是一个有用的助手，可以使用工具来完成任务。"),  # 系统消息
-        ("user", "{input}"),  # 用户输入
-        ("placeholder", "{agent_scratchpad}")  # Agent思考过程
-    ])
-    
     # 创建Agent
-    # create_openai_tools_agent()：创建支持OpenAI工具调用的Agent
+    # create_agent()：1.x 标准Agent构造方式，基于 LangGraph 运行时
     # 参数：
     #   llm：语言模型
     #   tools：工具列表
-    #   prompt：提示模板
-    agent = create_openai_tools_agent(llm, tools, prompt)
-    
-    # 创建Agent执行器
-    # AgentExecutor：管理Agent的执行循环
-    # 参数：
-    #   agent：Agent实例
-    #   tools：工具列表
-    #   verbose=True：打印详细执行过程
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-    return agent_executor
+    #   system_prompt：系统提示，定义Agent的行为（无需手写 agent_scratchpad）
+    return create_agent(
+        llm,
+        tools,
+        system_prompt="你是一个有用的助手，可以使用工具来完成任务。",
+    )
 
 # 使用示例
 # 创建Agent实例
-agent = create_agent()
+agent = build_agent()
 
 # 执行Agent
 # invoke()方法：执行Agent
-# 参数：包含用户输入的字典
-# Agent会自动决定是否使用工具，以及使用哪个工具
-result = agent.invoke({"input": "搜索最新科技新闻并计算相关数据"})
-print(result)
+# 输入是 messages 列表；Agent会自动决定是否使用工具，以及使用哪个工具
+# 结果在 result["messages"] 中，最后一条为最终回答
+result = agent.invoke(
+    {"messages": [{"role": "user", "content": "搜索最新科技新闻并计算相关数据"}]}
+)
+print(result["messages"][-1].content)
 ```
+
+#### 旧写法（0.x）对照
+
+```python
+# ❌ 旧写法（LangChain 0.x，AgentExecutor 已从主包移除，仅存在于 langchain-classic）
+from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain_core.prompts import ChatPromptTemplate
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "你是一个有用的助手，可以使用工具来完成任务。"),
+    ("user", "{input}"),
+    ("placeholder", "{agent_scratchpad}")  # 需要手动维护思考过程占位符
+])
+agent = create_openai_tools_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+result = agent_executor.invoke({"input": "搜索最新科技新闻并计算相关数据"})
+
+# ✅ 新写法（LangChain 1.x）
+from langchain.agents import create_agent
+
+agent = create_agent(llm, tools, system_prompt="你是一个有用的助手。")
+result = agent.invoke({"messages": [{"role": "user", "content": "..."}]})
+```
+
+迁移要点：
+- `AgentExecutor` 的执行循环已内置于 `create_agent`（底层是 LangGraph 运行时）。
+- 提示模板与 `agent_scratchpad` 不再需要，用 `system_prompt` 参数定制行为。
+- 输入从 `{"input": ...}` 改为 `{"messages": [...]}`；`verbose=True` 的调试输出由 LangSmith / LangGraph Studio 取代。
 
 ## 最佳实践
 
@@ -415,7 +446,7 @@ print(result)
 - **并发限制**：使用异步处理提升并发能力
 
 ### 3. 调试技巧
-- **verbose模式**：开启verbose模式查看执行过程
+- **LangSmith**：开启追踪，查看链与 Agent 每一步的输入输出
 - **回调函数**：使用回调函数监控执行
 - **日志分析**：分析日志定位问题
 

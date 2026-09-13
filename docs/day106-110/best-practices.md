@@ -1,5 +1,7 @@
 # LangChain最佳实践指南
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 本章介绍LangChain框架在生产环境中的最佳实践，包括设计原则、性能优化、安全考虑和部署策略。
@@ -30,28 +32,39 @@
 ## 性能优化
 
 ### 1. 缓存策略
-实现多级缓存：
+::: warning 旧写法对照
+0.x 的 `langchain.cache` / `set_llm_cache`（`InMemoryCache`、`SQLiteCache` 等 LLM 级缓存）已从 1.x 中移除。现代方案：**OpenAI Prompt Caching（自动生效）+ LangSmith 观测 + 应用层缓存**。
+:::
+
+现代缓存分层实施：
+
 ```python
-from langchain.globals import set_llm_cache
-from langchain.cache import InMemoryCache, SQLiteCache
+# 1）OpenAI Prompt Caching：对长提示自动生效，无需改代码。
+#    前缀相同的请求（>1024 token）命中缓存可显著降低成本与延迟，
+#    通过 response.usage 查看 cached_tokens 字段确认命中情况。
 
-# 内存缓存
-set_llm_cache(InMemoryCache())
+# 2）观测：接入 LangSmith，确认缓存命中与真实延迟
+#    export LANGSMITH_TRACING=true
+#    export LANGSMITH_API_KEY="your-langsmith-key"
 
-# SQLite缓存
-set_llm_cache(SQLiteCache(database_path=".langchain.db"))
+# 3）应用层缓存：对"相同用户问题"做语义/精确缓存（以 Redis 为例）
+import hashlib
+import json
+import redis
 
-# 自定义缓存
-from langchain_core.caches import BaseCache
+r = redis.Redis(host="localhost", port=6379, decode_responses=True)
 
-class CustomCache(BaseCache):
-    def lookup(self, prompt, llm_string):
-        # 实现缓存查找逻辑
-        pass
-    
-    def update(self, prompt, llm_string, return_val):
-        # 实现缓存更新逻辑
-        pass
+def cached_model_call(model, prompt: str, ttl: int = 3600) -> str:
+    """应用层精确缓存：相同 prompt 直接返回历史结果"""
+    key = "llm:" + hashlib.sha256(prompt.encode()).hexdigest()
+
+    hit = r.get(key)
+    if hit:
+        return json.loads(hit)
+
+    response = model.invoke(prompt)
+    r.set(key, json.dumps(response.content), ex=ttl)
+    return response.content
 ```
 
 ### 2. 异步处理
@@ -61,7 +74,7 @@ import asyncio
 from langchain_openai import ChatOpenAI
 
 async def process_batch(inputs):
-    model = ChatOpenAI(model="gpt-4o-mini")
+    model = ChatOpenAI(model="gpt-5-mini")
     
     # 异步批量处理
     tasks = [model.ainvoke(input) for input in inputs]
@@ -79,7 +92,7 @@ results = asyncio.run(process_batch(inputs))
 ```python
 from langchain_openai import ChatOpenAI
 
-model = ChatOpenAI(model="gpt-4o-mini")
+model = ChatOpenAI(model="gpt-5-mini")
 
 # 流式处理
 for chunk in model.stream("请详细解释人工智能"):
@@ -91,7 +104,7 @@ for chunk in model.stream("请详细解释人工智能"):
 ```python
 from langchain_openai import ChatOpenAI
 
-model = ChatOpenAI(model="gpt-4o-mini")
+model = ChatOpenAI(model="gpt-5-mini")
 
 # 批量处理
 inputs = ["问题1", "问题2", "问题3"]
@@ -210,7 +223,7 @@ audit_logger.log_action("user1", "invoke_chain", {"input": "问题"})
 ### 1. 容器化部署
 使用Docker容器化部署：
 ```dockerfile
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -256,11 +269,12 @@ services:
 使用环境变量管理配置：
 ```python
 import os
-from pydantic import BaseSettings
+# Pydantic v2 中 BaseSettings 已拆分到独立包：pip install pydantic-settings
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     openai_api_key: str
-    model_name: str = "gpt-4o-mini"
+    model_name: str = "gpt-5-mini"
     temperature: float = 0.7
     max_tokens: int = 1000
     cache_enabled: bool = True
@@ -370,7 +384,7 @@ from unittest.mock import Mock, patch
 
 def test_model_call():
     """测试模型调用"""
-    model = ChatOpenAI(model="gpt-4o-mini")
+    model = ChatOpenAI(model="gpt-5-mini")
     
     with patch.object(model, 'invoke') as mock_invoke:
         mock_invoke.return_value = Mock(content="测试响应")
@@ -391,13 +405,13 @@ def test_chain_execution():
 ```python
 import pytest
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.output_parser import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
 @pytest.mark.integration
 def test_end_to_end():
     """端到端测试"""
-    model = ChatOpenAI(model="gpt-4o-mini")
+    model = ChatOpenAI(model="gpt-5-mini")
     prompt = ChatPromptTemplate.from_messages([
         ("system", "你是一个有用的助手。"),
         ("user", "{input}")
@@ -421,7 +435,7 @@ from langchain_openai import ChatOpenAI
 @pytest.mark.performance
 def test_response_time():
     """测试响应时间"""
-    model = ChatOpenAI(model="gpt-4o-mini")
+    model = ChatOpenAI(model="gpt-5-mini")
     
     start_time = time.time()
     response = model.invoke("测试输入")

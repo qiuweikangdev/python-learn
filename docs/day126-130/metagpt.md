@@ -1,8 +1,14 @@
 # MetaGPT详解
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 MetaGPT是一个多角色协作框架，模拟软件开发团队的工作流程。它将不同的角色（如产品经理、架构师、工程师等）分配给不同的Agent，实现高效的软件开发。
+
+::: warning 项目状态（2026-09）
+MetaGPT 属于 **2023 年的早期探索项目，具历史意义**：它是"多角色软件公司"范式的代表作，可以通过 `pip install metagpt` 安装，但更新节奏已放缓，更适合用来理解 SOP 驱动的多角色协作思想。具体 API 以官方文档为准。
+:::
 
 ## 核心概念
 
@@ -77,48 +83,69 @@ export OPENAI_API_KEY="your-api-key"
 ```
 
 ### 2. 基础配置
-```python
-# 配置文件
-config = {
-    "llm": {
-        "model": "gpt-4o-mini",
-        "api_key": "your-api-key"
-    },
-    "roles": ["product_manager", "architect", "engineer", "tester"],
-    "workflow": "waterfall"  # 或 "agile"
-}
+```yaml
+# ~/.metagpt/config2.yaml（首次运行 metagpt --init-config 自动生成）
+llm:
+  api_type: "openai"
+  model: "gpt-5-mini"
+  api_key: "sk-..."
+  base_url: "https://api.openai.com/v1"  # 可选
 ```
 
 ### 3. 运行MetaGPT
+```bash
+# 方式一：CLI 一句话生成整个软件项目
+metagpt "开发一个待办事项应用"
+```
+
 ```python
-from metagpt import MetaGPT
+# 方式二：用 Python 组建"软件公司"
+import asyncio
+from metagpt.roles.product_manager import ProductManager
+from metagpt.roles.architect import Architect
+from metagpt.roles.engineer import Engineer
+from metagpt.roles.project_manager import ProjectManager
+from metagpt.team import Team
 
-# 创建MetaGPT实例
-metagpt = MetaGPT(config)
+async def main(idea: str, investment: float = 3.0, n_round: int = 5):
+    company = Team()
+    company.hire([ProductManager(), Architect(), ProjectManager(), Engineer()])
+    company.invest(investment)      # 预算上限（美元），防止成本失控
+    company.start_project(idea)
+    await company.run(n_round=n_round)
 
-# 运行MetaGPT
-metagpt.run("开发一个简单的Web应用")
+asyncio.run(main(idea="开发一个待办事项应用"))
 ```
 
 ### 4. 自定义角色
 ```python
-from metagpt import Role
+import asyncio
+from metagpt.actions import Action
+from metagpt.roles import Role
 
-# 创建自定义角色
-class ProductManager(Role):
-    name = "产品经理"
-    profile = "负责需求分析和产品规划"
-    
-    def analyze_requirements(self, requirements):
-        # 实现需求分析逻辑
-        return f"分析结果: {requirements}"
-    
-    def create_user_stories(self, requirements):
-        # 实现用户故事创建逻辑
-        return f"用户故事: {requirements}"
+class WriteAnalysis(Action):
+    """自定义动作：撰写分析"""
+    name: str = "WriteAnalysis"
+    PROMPT_TEMPLATE: str = "请对以下需求做分析：{req}"
 
-# 注册角色
-metagpt.register_role(ProductManager())
+    async def run(self, req: str):
+        return await self._aask(self.PROMPT_TEMPLATE.format(req=req))
+
+class Analyst(Role):
+    """自定义角色：需求分析师"""
+    name: str = "Alice"
+    profile: str = "需求分析师"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.set_actions([WriteAnalysis])
+
+async def main():
+    role = Analyst()
+    result = await role.run("开发一个待办事项应用")
+    print(result)
+
+asyncio.run(main())
 ```
 
 ## 实践指南
@@ -134,60 +161,23 @@ export OPENAI_API_KEY="your-api-key"
 
 ### 2. 基础使用示例
 ```python
-from metagpt import MetaGPT
+# 最简单的方式：直接用 CLI
+# metagpt "开发一个待办事项应用"
 
-# 创建MetaGPT实例
-metagpt = MetaGPT()
-
-# 运行MetaGPT
-result = metagpt.run("开发一个待办事项应用")
-
-print(result)
+# 或用 Python API（见上文"运行MetaGPT"的 Team 组队示例）
 ```
 
 ### 3. 自定义工作流程
-```python
-from metagpt import Workflow
 
-# 创建自定义工作流程
-class CustomWorkflow(Workflow):
-    def __init__(self):
-        super().__init__()
-        self.steps = [
-            "requirements_analysis",
-            "architecture_design",
-            "implementation",
-            "testing",
-            "deployment"
-        ]
-    
-    def execute(self, task):
-        # 实现自定义工作流程逻辑
-        results = []
-        for step in self.steps:
-            result = self.execute_step(step, task)
-            results.append(result)
-        return results
+MetaGPT 的流程由角色之间的"订阅-发布"消息机制驱动（SOP 固化在角色与动作的定义里）。要调整流程，通常做法是：
 
-# 使用自定义工作流程
-metagpt.set_workflow(CustomWorkflow())
-```
+- **增删角色**：`Team().hire([...])` 决定参与的角色
+- **控制轮次**：`company.run(n_round=N)` 限制协作轮数
+- **自定义动作**：继承 `Action` 定义新的执行步骤，挂到自定义 `Role` 上
 
 ### 4. 角色协作
-```python
-from metagpt import Collaboration
 
-# 创建协作实例
-collaboration = Collaboration()
-
-# 添加角色
-collaboration.add_role("product_manager", ProductManager())
-collaboration.add_role("architect", Architect())
-collaboration.add_role("engineer", Engineer())
-
-# 运行协作
-result = collaboration.run("开发一个Web应用")
-```
+角色之间通过共享的 `Environment` 发布/订阅消息协作：产品经理产出 PRD → 架构师订阅并产出设计 → 工程师订阅并写代码。上面的 `Team` 示例已经组装了这条完整流水线，无需手动编排每个角色的顺序。
 
 ## 最佳实践
 

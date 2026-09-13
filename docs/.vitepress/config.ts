@@ -332,7 +332,8 @@ export default defineConfig({
             { text: 'OpenAI API详解', link: '/agent/llm-basics/openai-api' },
             { text: '提示工程', link: '/agent/llm-basics/prompt-engineering' },
             { text: '函数调用', link: '/agent/llm-basics/function-calling' },
-            { text: '工具使用', link: '/agent/llm-basics/tool-use' }
+            { text: '工具使用', link: '/agent/llm-basics/tool-use' },
+            { text: 'MCP协议', link: '/agent/llm-basics/mcp' }
           ]
         }
       ],
@@ -447,7 +448,8 @@ export default defineConfig({
             { text: 'OpenAI API详解', link: '/agent/llm-basics/openai-api' },
             { text: '提示工程', link: '/agent/llm-basics/prompt-engineering' },
             { text: '函数调用', link: '/agent/llm-basics/function-calling' },
-            { text: '工具使用', link: '/agent/llm-basics/tool-use' }
+            { text: '工具使用', link: '/agent/llm-basics/tool-use' },
+            { text: 'MCP协议', link: '/agent/llm-basics/mcp' }
           ]
         }
       ],

@@ -1,14 +1,20 @@
 # Weaviate详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
+::: warning 客户端版本说明
+2026 年 Weaviate 主推 v4 gRPC 客户端，本文基于 v4。旧版 v3 的 `weaviate.Client` 与 schema/class API 已弃用，请迁移到 `connect_to_local()` 与 collections API。
+:::
+
 ## 概述
 
 Weaviate是一个开源的向量数据库，支持多种数据类型和搜索模式。它提供了GraphQL和RESTful API，支持多模态数据存储和查询。
 
 ## 核心概念
 
-### 1. 类（Class）
-Weaviate中的类类似于数据库中的表：
-- **属性定义**：定义类的属性
+### 1. 集合（Collection）
+v4 中不再使用"类（Class）"概念，统一为集合（Collection），类似于数据库中的表：
+- **属性定义**：定义集合的属性（Property）
 - **向量化配置**：配置向量化方式
 - **索引配置**：配置索引参数
 - **模块配置**：配置使用的模块
@@ -61,72 +67,51 @@ Weaviate的查询优化：
 
 ### 1. 安装和配置
 ```python
-# 安装Weaviate客户端
+# 安装Weaviate v4客户端（weaviate-client >= 4）
 pip install weaviate-client
 
 # 连接到Weaviate
 import weaviate
 
-client = weaviate.Client(
-    url="http://localhost:8080",
-    additional_headers={
+client = weaviate.connect_to_local(
+    headers={
         "X-OpenAI-Api-Key": "your-openai-api-key"
     }
 )
 ```
 
-### 2. 创建类
+### 2. 创建集合
 ```python
-# 定义类
-class_obj = {
-    "class": "Article",
-    "vectorizer": "text2vec-openai",
-    "moduleConfig": {
-        "text2vec-openai": {
-            "model": "ada",
-            "modelVersion": "002",
-            "type": "text"
-        }
-    },
-    "properties": [
-        {
-            "name": "title",
-            "dataType": ["text"],
-            "moduleConfig": {
-                "text2vec-openai": {
-                    "skip": False,
-                    "vectorizePropertyName": False
-                }
-            }
-        },
-        {
-            "name": "content",
-            "dataType": ["text"]
-        },
-        {
-            "name": "year",
-            "dataType": ["int"]
-        }
-    ]
-}
+from weaviate.classes.config import Configure, Property, DataType
 
-# 创建类
-client.schema.create_class(class_obj)
+# 创建集合（v4 中不再需要手写 JSON Schema）
+collection = client.collections.create(
+    name="Article",
+    # 自动向量化（也可用 Configure.Vectorizer.none() 关闭，向量由外部生成）
+    vectorizer_config=Configure.Vectorizer.text2vec_openai(
+        model="text-embedding-3-small",  # 替代旧的 ada-002
+    ),
+    properties=[
+        Property(name="title", data_type=DataType.TEXT),
+        Property(name="content", data_type=DataType.TEXT),
+        Property(name="year", data_type=DataType.INT),
+    ]
+)
+
+# 获取已存在的集合
+collection = client.collections.get("Article")
 ```
 
 ### 3. 插入对象
 ```python
+collection = client.collections.get("Article")
+
 # 插入单个对象
-data_object = {
+collection.data.insert({
     "title": "人工智能简介",
     "content": "人工智能是计算机科学的一个分支...",
     "year": 2023
-}
-
-client.data_object.create(
-    data_object=data_object,
-    class_name="Article"
-)
+})
 
 # 批量插入
 objects = [
@@ -142,67 +127,53 @@ objects = [
     }
 ]
 
-client.batch.configure(batch_size=100)
-for obj in objects:
-    client.batch.add_data_object(obj, "Article")
-client.batch.flush()
+with collection.batch.fixed_size(batch_size=100) as batch:
+    for obj in objects:
+        batch.add_object(properties=obj)
 ```
 
 ### 4. 查询对象
 ```python
-# 相似性搜索
-result = (
-    client.query
-    .get("Article", ["title", "content", "year"])
-    .with_near_text({"concepts": ["人工智能"]})
-    .with_limit(10)
-    .do()
-)
+collection = client.collections.get("Article")
 
-# 带过滤的搜索
-result = (
-    client.query
-    .get("Article", ["title", "content", "year"])
-    .with_near_text({"concepts": ["人工智能"]})
-    .with_where({
-        "path": ["year"],
-        "operator": "GreaterThan",
-        "valueInt": 2020
-    })
-    .with_limit(5)
-    .do()
+# 相似性搜索
+results = collection.query.near_text(
+    query="人工智能",
+    limit=10
+)
+for obj in results.objects:
+    print(obj.properties)
+
+# 带过滤的搜索（v4 使用 Filter 对象）
+from weaviate.classes.query import Filter
+
+results = collection.query.near_text(
+    query="人工智能",
+    limit=5,
+    filters=Filter.by_property("year").greater_than(2020)
 )
 
 # 混合搜索
-result = (
-    client.query
-    .get("Article", ["title", "content", "year"])
-    .with_hybrid(
-        query="人工智能",
-        alpha=0.5  # 0表示纯关键词搜索，1表示纯向量搜索
-    )
-    .with_limit(10)
-    .do()
+results = collection.query.hybrid(
+    query="人工智能",
+    alpha=0.5,  # 0表示纯关键词搜索，1表示纯向量搜索
+    limit=10
 )
 ```
 
 ### 5. 更新和删除
 ```python
-# 更新对象
-client.data_object.update(
-    data_object={"title": "更新后的标题"},
-    class_name="Article",
-    uuid="your-uuid"
+# 更新对象（按UUID）
+collection.data.update(
+    uuid="your-uuid",
+    properties={"title": "更新后的标题"}
 )
 
 # 删除对象
-client.data_object.delete(
-    class_name="Article",
-    uuid="your-uuid"
-)
+collection.data.delete(uuid="your-uuid")
 
-# 删除类
-client.schema.delete_class("Article")
+# 删除集合
+client.collections.delete("Article")
 ```
 
 ## 实践指南
@@ -222,29 +193,30 @@ pip install weaviate-client openai
 ### 2. 基础使用示例
 ```python
 import weaviate
-from openai import OpenAI
+from weaviate.classes.config import Configure, Property, DataType
 
 # 连接到Weaviate
-client = weaviate.Client(
-    url="http://localhost:8080",
-    additional_headers={
+client = weaviate.connect_to_local(
+    headers={
         "X-OpenAI-Api-Key": "your-openai-api-key"
     }
 )
 
-# 创建类
-class_obj = {
-    "class": "Document",
-    "vectorizer": "text2vec-openai",
-    "properties": [
-        {"name": "content", "dataType": ["text"]},
-        {"name": "source", "dataType": ["text"]},
-        {"name": "timestamp", "dataType": ["date"]}
-    ]
-}
+# 创建集合
+if not client.collections.exists("Document"):
+    client.collections.create(
+        name="Document",
+        vectorizer_config=Configure.Vectorizer.text2vec_openai(
+            model="text-embedding-3-small"
+        ),
+        properties=[
+            Property(name="content", data_type=DataType.TEXT),
+            Property(name="source", data_type=DataType.TEXT),
+            Property(name="timestamp", data_type=DataType.DATE),
+        ]
+    )
 
-if not client.schema.exists("Document"):
-    client.schema.create_class(class_obj)
+collection = client.collections.get("Document")
 
 # 插入文档
 documents = [
@@ -253,37 +225,33 @@ documents = [
 ]
 
 for doc in documents:
-    client.data_object.create(doc, "Document")
+    collection.data.insert(doc)
 
 # 查询
-result = (
-    client.query
-    .get("Document", ["content", "source"])
-    .with_near_text({"concepts": ["人工智能"]})
-    .with_limit(5)
-    .do()
+results = collection.query.near_text(
+    query="人工智能",
+    limit=5
 )
 
-print(result)
+for obj in results.objects:
+    print(obj.properties)
 ```
 
 ### 3. 多模态数据
 ```python
+from weaviate.classes.config import Configure, Property, DataType
+
 # 图像数据
-class ImageClass:
-    class_obj = {
-        "class": "Image",
-        "vectorizer": "img2vec-neural",
-        "moduleConfig": {
-            "img2vec-neural": {
-                "imageFields": ["image"]
-            }
-        },
-        "properties": [
-            {"name": "image", "dataType": ["blob"]},
-            {"name": "description", "dataType": ["text"]}
-        ]
-    }
+client.collections.create(
+    name="Image",
+    vectorizer_config=Configure.Vectorizer.img2vec_neural(
+        image_fields=["image"]
+    ),
+    properties=[
+        Property(name="image", data_type=DataType.BLOB),
+        Property(name="description", data_type=DataType.TEXT),
+    ]
+)
 
 # 插入图像
 import base64
@@ -291,37 +259,33 @@ import base64
 with open("image.jpg", "rb") as f:
     image_data = base64.b64encode(f.read()).decode("utf-8")
 
-data_object = {
+collection = client.collections.get("Image")
+collection.data.insert({
     "image": image_data,
     "description": "一张风景图片"
-}
-
-client.data_object.create(data_object, "Image")
+})
 ```
 
 ### 4. 生成式查询
 ```python
 # 使用生成式模块
-result = (
-    client.query
-    .get("Document", ["content"])
-    .with_near_text({"concepts": ["人工智能"]})
-    .with_generate(
-        single_prompt="请用中文总结以下内容: {content}"
-    )
-    .with_limit(3)
-    .do()
+collection = client.collections.get("Document")
+
+results = collection.generate.near_text(
+    query="人工智能",
+    limit=3,
+    single_prompt="请用中文总结以下内容: {content}"
 )
 
-for doc in result["data"]["Get"]["Document"]:
-    print(f"Content: {doc['content']}")
-    print(f"Summary: {doc['_additional']['generate']['singleResult']}")
+for obj in results.objects:
+    print(f"Content: {obj.properties['content']}")
+    print(f"Summary: {obj.generated}")
     print()
 ```
 
 ## 最佳实践
 
-### 1. 类设计
+### 1. 集合设计
 - **合理定义属性**：根据查询需求定义属性
 - **选择合适的向量化器**：根据数据类型选择
 - **配置索引参数**：根据性能需求配置

@@ -1,5 +1,7 @@
 # LangGraph工作流
 
+> **版本基线**：本文基于 LangGraph 1.x（1.2.x，2026-08），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 LangGraph是LangChain团队开发的基于图的Agent工作流框架，用于构建复杂的、有状态的LLM应用。它提供了更灵活的控制流和状态管理能力，适合构建需要多步推理和决策的Agent系统。
@@ -254,7 +256,7 @@ class QAState(TypedDict):
 # 2. 定义节点
 def analyze_question(state: QAState) -> QAState:
     """分析问题"""
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     analysis = llm.invoke(f"分析问题的类型和需要的信息：{state['question']}")
     return {"analysis": analysis.content}
 
@@ -266,7 +268,7 @@ def search_information(state: QAState) -> QAState:
 
 def generate_answer(state: QAState) -> QAState:
     """生成回答"""
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     context = "\n".join(state["search_results"])
     answer = llm.invoke(f"基于以下信息回答问题：\n{context}\n\n问题：{state['question']}")
     return {"answer": answer.content}
@@ -321,7 +323,7 @@ class RouterState(TypedDict):
 # 2. 定义节点
 def classify_question(state: RouterState) -> RouterState:
     """分类问题"""
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     response = llm.invoke(f"将以下问题分类为'天气'、'新闻'或'其他'：{state['question']}")
     question_type = response.content.strip().lower()
     return {"question_type": question_type}
@@ -336,7 +338,7 @@ def handle_news(state: RouterState) -> RouterState:
 
 def handle_other(state: RouterState) -> RouterState:
     """处理其他问题"""
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     answer = llm.invoke(state["question"])
     return {"answer": answer.content}
 
@@ -397,7 +399,7 @@ print(result["answer"])
 **实现：**
 ```python
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver  # 旧名 MemorySaver 仍可用
 from langchain_openai import ChatOpenAI
 from typing import TypedDict
 
@@ -411,7 +413,7 @@ class ApprovalState(TypedDict):
 # 2. 定义节点
 def generate_draft(state: ApprovalState) -> ApprovalState:
     """生成草稿"""
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     draft = llm.invoke(f"根据以下任务生成草稿：{state['task']}")
     return {"draft": draft.content}
 
@@ -443,10 +445,10 @@ graph.add_edge("review", "finalize")
 graph.add_edge("finalize", END)
 
 # 4. 使用检查点支持中断
-checkpointer = MemorySaver()
+checkpointer = InMemorySaver()
 app = graph.compile(
     checkpointer=checkpointer,
-    interrupt_before=["review"]  # 在审核前中断
+    interrupt_before=["review"]  # 在审核前中断（旧式静态中断，兼容）
 )
 
 # 5. 执行
@@ -461,8 +463,27 @@ result = app.invoke({
 
 **设计要点：**
 - 使用interrupt_before在特定节点前中断
-- 使用MemorySaver保存执行状态
+- 使用InMemorySaver保存执行状态
 - 可以恢复执行并继续
+
+::: tip 现行写法：interrupt() 函数
+`interrupt_before` 属于旧式但兼容的静态中断。1.x 推荐在节点内部调用 `interrupt()` 实现动态人机交互，可携带/恢复自定义数据：
+
+```python
+from langgraph.types import interrupt, Command
+
+def human_review(state: ApprovalState) -> ApprovalState:
+    # 在节点内部暂停，把草稿交给调用方，等待人工反馈
+    feedback = interrupt({"draft": state["draft"], "question": "是否批准？"})
+    return {"approved": bool(feedback)}
+
+# 调用方：
+# result = app.invoke(initial_state, config)               # 在 interrupt() 处暂停
+# result = app.invoke(Command(resume=True), config)        # 恢复执行
+```
+
+对比：`interrupt_before` 在编译期静态指定节点，粒度粗；`interrupt()` 在运行期节点内随时触发，可返回任意数据。两种方式都依赖 checkpointer。
+:::
 
 ### 场景四：循环优化工作流
 
@@ -485,7 +506,7 @@ class OptimizationState(TypedDict):
 # 2. 定义节点
 def generate_output(state: OptimizationState) -> OptimizationState:
     """生成输出"""
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     output = llm.invoke(f"完成以下任务：{state['task']}")
     return {
         "current_output": output.content,
@@ -494,7 +515,7 @@ def generate_output(state: OptimizationState) -> OptimizationState:
 
 def evaluate_quality(state: OptimizationState) -> OptimizationState:
     """评估质量"""
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     response = llm.invoke(f"评估以下输出的质量（0-10分）：\n{state['current_output']}")
     try:
         score = float(response.content)
@@ -504,7 +525,7 @@ def evaluate_quality(state: OptimizationState) -> OptimizationState:
 
 def improve_output(state: OptimizationState) -> OptimizationState:
     """改进输出"""
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     improved = llm.invoke(f"改进以下输出，提高质量：\n{state['current_output']}")
     return {"current_output": improved.content}
 
@@ -628,7 +649,7 @@ def process_input(state: State) -> State:
 
 def generate_response(state: State) -> State:
     """生成响应节点"""
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     response = llm.invoke(state["messages"])
     return {"messages": [response], "current_step": "completed"}
 
@@ -709,7 +730,7 @@ class AgentState(TypedDict):
 # 定义节点
 def chat_node(state: AgentState) -> AgentState:
     """聊天节点"""
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-5-mini")
     response = llm.invoke(state["messages"])
     return {
         "messages": state["messages"] + [response],
@@ -805,7 +826,7 @@ print(result["output"])
 ### 4. 人机交互示例
 ```python
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver  # 旧名 MemorySaver 仍可用
 from typing import TypedDict
 
 # 定义状态
@@ -854,7 +875,7 @@ graph.add_edge("human_approval", "final")
 graph.add_edge("final", END)
 
 # 使用检查点
-checkpointer = MemorySaver()
+checkpointer = InMemorySaver()
 app = graph.compile(checkpointer=checkpointer, interrupt_before=["human_approval"])
 
 # 执行
@@ -865,6 +886,26 @@ result = app.invoke({
     "approved": False
 }, config)
 ```
+
+::: tip 现行写法：interrupt() 函数
+`interrupt_before=["human_approval"]` 属于旧式但仍然兼容的静态中断写法。LangGraph 1.x 推荐在节点内部调用 `interrupt()` 实现动态中断：
+
+```python
+from langgraph.types import interrupt, Command
+
+def human_approval_node(state: HumanLoopState) -> HumanLoopState:
+    answer = interrupt({"question": "是否批准该操作？"})
+    return {
+        "messages": state["messages"],
+        "human_input": str(answer),
+        "approved": bool(answer),
+    }
+
+# 恢复执行：app.invoke(Command(resume=True), config)
+```
+
+详见 agent/langgraph/index.md 中人机交互示例的完整对照说明。
+:::
 
 ## 最佳实践
 

@@ -1,5 +1,7 @@
 # Skills、协议与能力打包
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 Skills（技能）是Agent能力的模块化封装，通过标准化的协议和接口，让Agent能够快速集成和使用各种能力。本章将深入介绍Skills的设计模式、协议规范和能力打包方法。
@@ -22,6 +24,10 @@ Skills = 可复用的能力模块
 3. 标准化：遵循统一的协议
 4. 可组合：多个Skills组合使用
 ```
+
+::: tip 2026 现状：Anthropic "Agent Skills"
+2025 年 10 月，Anthropic 提出了 **Agent Skills**：把专业能力打包成一个包含 `SKILL.md`（说明书 + 使用流程）与可选脚本/资源的文件夹，模型按需加载。它已成为 Agent 能力打包的事实方向之一，Claude 应用、Claude Code 与 API 均已支持。本章介绍的自定义 Skill 设计模式与这一思路一脉相承。
+:::
 
 ### Skills的作用
 
@@ -89,7 +95,7 @@ class BuiltinSkills:
             计算结果
         """
         try:
-            result = eval(expression)
+            result = eval(expression)  # ⚠️ 教学演示，生产环境请用白名单解析/沙箱
             return f"计算结果：{result}"
         except Exception as e:
             return f"计算错误：{e}"
@@ -800,8 +806,11 @@ registry.install("weather_skill")
 ### 1. 与LangChain集成
 
 ```python
+from langchain.agents import create_agent
 from langchain.tools import tool
+from langchain_openai import ChatOpenAI
 from typing import Dict, Any
+import json
 
 # 将Skill转换为LangChain工具
 def skill_to_langchain_tool(skill):
@@ -816,8 +825,9 @@ def skill_to_langchain_tool(skill):
     """
     @tool
     def tool_func(input_str: str) -> str:
-        """Skill工具"""
-        result = skill.execute(**eval(input_str))
+        """Skill工具，input_str 为 JSON 格式的参数"""
+        params = json.loads(input_str)  # 用 json.loads，勿用 eval 解析不可信输入
+        result = skill.execute(**params)
         return str(result)
     
     return tool_func
@@ -826,24 +836,15 @@ def skill_to_langchain_tool(skill):
 weather_skill = WeatherSkill()
 weather_tool = skill_to_langchain_tool(weather_skill)
 
-# 在LangChain Agent中使用
-from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_tools_agent
-from langchain.prompts import ChatPromptTemplate
+# 在LangChain Agent中使用（1.x：create_agent 取代 AgentExecutor）
+agent = create_agent(
+    ChatOpenAI(model="gpt-5-mini"),
+    tools=[weather_tool],
+    system_prompt="你是一个有用的助手。",
+)
 
-llm = ChatOpenAI(model="gpt-4o-mini")
-tools = [weather_tool]
-
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "你是一个有用的助手。"),
-    ("user", "{input}"),
-    ("placeholder", "{agent_scratchpad}")
-])
-
-agent = create_openai_tools_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools)
-
-# result = agent_executor.invoke({"input": "北京天气怎么样？"})
+# result = agent.invoke({"messages": [{"role": "user", "content": "北京天气怎么样？"}]})
+# print(result["messages"][-1].content)
 ```
 
 ## 最佳实践

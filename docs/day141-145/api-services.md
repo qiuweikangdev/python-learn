@@ -1,5 +1,7 @@
 # API服务
 
+> **版本基线**：本文示例模型 gpt-5-mini，SDK 以 2026-09 现状为准，更新于 2026-09。
+
 ## 概述
 
 API服务是将Agent能力封装为API接口，供其他应用调用。本章将介绍如何设计和实现Agent API服务。
@@ -42,7 +44,7 @@ app = FastAPI(title="Agent API", version="1.0.0")
 class AgentRequest(BaseModel):
     query: str
     context: Optional[str] = None
-    model: str = "gpt-4o-mini"
+    model: str = "gpt-5-mini"
     max_tokens: int = 1000
 
 # 响应模型
@@ -120,7 +122,7 @@ def chat():
         response = call_agent(
             query=data['query'],
             context=data.get('context'),
-            model=data.get('model', 'gpt-4o-mini')
+            model=data.get('model', 'gpt-5-mini')
         )
         
         return jsonify({
@@ -218,7 +220,7 @@ app = FastAPI()
 
 class StreamRequest(BaseModel):
     query: str
-    model: str = "gpt-4o-mini"
+    model: str = "gpt-5-mini"
 
 @app.post("/agent/stream")
 async def stream_chat(request: StreamRequest):
@@ -277,7 +279,7 @@ SECRET_KEY = "your-secret-key"
 class ChatRequest(BaseModel):
     query: str = Field(..., description="用户查询")
     context: Optional[str] = Field(None, description="上下文信息")
-    model: str = Field("gpt-4o-mini", description="模型名称")
+    model: str = Field("gpt-5-mini", description="模型名称")
     temperature: float = Field(0.7, ge=0, le=2, description="温度参数")
     max_tokens: int = Field(1000, ge=1, le=4000, description="最大token数")
 
@@ -337,9 +339,9 @@ async def list_models(user=Depends(verify_token)):
     """获取可用模型列表"""
     return {
         "models": [
-            {"id": "gpt-4o-mini", "name": "GPT-3.5 Turbo"},
-            {"id": "gpt-4", "name": "GPT-4"},
-            {"id": "claude-3-sonnet", "name": "Claude 3 Sonnet"}
+            {"id": "gpt-5-mini", "name": "GPT-5 mini"},
+            {"id": "gpt-5.4", "name": "GPT-5.4（旗舰）"},
+            {"id": "claude-sonnet-4-5", "name": "Claude Sonnet 4.5"}
         ]
     }
 
@@ -355,7 +357,7 @@ async def health_check():
 
 ### 3. Docker部署
 ```dockerfile
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 

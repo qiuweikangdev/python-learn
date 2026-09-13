@@ -1,5 +1,7 @@
 # 任务分解策略详解
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 任务分解是将复杂任务拆分为可管理、可执行的子任务的过程。本章详细介绍各种任务分解策略的原理、实现和最佳实践。
@@ -162,7 +164,7 @@ for leaf in leaves:
 from typing import Dict, List, Any
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 class SubTask(BaseModel):
     """子任务"""
@@ -180,7 +182,7 @@ class LLMHierarchicalDecomposer:
     """LLM驱动的层次分解器"""
     
     def __init__(self, llm=None):
-        self.llm = llm or ChatOpenAI(model="gpt-4")
+        self.llm = llm or ChatOpenAI(model="gpt-5-mini")
         self.structured_llm = self.llm.with_structured_output(DecompositionResult)
     
     def decompose(self, task: str, context: str = "", 

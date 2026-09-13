@@ -1,5 +1,7 @@
 # CrewAI详解
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 CrewAI是一个多Agent协作框架，模拟团队协作的工作模式。它通过角色定义、任务分配和协作机制，实现高效的多Agent协作。
@@ -195,7 +197,7 @@ analyst = Agent(
 
 # 创建任务
 research_task = Task(
-    description="研究2024年人工智能市场的最新趋势",
+    description="研究2026年人工智能市场的最新趋势",
     expected_output="一份详细的市场趋势报告",
     agent=researcher
 )
@@ -238,7 +240,7 @@ class CalculatorTool(BaseTool):
 
     def _run(self, expression: str) -> str:
         try:
-            result = eval(expression)
+            result = eval(expression)  # ⚠️ 教学演示，生产环境请用白名单解析/沙箱
             return f"计算结果: {result}"
         except Exception as e:
             return f"计算错误: {e}"

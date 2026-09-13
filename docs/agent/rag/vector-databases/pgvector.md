@@ -1,5 +1,7 @@
 # pgvector详解
 
+> **版本基线**：本文基于 LangChain 1.x，向量库使用官方独立集成包，更新于 2026-09。
+
 ## 概述
 
 pgvector是PostgreSQL的向量搜索扩展，让你可以在现有的PostgreSQL数据库中存储和查询向量。它以零额外基础设施、SQL兼容性和事务支持著称，是已有PostgreSQL环境的理想选择。
@@ -291,6 +293,7 @@ cur.execute("""
 ## 与LangChain集成
 
 ```python
+# PGVector 的 LangChain 集成仍保留在 langchain-community 包中（1.x 现行写法）
 from langchain_community.vectorstores import PGVector
 from langchain_openai import OpenAIEmbeddings
 
@@ -298,7 +301,7 @@ from langchain_openai import OpenAIEmbeddings
 CONNECTION_STRING = "postgresql+psycopg2://user:password@localhost:5432/database"
 
 # 创建向量存储
-embeddings = OpenAIEmbeddings()
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
 vectorstore = PGVector.from_documents(
     documents=docs,

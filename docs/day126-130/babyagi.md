@@ -1,8 +1,14 @@
 # BabyAGI详解
 
+> **版本基线**：本文基于 LangChain 1.x / LangGraph 1.x（2025-10 GA），示例模型 gpt-5-mini，更新于 2026-09。
+
 ## 概述
 
 BabyAGI是一个任务驱动的自主Agent系统，能够自动创建、 prioritization和执行任务。它展示了如何使用LLM来管理复杂的任务流程。
+
+::: warning 项目状态（2026-09）
+BabyAGI 属于 **2023 年的早期探索项目，具历史意义**：它以极简代码（核心逻辑就在一个 `babyagi.py` 脚本里）演示了"任务驱动的自主 Agent"循环，非常适合作为学习参考，但**没有官方维护的 pip 包，不能 `pip install babyagi`**，也不适合作为生产框架。
+:::
 
 ## 核心概念
 
@@ -80,7 +86,7 @@ cp .env.example .env
 ```python
 # .env文件配置
 OPENAI_API_KEY=your-openai-api-key
-OPENAPI_API_MODEL=gpt-4o-mini  # 或gpt-4
+OPENAPI_API_MODEL=gpt-5-mini
 
 # Pinecone配置（可选）
 PINECONE_API_KEY=your-pinecone-api-key
@@ -114,10 +120,7 @@ TOOLS = [
 
 ### 1. 环境准备
 ```bash
-# 安装BabyAGI
-pip install babyagi
-
-# 或者从源码安装
+# BabyAGI 没有官方 pip 包，需克隆仓库运行
 git clone https://github.com/yoheinakajima/babyagi.git
 cd babyagi
 pip install -r requirements.txt
@@ -127,55 +130,57 @@ export OPENAI_API_KEY="your-api-key"
 ```
 
 ### 2. 基础使用示例
+
+BabyAGI 的核心逻辑就在仓库的 `babyagi.py` 一个脚本里，建议直接阅读源码来理解循环：
+
 ```python
-# 使用BabyAGI Python库
-from babyagi import BabyAGI
+# babyagi.py 的核心配置（脚本级变量，不是可 import 的库）
+OBJECTIVE = "提高代码质量"          # 最终目标
+INITIAL_TASK = "分析当前代码质量"    # 初始任务
 
-# 创建BabyAGI实例
-baby_agi = BabyAGI(
-    objective="提高代码质量",
-    initial_task="分析当前代码质量"
-)
-
-# 运行BabyAGI
-baby_agi.run()
+# 运行 python babyagi.py 后进入循环：
+# 1. 取出任务列表中优先级最高的任务
+# 2. 调用 LLM 执行该任务
+# 3. 根据执行结果让 LLM 创建新任务（task_creation_agent）
+# 4. 对任务列表重新排序（prioritization_agent）
+# 5. 结果写入向量库作为记忆，回到第 1 步
 ```
 
-### 3. 自定义任务
-```python
-from babyagi import Task
+### 3. 用现代框架实现同样的循环
 
-# 创建自定义任务
-task = Task(
-    name="代码分析",
-    description="分析当前代码质量",
-    priority=1,
-    dependencies=[]
+想在自己代码里实现 BabyAGI 式的"任务驱动自主循环"，用 LangChain 1.x / LangGraph 更可靠：
+
+```python
+from langchain.agents import create_agent
+from langchain.tools import tool
+from langchain_openai import ChatOpenAI
+
+@tool
+def analyze_code(code: str) -> str:
+    """分析代码质量并给出改进建议"""
+    return f"分析结果: {code}"
+
+agent = create_agent(
+    ChatOpenAI(model="gpt-5-mini"),
+    tools=[analyze_code],
+    system_prompt=(
+        "你是任务管理型 Agent：先分析当前任务，执行后提出下一个子任务，"
+        "按优先级逐个完成，直到达成目标。"
+    ),
 )
 
-# 添加任务到任务列表
-baby_agi.add_task(task)
-
-# 执行任务
-result = baby_agi.execute_task(task)
+# recursion_limit 控制循环上限（对应 BabyAGI 防失控的最大循环数）
+result = agent.invoke(
+    {"messages": [{"role": "user",
+                   "content": "目标：提高代码质量。第一个任务：分析当前代码质量"}]},
+    config={"recursion_limit": 30},
+)
+print(result["messages"][-1].content)
 ```
 
 ### 4. 工具集成
-```python
-from babyagi import Tool
 
-# 创建自定义工具
-class CodeAnalysisTool(Tool):
-    name = "code_analysis"
-    description = "代码分析工具"
-    
-    def execute(self, code: str) -> str:
-        # 实现代码分析逻辑
-        return f"分析结果: {code}"
-
-# 注册工具
-baby_agi.register_tool(CodeAnalysisTool())
-```
+BabyAGI 源码中的"工具"本质是执行任务时传入 LLM 的上下文与向量库检索结果。在自己的实现中，用 `@tool` 定义工具并挂到 `create_agent` 即可（见上例）；任务的持久化可交给 LangGraph checkpointer（详见[Agent核心API详解](/agent/agent-frameworks/core-apis)）。
 
 ## 最佳实践
 
