@@ -81,7 +81,7 @@ plt.rcParams['font.sans-serif'] = ['SimHei']
 plt.rcParams['axes.unicode_minus'] = False
 
 # 1. 获取股票数据
-# 注意：需要安装yfinance库: pip install yfinance
+# 注意：需要安装yfinance库: uv pip install yfinance（传统方式：pip install yfinance，或项目模式 uv add yfinance）
 
 # 获取苹果公司股票数据
 symbol = 'AAPL'

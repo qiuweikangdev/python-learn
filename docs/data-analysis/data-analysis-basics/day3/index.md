@@ -1,5 +1,7 @@
 # Day 3: 数据清洗与预处理
 
+> **版本基线**：本文基于 Python 3.12+ / pandas 3.x（CoW 默认开启）/ numpy 2.x，更新于 2026-09。
+
 ## 学习目标
 
 完成今天的学习后，你将能够：
@@ -103,24 +105,55 @@ print("\n删除缺失值后的数据:")
 print(df_dropped)
 
 # 3. 填充缺失值
-# 使用均值填充数值列
+# 注意：pandas 3.x 默认开启 Copy-on-Write，不能用"链式选择 + inplace"，必须整列赋值
 df_filled = df.copy()
-df_filled['年龄'].fillna(df['年龄'].mean(), inplace=True)
-df_filled['收入'].fillna(df['收入'].median(), inplace=True)
-df_filled['城市'].fillna('未知', inplace=True)
+df_filled['年龄'] = df_filled['年龄'].fillna(df['年龄'].mean())
+df_filled['收入'] = df_filled['收入'].fillna(df['收入'].median())
+df_filled['城市'] = df_filled['城市'].fillna('未知')
 print("\n填充缺失值后的数据:")
 print(df_filled)
 
 # 4. 使用前向填充
-df_ffill = df.fillna(method='ffill')
+# pandas 3.0 移除了 fillna(method=...) 参数，改用专门的 ffill/bfill 方法
+df_ffill = df.ffill()
 print("\n前向填充后的数据:")
 print(df_ffill)
 
 # 5. 使用后向填充
-df_bfill = df.fillna(method='bfill')
+df_bfill = df.bfill()
 print("\n后向填充后的数据:")
 print(df_bfill)
 ```
+
+::: warning Copy-on-Write（CoW）注意事项
+pandas 3.0 起 **Copy-on-Write 默认开启**：任何从原 DataFrame 派生出的对象（切片、单列选择等）都不再与原表共享可写内存，修改时会先复制数据。因此，**"链式选择 + inplace"的旧写法彻底失效**——例如 `df['年龄'].fillna(..., inplace=True)` 修改的只是 `df['年龄']` 这个临时派生对象，原表不会有任何变化（pandas 2.x CoW 下静默失效，3.x 下直接报错或告警）。
+
+正确做法是**一次性定位、直接赋值**：
+
+```python
+# ✅ 推荐：直接整列赋值
+df['年龄'] = df['年龄'].fillna(df['年龄'].mean())
+
+# ✅ 推荐：一次性 .loc 布尔索引修改（方括号只出现一次）
+df.loc[df['年龄'] < 0, '年龄'] = 0
+
+# ✅ 推荐：用 .assign 派生新表（不修改原表，函数式风格）
+df_clean = df.assign(年龄=df['年龄'].fillna(df['年龄'].mean()))
+
+# ✅ 推荐：用 query 做条件筛选
+df_clean = df.query('年龄 >= 0 and 收入 > 0')
+```
+
+```python
+# ❌ 反例：链式赋值，CoW 下修改的是临时副本，原 df 不变
+df[df['年龄'] < 0]['年龄'] = 0
+
+# ❌ 反例：对派生对象 inplace，原 df 不变
+df['年龄'].fillna(df['年龄'].mean(), inplace=True)
+```
+
+记忆口诀：**不要连续写两个方括号 `df[...][...]`；改原表用 `df['列'] = ...` 或一次性 `df.loc[...] = ...`，要新表用 `.assign()` / `.query()`。**
+:::
 
 ### 异常值处理
 
@@ -333,6 +366,63 @@ axes[1, 1].set_ylabel('对数值')
 plt.tight_layout()
 plt.show()
 ```
+
+### 用 pydantic 校验清洗结果
+
+在企业数据管道中，"清洗 + 校验"是标配：清洗负责把数据改对，校验负责确认清洗结果确实符合业务规则（类型、取值范围、非空等）。[pydantic](https://docs.pydantic.dev/) 是 Python 数据校验的事实标准，下面用它对清洗后的用户数据做批量校验：
+
+```python
+# 使用 pydantic 校验清洗结果
+
+import pandas as pd
+import numpy as np
+from pydantic import BaseModel, Field, ValidationError
+
+# 清洗后的电商用户数据（假设已完成缺失值填充与异常值处理）
+df = pd.DataFrame({
+    '姓名': ['张三', '李四', '王五', '赵六', '钱七'],
+    '年龄': [25, 30, 35, -1, 28],               # -1 是漏网的异常值
+    '收入': [5000, 8000, 6000, 7000, np.nan],   # NaN 是漏网的缺失值
+    '城市': ['北京', '上海', '广州', '深圳', '未知']
+})
+
+
+# 1. 定义清洗后数据必须满足的规则：BaseModel 字段 + Field 约束
+class UserRecord(BaseModel):
+    姓名: str
+    年龄: int = Field(ge=0, le=120)      # 年龄必须在 0~120 之间
+    收入: float = Field(ge=0)            # 收入必须 >= 0（NaN 无法通过约束）
+    城市: str = Field(min_length=1)      # 城市不能为空字符串
+
+
+# 2. DataFrame -> 记录列表 -> 逐条批量校验
+records = df.to_dict(orient='records')
+
+valid_rows, invalid_rows = [], []
+for i, record in enumerate(records):
+    try:
+        UserRecord.model_validate(record)
+        valid_rows.append(i)
+    except ValidationError as e:
+        invalid_rows.append((i, str(e)))
+
+# 3. 统计校验结果
+print(f"总行数: {len(records)}")
+print(f"通过校验: {len(valid_rows)} 行")
+print(f"校验失败: {len(invalid_rows)} 行")
+for i, err in invalid_rows:
+    print(f"\n第 {i} 行校验失败:\n{err}")
+
+# 4. 只保留通过校验的行，进入下一步分析
+df_valid = df.iloc[valid_rows].reset_index(drop=True)
+print("\n通过校验的数据:")
+print(df_valid)
+```
+
+::: tip
+- `df.to_dict(orient='records')` 把每行转成一条字典记录，再用 `UserRecord.model_validate(record)` 逐条校验；失败行集中收集，可回炉重新清洗，而不是混入后续分析。
+- pydantic 校验时还会做类型转换（如把字符串 `"25"` 转成 `int`），并把 `NaN`、`None` 视为非法输入——正好拦截清洗遗漏的脏数据。
+:::
 
 ## 课后练习
 

@@ -504,7 +504,7 @@ df['事件发生'] = np.random.choice([0, 1], n_patients, p=[0.3, 0.7])  # 1表�
 # 计算中位生存时间
 from lifelines import KaplanMeierFitter
 
-# 注意：需要安装lifelines库: pip install lifelines
+# 注意：需要安装lifelines库: uv pip install lifelines（传统方式：pip install lifelines，或项目模式 uv add lifelines）
 try:
     kmf = KaplanMeierFitter()
     
@@ -536,7 +536,7 @@ try:
     plt.show()
     
 except ImportError:
-    print("需要安装lifelines库: pip install lifelines")
+    print("需要安装lifelines库: uv pip install lifelines（或 pip install lifelines）")
 ```
 
 ### 风险因素分析

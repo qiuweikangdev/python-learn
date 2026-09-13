@@ -1,5 +1,7 @@
 # Day 1: 数据分析概述与环境搭建
 
+> **版本基线**：本文基于 Python 3.12+ / pandas 3.x（CoW 默认开启）/ numpy 2.x，更新于 2026-09。
+
 ## 学习目标
 
 完成今天的学习后，你将能够：
@@ -40,6 +42,18 @@
 5. **jupyter**：交互式开发环境
 6. **scikit-learn**：机器学习库
 
+### 现代分析工具生态
+
+pandas 依然是数据分析的主流基础，但 2026 年的现代分析栈里还有几个值得认识的工具，它们与 pandas 互补而非替代：
+
+- **polars**：基于 Rust 实现的新一代 DataFrame 库，天然多线程并支持惰性求值，处理大规模数据集时通常显著快于 pandas，API 也更现代化。当 pandas 遇到性能瓶颈时，它是首选替代方案。
+- **duckdb**：进程内 SQL 分析引擎（可以理解为"本地就能跑的 OLAP 数据库"），无需搭建数据库服务即可直接用 SQL 查询 CSV、Parquet 等文件，与 pandas 互转方便，适合习惯 SQL 的分析场景。
+- **pydantic**：Python 数据校验的事实标准，通过声明式模型（`BaseModel` + 字段约束）对数据的类型、取值范围做严格校验，常用于数据管道中"清洗结果是否合格"的质量把关。
+
+::: tip
+本系列以 pandas 为主线展开；pydantic 会在 Day 3 数据清洗中用来校验清洗结果，polars 与 duckdb 适合在你遇到性能瓶颈或偏好 SQL 时再自行扩展。
+:::
+
 ## 案例：销售数据分析
 
 假设我们有一个销售数据集，包含产品、销售额、日期等信息。通过数据分析，我们可以：
@@ -60,28 +74,50 @@
 
 ### 环境搭建
 
-```python
-# 安装必要的库
-# 在终端中运行以下命令：
+2026 年 Python 环境与依赖管理的事实标准是 [uv](https://docs.astral.sh/uv/)：它用 Rust 实现，创建虚拟环境和安装依赖比传统 pip/venv 快一个数量级，还能自动下载管理 Python 解释器本身。推荐按下面的流程搭建本系列所需的环境。
 
-# 安装pandas - 数据处理库
-pip install pandas
+#### 方式一：uv（推荐）
 
-# 安装numpy - 数值计算库
-pip install numpy
+```bash
+# 1. 安装 uv
+# macOS / Linux：
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# Windows（PowerShell）：
+# powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-# 安装matplotlib - 数据可视化库
-pip install matplotlib
+# 2. 在项目目录创建虚拟环境（uv 会按需自动安装 Python 3.12+）
+uv venv
+source .venv/bin/activate   # Linux/Mac；Windows 执行 .venv\Scripts\activate
 
-# 安装seaborn - 高级数据可视化库
-pip install seaborn
-
-# 安装jupyter - 交互式开发环境
-pip install jupyter
-
-# 安装scikit-learn - 机器学习库
-pip install scikit-learn
+# 3. 一条命令安装本系列全部依赖
+uv pip install pandas numpy matplotlib seaborn jupyter scikit-learn
 ```
+
+::: tip 项目模式：uv add
+对于长期维护的分析项目，推荐使用 uv 的项目模式：依赖写入 `pyproject.toml`，并自动生成 `uv.lock` 锁定文件，团队协作时版本完全一致。
+```bash
+uv init my-analysis && cd my-analysis
+uv add pandas numpy matplotlib seaborn jupyter scikit-learn
+uv run jupyter notebook   # uv run 会自动使用项目虚拟环境，无需手动激活
+```
+:::
+
+#### 方式二：pip + venv（传统方式对照）
+
+不使用 uv 也可以用 Python 标准库的 venv + pip 完成同样的工作：
+
+```bash
+# 创建并激活虚拟环境
+python -m venv .venv
+source .venv/bin/activate   # Linux/Mac；Windows 执行 .venv\Scripts\activate
+
+# 安装本系列所需的库（对应 uv 版命令：uv pip install pandas numpy ...）
+pip install pandas numpy matplotlib seaborn jupyter scikit-learn
+```
+
+::: tip 关于 Anaconda / conda
+Anaconda 是面向数据科学的 Python 发行版，内置大量预编译的科学计算包，适合离线环境或依赖 conda 生态的场景，但安装包体积大、启动慢。对数据分析学习而言，轻量的 uv 方案已经足够；如果你已在用 conda，继续用 `conda install pandas numpy matplotlib seaborn jupyter scikit-learn` 也可以，不影响本系列的学习。
+:::
 
 ### 验证安装
 
@@ -150,9 +186,9 @@ plt.show()  # 显示图表
 ## 课后练习
 
 ### 练习1：环境搭建
-1. 安装Python 3.8或更高版本
-2. 安装Jupyter Notebook
-3. 创建一个新的Jupyter Notebook
+1. 安装Python 3.12或更高版本（2026 年最新稳定版为 3.14，企业项目建议 3.12/3.13 起步）
+2. 安装 uv，并用 `uv venv` 创建虚拟环境
+3. 安装Jupyter Notebook，创建一个新的Jupyter Notebook
 4. 验证所有必要的库都已安装
 
 ### 练习2：基础数据分析
@@ -171,10 +207,14 @@ plt.show()  # 显示图表
 ## 常见问题
 
 ### Q1: 安装库时出现权限错误怎么办？
-A: 可以使用`--user`参数安装到用户目录，或者使用虚拟环境：
+A: 不要直接往系统 Python 里装库，优先使用虚拟环境：
 ```bash
-pip install --user pandas
-# 或者创建虚拟环境
+# 推荐：uv 创建虚拟环境
+uv venv
+source .venv/bin/activate  # Linux/Mac
+uv pip install pandas
+
+# 传统方式：venv + pip
 python -m venv myenv
 source myenv/bin/activate  # Linux/Mac
 myenv\Scripts\activate  # Windows
@@ -184,12 +224,12 @@ pip install pandas
 ### Q2: Jupyter Notebook无法启动怎么办？
 A: 检查是否正确安装，尝试重新安装：
 ```bash
-pip install --upgrade jupyter
+uv pip install --upgrade jupyter   # 传统方式：pip install --upgrade jupyter
 jupyter notebook
 ```
 
 ### Q3: 如何选择Python版本？
-A: 推荐使用Python 3.8或更高版本，因为大多数数据分析库都支持这些版本。
+A: 推荐 Python 3.12 或更高版本（2026 年最新稳定版为 3.14，企业项目建议 3.12/3.13 起步）。Python 3.8 已于 2024 年 10 月停止维护，主流数据分析库的新版本均已不再支持它。
 
 ### Q4: 数据分析需要很强的数学基础吗？
 A: 基础的数据分析只需要高中数学水平。高级分析可能需要统计学和线性代数知识，但可以在学习过程中逐步掌握。

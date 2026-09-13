@@ -26,6 +26,8 @@ features:
 
 # Python 数据分析系列
 
+> **版本基线**：本文基于 Python 3.12+ / pandas 3.x（CoW 默认开启）/ numpy 2.x，更新于 2026-09。
+
 欢迎来到 Python 数据分析学习系列！本系列课程将带你从零开始掌握数据分析技能。
 
 ::: tip 深入篇
@@ -58,11 +60,13 @@ features:
 
 ## 技术栈
 
-- **数据处理**: pandas, numpy
+- **Python**: 3.12+（2026 年最新稳定版为 3.14，企业项目建议 3.12/3.13 起步）
+- **数据处理**: pandas 3.x（CoW 默认开启）, numpy 2.x；大规模数据集可配合 polars / duckdb
 - **数据可视化**: matplotlib, seaborn, plotly
 - **统计分析**: scipy, statsmodels
-- **机器学习**: scikit-learn, xgboost
-- **开发环境**: Jupyter Notebook/Lab
+- **机器学习**: scikit-learn 1.9+, xgboost
+- **数据校验**: pydantic
+- **开发环境**: Jupyter Notebook/Lab + uv（环境与依赖管理）
 
 ## 学习建议
 
@@ -74,8 +78,11 @@ features:
 ## 环境准备
 
 ```bash
-# 安装必要的库
-pip install pandas numpy matplotlib seaborn scikit-learn jupyter
+# 推荐：使用 uv 管理环境与依赖（2026 年事实标准）
+uv venv
+uv pip install pandas numpy matplotlib seaborn scikit-learn jupyter
+
+# 传统方式（对照）：pip install pandas numpy matplotlib seaborn scikit-learn jupyter
 
 # 启动Jupyter Notebook
 jupyter notebook

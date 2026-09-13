@@ -1,5 +1,7 @@
 # Day 7: 时间序列分析
 
+> **版本基线**：本文基于 Python 3.12+ / pandas 3.x（CoW 默认开启）/ numpy 2.x，更新于 2026-09。
+
 ## 学习目标
 
 完成今天的学习后，你将能够：
@@ -106,7 +108,7 @@ prices = trend + seasonal + noise
 
 # 创建DataFrame
 df = pd.DataFrame({'日期': dates, '价格': prices})
-df.set_index('日期', inplace=True)
+df = df.set_index('日期')  # CoW 时代推荐：重新赋值，不用 inplace 参数
 
 print("时间序列数据:")
 print(df.head())
@@ -115,12 +117,13 @@ print(f"时间范围: {df.index.min()} 到 {df.index.max()}")
 
 # 2. 时间序列基本操作
 # 重采样 - 月度平均
-monthly_avg = df.resample('M').mean()
+# 注意：pandas 2.2 起 'M'/'Q' 别名更名为 'ME'/'QE'（月末/季末），pandas 3.0 已移除旧别名
+monthly_avg = df.resample('ME').mean()
 print("\n月度平均价格:")
 print(monthly_avg.head())
 
 # 重采样 - 季度平均
-quarterly_avg = df.resample('Q').mean()
+quarterly_avg = df.resample('QE').mean()
 print("\n季度平均价格:")
 print(quarterly_avg.head())
 
@@ -185,7 +188,7 @@ plt.rcParams['font.sans-serif'] = ['SimHei']
 plt.rcParams['axes.unicode_minus'] = False
 
 # 1. 创建具有明显季节性的时间序列
-dates = pd.date_range(start='2018-01-01', end='2023-12-31', freq='M')
+dates = pd.date_range(start='2018-01-01', end='2023-12-31', freq='ME')
 n = len(dates)
 
 # 生成模拟销售数据
@@ -197,7 +200,7 @@ sales = trend + seasonal + noise
 
 # 创建DataFrame
 df = pd.DataFrame({'日期': dates, '销售额': sales})
-df.set_index('日期', inplace=True)
+df = df.set_index('日期')
 
 print("时间序列数据:")
 print(df.head())
@@ -460,7 +463,7 @@ plt.rcParams['axes.unicode_minus'] = False
 # 1. 创建时间序列数据
 np.random.seed(42)
 n = 100
-dates = pd.date_range(start='2020-01-01', periods=n, freq='M')
+dates = pd.date_range(start='2020-01-01', periods=n, freq='ME')
 
 # 生成模拟数据
 trend = np.linspace(100, 150, n)
@@ -469,7 +472,7 @@ noise = np.random.normal(0, 5, n)
 sales = trend + seasonal + noise
 
 df = pd.DataFrame({'日期': dates, '销售额': sales})
-df.set_index('日期', inplace=True)
+df = df.set_index('日期')
 
 # 2. 划分训练集和测试集
 train_size = int(len(df) * 0.8)

@@ -1,5 +1,7 @@
 # Day 15: 完整项目实战与部署
 
+> **版本基线**：本文基于 Python 3.12+ / pandas 3.x（CoW 默认开启）/ numpy 2.x，更新于 2026-09。
+
 ## 学习目标
 
 完成今天的学习后，你将能够：
@@ -990,7 +992,7 @@ print("\n创建Docker配置:")
 print("=" * 50)
 
 dockerfile = """
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -1004,12 +1006,13 @@ EXPOSE 5000
 CMD ["python", "app.py"]
 """
 
+# 依赖版本钉死，保证构建可复现（2026-09 基线）
 requirements = """
-flask==2.3.2
-scikit-learn==1.3.0
-pandas==2.0.3
-numpy==1.24.3
-joblib==1.3.2
+flask==3.1.3
+scikit-learn==1.9.1
+pandas==3.0.5
+numpy==2.5.3
+joblib>=1.4
 """
 
 # 保存文件
@@ -1068,7 +1071,7 @@ readme = """# 电商用户流失预测项目
 ### 本地运行
 ```bash
 # 安装依赖
-pip install -r requirements.txt
+uv pip install -r requirements.txt   # 传统方式：pip install -r requirements.txt
 
 # 运行应用
 python app.py
