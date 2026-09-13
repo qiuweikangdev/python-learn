@@ -1,5 +1,7 @@
 # Day 10: CI/CD持续集成与持续部署
 
+> **版本基线**：本文基于 Python 3.12+，更新于 2026-09。Lint 工具链以 ruff（+ mypy 类型检查）为准。
+
 ## 学习目标
 
 完成今天的学习后，你将能够：
@@ -58,6 +60,17 @@
 
 ## 代码案例
 
+::: tip ruff：2026 年的 Lint 事实标准
+**ruff 一个工具即可替代 flake8 + isort + black**（代码检查 + 导入排序 + 格式化），速度比传统工具链快几个数量级；mypy 保留作为类型检查的补充。本地日常使用：
+
+```bash
+uv add --dev ruff mypy    # 或 pip install ruff mypy
+ruff check --fix .        # 检查并自动修复可修复的问题
+ruff format .             # 格式化（同时替代 black 和 isort）
+mypy .                    # 类型检查
+```
+:::
+
 ### 案例1：GitHub Actions配置
 
 ```yaml
@@ -81,18 +94,17 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: '3.12'
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 black isort mypy
+        pip install ruff mypy
     
     - name: Run linters
       run: |
-        flake8 . --max-line-length=88
-        black --check .
-        isort --check-only --profile black .
+        ruff check .
+        ruff format --check .
         mypy . --ignore-missing-imports
 
   # 单元测试
@@ -102,7 +114,7 @@ jobs:
     
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.11', '3.12', '3.13']
     
     steps:
     - uses: actions/checkout@v3
@@ -228,16 +240,15 @@ cache:
 # 代码检查
 lint:
   stage: lint
-  image: python:3.9
+  image: python:3.12
   
   before_script:
     - python -m pip install --upgrade pip
-    - pip install flake8 black isort mypy
+    - pip install ruff mypy
   
   script:
-    - flake8 . --max-line-length=88
-    - black --check .
-    - isort --check-only --profile black .
+    - ruff check .
+    - ruff format --check .
     - mypy . --ignore-missing-imports
   
   only:
@@ -248,7 +259,7 @@ lint:
 # 单元测试
 test:
   stage: test
-  image: python:3.9
+  image: python:3.12
   
   services:
     - postgres:13
@@ -423,15 +434,15 @@ class CICDRunner:
             return False
     
     def lint(self):
-        """代码检查"""
+        """代码检查（ruff 替代 flake8）"""
         return self.run_step("代码检查", [
-            'flake8', '--max-line-length=88', '.'
+            'ruff', 'check', '.'
         ])
     
     def format_check(self):
-        """格式检查"""
+        """格式检查（ruff 替代 black + isort）"""
         return self.run_step("格式检查", [
-            'black', '--check', '.'
+            'ruff', 'format', '--check', '.'
         ])
     
     def type_check(self):

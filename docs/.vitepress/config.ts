@@ -700,7 +700,7 @@ export default defineConfig({
             { text: '概述与学习路线', link: '/automation/automation-practice/' },
             { text: 'Day 11: 系统监控与告警自动化', link: '/automation/automation-practice/day11/' },
             { text: 'Day 12: 日志分析自动化', link: '/automation/automation-practice/day12/' },
-            { text: 'Day 13: AI自动化基础', link: '/automation/automation-practice/day13/' },
+            { text: 'Day 13: AI自动化（LLM API与传统机器学习）', link: '/automation/automation-practice/day13/' },
             { text: 'Day 14: 网页自动化（Selenium）', link: '/automation/automation-practice/day14/' },
             { text: 'Day 15: 爬虫自动化（Scrapy）', link: '/automation/automation-practice/day15/' },
             { text: 'Day 16: API接口自动化测试', link: '/automation/automation-practice/day16/' },

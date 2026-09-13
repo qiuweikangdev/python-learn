@@ -1,5 +1,7 @@
 # Day 2: 文件处理自动化
 
+> **版本基线**：本文基于 Python 3.12+，更新于 2026-09。新项目推荐以 pathlib 为主进行路径操作（见下文专节）。
+
 ## 学习目标
 
 完成今天的学习后，你将能够：
@@ -46,6 +48,10 @@ for root, dirs, files in os.walk('directory'):
     print(root, dirs, files)
 ```
 
+::: tip
+`os.walk` 是老代码中非常常见的写法，本文的案例也会沿用；但**新项目建议优先使用 pathlib**（见下一小节），代码更简洁、更不易出错。
+:::
+
 #### 3. 路径操作
 
 ```python
@@ -53,6 +59,48 @@ from pathlib import Path
 p = Path('directory')
 p.mkdir(parents=True, exist_ok=True)
 ```
+
+### pathlib 现代路径操作
+
+`pathlib.Path` 是面向对象的路径 API（Python 3.12+ 的首选写法），用 `/` 运算符拼接路径，读写、遍历、建目录一气呵成。
+
+**常用操作对照表（os/os.path → pathlib）：**
+
+| 任务 | os / os.path 写法 | pathlib 写法 |
+|------|-------------------|--------------|
+| 拼接路径 | `os.path.join(root, file)` | `root / file` |
+| 递归遍历目录 | `os.walk(dir)` | `Path(dir).rglob("*")` |
+| 列出目录内容 | `os.listdir(dir)` | `Path(dir).iterdir()` |
+| 按模式匹配文件 | `glob.glob("*.csv")` | `Path(".").glob("*.csv")` |
+| 创建目录 | `os.makedirs(p, exist_ok=True)` | `Path(p).mkdir(parents=True, exist_ok=True)` |
+| 读 / 写文本 | `open()` + `f.read()/f.write()` | `Path.read_text() / write_text()` |
+| 取扩展名 / 改名 | `os.path.splitext(f)` | `Path(f).suffix / with_suffix()` |
+| 判断是否存在 | `os.path.exists(p)` | `Path(p).exists()` |
+| 取绝对路径 | `os.path.abspath(p)` | `Path(p).resolve()` |
+
+**基础用法示例：**
+
+```python
+from pathlib import Path
+
+# 创建目录（含父级，已存在不报错）
+config = Path("config/app.yaml")
+config.parent.mkdir(parents=True, exist_ok=True)
+
+# 读写文件：一行搞定，无需手动 open/close
+config.write_text("name: demo\n", encoding="utf-8")
+text = config.read_text(encoding="utf-8")
+
+# 单层匹配：当前目录所有 csv
+for csv_file in Path("data").glob("*.csv"):
+    print(csv_file.name, csv_file.stat().st_size)
+
+# 递归匹配：src 下所有 py 文件（等价于 os.walk 的常见用途）
+for py_file in Path("src").rglob("*.py"):
+    print(py_file)
+```
+
+> 与 `os.walk` 相比，`rglob("*")` 直接产出 `Path` 对象，不用再手工 `os.path.join(root, file)`；配合 `file_path.suffix`、`file_path.stat()` 等属性，批量处理代码量能减少一半左右。
 
 ## 案例：批量文件处理
 
@@ -292,6 +340,60 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+
+### 案例3：pathlib 版批量重命名（推荐写法）
+
+前面案例1（批量重命名）的核心逻辑用 pathlib 重写如下——对比可见 `os.walk + os.path.join + os.rename` 被压缩为 `rglob + with_name + rename`：
+
+```python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+pathlib 版批量重命名
+功能：递归重命名目录下匹配正则的文件（案例1 的 pathlib 版本）
+"""
+
+import re
+from pathlib import Path
+
+def rename_files(directory, pattern, replacement, dry_run=False):
+    """批量重命名文件（递归），pathlib 写法"""
+    renamed_count = 0
+
+    # rglob("*") 递归遍历，直接得到 Path 对象，无需 os.walk + os.path.join
+    for file_path in Path(directory).rglob("*"):
+        if not file_path.is_file():
+            continue
+        if re.search(pattern, file_path.name):
+            # with_name：只替换文件名，目录部分保持不变
+            new_path = file_path.with_name(re.sub(pattern, replacement, file_path.name))
+            if dry_run:
+                print(f"[试运行] {file_path.name} -> {new_path.name}")
+            else:
+                try:
+                    file_path.rename(new_path)
+                    print(f"[重命名] {file_path.name} -> {new_path.name}")
+                    renamed_count += 1
+                except OSError as e:
+                    print(f"[错误] 无法重命名 {file_path.name}: {e}")
+
+    return renamed_count
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) < 3:
+        print("用法: python rename_pathlib.py <目录> <匹配模式> [替换文本]")
+        sys.exit(1)
+
+    count = rename_files(sys.argv[1], sys.argv[2],
+                         sys.argv[3] if len(sys.argv) > 3 else '', dry_run=True)
+    print(f"试运行完成，将重命名 {count} 个文件（去掉 dry_run=True 正式执行）")
+```
+
+::: tip
+老项目里大量 `os.path` 代码可以逐步迁移到 pathlib：两者可以混用（`str(path_obj)` 可随时转回字符串路径），迁移成本很低。
+:::
 
 ## 课后练习
 

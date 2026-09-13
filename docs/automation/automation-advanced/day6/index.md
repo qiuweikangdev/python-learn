@@ -1,5 +1,7 @@
 # Day 6: 日志记录与监控
 
+> **版本基线**：本文基于 Python 3.12+，更新于 2026-09。标准库 logging 之外，补充了更简洁的 loguru 方案。
+
 ## 学习目标
 
 完成今天的学习后，你将能够：
@@ -273,6 +275,60 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+
+## loguru：更简洁的日志方案
+
+上面的案例可以看到：标准库 logging 配置一个像样的日志系统需要 Handler、Formatter、层级传递等大量样板代码。**loguru** 把这些全部做成开箱即用的默认值，两三行代码就能达到案例1的效果，是快速项目和中小型服务的推荐选择。
+
+```bash
+pip install loguru   # 或 uv add loguru
+```
+
+**基础用法（无需任何配置，默认输出到控制台且带颜色和时间戳）：**
+
+```python
+from loguru import logger
+
+logger.info("这是一条信息日志")
+logger.warning("这是一条警告日志")
+logger.error("这是一条错误日志")
+```
+
+**文件输出 + 轮转 + 保留策略：**
+
+```python
+from loguru import logger
+
+# 单文件超过 500 MB 自动轮转，只保留最近 10 天
+logger.add("app.log", rotation="500 MB", retention="10 days", level="INFO")
+
+# 也可以按时间轮转：每天 0 点切分新文件，保留 7 天并压缩
+logger.add("logs/app_{time}.log", rotation="00:00", retention="7 days", compression="zip")
+```
+
+**@logger.catch 异常捕获——一行装饰器自动记录完整堆栈：**
+
+```python
+from loguru import logger
+
+@logger.catch
+def divide(a, b):
+    return a / b
+
+divide(1, 0)  # 除零异常被自动捕获并记录（含变量值与完整堆栈），程序默认不崩溃
+              # 需要让异常继续向上抛出时，使用 @logger.catch(reraise=True)
+```
+
+**与标准库 logging 如何取舍？**
+
+| 场景 | 推荐 | 理由 |
+|------|------|------|
+| 快速项目、脚本、中小型服务 | loguru | 零配置、开箱即用的格式/轮转/异常捕获，样板代码极少 |
+| 超大型系统、需深度定制 | logging | Handler/Filter 生态成熟，可与集中式日志采集体系深度集成，行为完全可控 |
+
+::: tip
+两者并不互斥：loguru 可以通过 `logger.add(sink)` 把日志转发到任意对象，已有 logging 体系的项目也可以渐进式引入 loguru。
+:::
 
 ## 课后练习
 

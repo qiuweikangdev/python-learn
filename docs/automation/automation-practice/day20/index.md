@@ -1,5 +1,7 @@
 # Day 20: 企业级自动化测试实战
 
+> **版本基线**：本文基于 Python 3.12+，更新于 2026-09。
+
 ## 学习目标
 
 完成今天的学习后，你将能够：
@@ -858,7 +860,7 @@ jobs:
     
     strategy:
       matrix:
-        python-version: [3.9, 3.10, 3.11]
+        python-version: ['3.11', '3.12', '3.13']
     
     steps:
     - uses: actions/checkout@v3

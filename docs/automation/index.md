@@ -26,6 +26,8 @@ features:
 
 # Python 自动化系列
 
+> **版本基线**：本系列基于 Python 3.12+，更新于 2026-09。
+
 欢迎来到 Python 自动化学习系列！本系列课程将带你从零开始掌握Python自动化技能。
 
 ## 学习路径
@@ -47,7 +49,7 @@ features:
 ### 🔴 实战篇（Day 11-20）
 - **Day 11**: 系统监控与告警自动化
 - **Day 12**: 日志分析自动化
-- **Day 13**: AI自动化基础
+- **Day 13**: AI自动化：LLM API与传统机器学习
 - **Day 14**: 网页自动化（Selenium）
 - **Day 15**: 爬虫自动化（Scrapy）
 - **Day 16**: API接口自动化测试
@@ -58,16 +60,21 @@ features:
 
 ## 技术栈
 
+> 以下技术栈均会在对应章节中实际讲解并给出可运行代码：loguru 见 Day 6，APScheduler 见 Day 3，uv 见 Day 7，ruff 见 Day 10，pathlib 见 Day 2，fabric/ansible 见 Day 9（介绍其定位与最小示例）。
+
+- **环境与依赖管理**: uv（2026 事实标准，推荐）, venv, pip, Poetry
 - **脚本自动化**: Python标准库, argparse, configparser
-- **文件处理**: os, shutil, pathlib, glob
-- **系统任务**: subprocess, schedule, cron
+- **文件处理**: pathlib（现代路径操作主线）, os, shutil, glob
+- **系统任务**: subprocess, schedule, APScheduler, cron
 - **日志记录**: logging, loguru
+- **代码质量**: ruff（lint + format，替代 flake8/isort/black）, mypy
 - **测试自动化**: pytest, unittest, mock
 - **API测试**: requests, httpx, pytest-html
 - **性能测试**: locust, httpx
 - **UI测试**: Playwright, Selenium
-- **办公自动化**: openpyxl, python-docx, PyPDF2
-- **部署自动化**: fabric, ansible, docker
+- **办公自动化**: openpyxl, python-docx, pypdf
+- **部署自动化**: docker, docker compose, fabric, ansible
+- **AI自动化**: OpenAI 兼容 API（openai SDK）, ollama, scikit-learn
 - **CI/CD**: GitHub Actions, GitLab CI, Jenkins
 - **爬虫自动化**: Scrapy, requests, aiohttp
 
@@ -81,19 +88,24 @@ features:
 ## 环境准备
 
 ```bash
+# 安装 uv（2026 事实标准，推荐）
+curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS / Linux
+# Windows (PowerShell): powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
 # 安装必要的库
-pip install selenium scrapy pytest loguru fabric docker
-pip install requests httpx locust
-pip install playwright openpyxl python-docx PyPDF2
+pip install loguru apscheduler ruff fabric docker
+pip install selenium scrapy pytest requests httpx locust
+pip install playwright openpyxl python-docx pypdf openai scikit-learn
 
 # 安装Playwright浏览器
 playwright install
 
-# 验证Python版本
+# 验证Python版本（本系列要求 3.12+，3.7 已于 2023-06 EOL）
 python --version
 
-# 创建虚拟环境
-python -m venv automation-env
+# 创建虚拟环境（两种方式任选其一）
+uv venv && uv pip install -r requirements.txt   # 推荐：uv 一条龙
+python -m venv automation-env                    # 传统方式
 source automation-env/bin/activate  # Linux/Mac
 automation-env\Scripts\activate  # Windows
 ```

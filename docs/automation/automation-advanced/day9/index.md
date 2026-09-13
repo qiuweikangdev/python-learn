@@ -1,5 +1,7 @@
 # Day 9: 部署自动化
 
+> **版本基线**：本文基于 Python 3.12+，更新于 2026-09。文末补充了 fabric / ansible 配置管理工具的定位说明。
+
 ## 学习目标
 
 完成今天的学习后，你将能够：
@@ -36,7 +38,7 @@ docker stop <container_id>
 ### Dockerfile示例
 
 ```dockerfile
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -346,7 +348,7 @@ class DockerDeployer:
         dockerfile = self.project_dir / 'Dockerfile'
         
         if not dockerfile.exists():
-            dockerfile.write_text("""FROM python:3.9-slim
+            dockerfile.write_text("""FROM python:3.12-slim
 
 # 设置工作目录
 WORKDIR /app
@@ -502,6 +504,82 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+
+## 配置管理工具的定位：fabric 与 ansible
+
+前面两个案例用 subprocess + venv/docker 脚本完成了单机部署。当服务器变多、部署步骤需要复用时，就该认识两类配置管理工具了。**本节的目标是理解它们的定位与最小用法**，具体深入可阅读官方文档。
+
+### fabric：用 Python 写 SSH 编排（适合少量服务器）
+
+fabric 3.x 让你把案例1的部署逻辑变成可在任意主机上执行的"任务"（task），通过 `fab` 命令一键 SSH 执行：
+
+```bash
+pip install fabric   # 或 uv add fabric
+```
+
+```python
+# fabfile.py —— fabric 3.x 任务文件（fab 默认读取当前目录的 fabfile.py）
+from fabric import task
+
+@task
+def deploy(c):
+    """SSH 到目标主机执行部署"""
+    c.run("cd /opt/myapp && git pull")
+    c.run("cd /opt/myapp && ./venv/bin/pip install -r requirements.txt")
+    c.run("sudo systemctl restart myapp")
+
+@task
+def status(c):
+    """查看服务状态"""
+    c.run("systemctl status myapp --no-pager")
+```
+
+```bash
+# 一条命令在远程主机上执行 deploy 任务
+fab -H ubuntu@192.168.1.10 deploy
+```
+
+适用规模：**几台到十几台服务器**的 SSH 部署编排——逻辑直接用 Python 写，能复用前面所有章节的代码，是脚本部署到批量运维之间的自然过渡。
+
+### ansible：YAML playbook 声明式批量配置管理
+
+ansible 用 YAML playbook 声明"机器应该处于什么状态"，由控制机通过 SSH 推送执行（被管机无需安装 agent，模块本身用 Python 编写），幂等且可批量作用于数十台以上主机：
+
+```yaml
+# deploy.yml —— 最小 playbook 示例
+- hosts: webservers
+  become: true
+  tasks:
+    - name: 同步应用代码
+      ansible.builtin.copy:
+        src: ./app/
+        dest: /opt/myapp
+    - name: 在虚拟环境中安装依赖
+      ansible.builtin.pip:
+        requirements: /opt/myapp/requirements.txt
+        virtualenv: /opt/myapp/venv
+    - name: 重启服务
+      ansible.builtin.systemd:
+        name: myapp
+        state: restarted
+```
+
+```bash
+ansible-playbook -i inventory deploy.yml
+```
+
+### 三者如何分工？
+
+| 工具 | 适用规模 | 定位 |
+|------|----------|------|
+| 自写脚本（本文案例） | 单机 | 完全可控，逻辑自由 |
+| fabric | 几台 ~ 十几台 | Python 代码驱动的 SSH 编排 |
+| ansible | 数十台以上 | YAML 声明式批量配置管理，幂等可复用 |
+| docker compose | 单机多容器 | 容器组编排；多机容器编排则进入 Kubernetes 领域 |
+
+::: tip
+fabric/ansible 与 docker compose 是互补关系：前者管"机器与部署流程"（拉代码、装依赖、重启服务），后者管"单机上的容器组"。常见组合是 CI 流水线中用 fabric/ansible 触发远端 `docker compose up -d`（见 Day 10）。
+:::
 
 ## 课后练习
 

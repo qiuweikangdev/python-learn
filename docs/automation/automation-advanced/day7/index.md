@@ -1,5 +1,7 @@
 # Day 7: 开发环境自动化
 
+> **版本基线**：本文基于 Python 3.12+，更新于 2026-09。虚拟环境与依赖管理推荐以 uv 为主线（见下文专节），venv/pip/Poetry 作为背景知识保留。
+
 ## 学习目标
 
 完成今天的学习后，你将能够：
@@ -60,6 +62,53 @@ pipenv install requests
 # 激活环境
 pipenv shell
 ```
+
+#### 4. uv：2026 的事实标准（推荐主线）
+
+上面三种工具分别解决了"隔离"（venv）、"版本"（pyenv）、"依赖管理"（pip/Poetry）的问题，但需要多套工具配合。**uv** 用一个 Rust 实现的单一工具统一取代了 venv + pip + pyenv 组合，是 2026 年 Python 社区的事实标准。
+
+```bash
+# 安装 uv（macOS / Linux）
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+**常用命令：**
+
+```bash
+# 安装/管理 Python 版本（替代 pyenv）
+uv python install 3.12
+
+# 创建虚拟环境（替代 python -m venv，自动生成 .venv）
+uv venv
+
+# 安装依赖（替代 pip install）
+uv pip install -r requirements.txt
+
+# 项目化添加依赖（自动写入 pyproject.toml 并锁定版本）
+uv add requests
+uv add --dev ruff mypy        # 开发依赖
+
+# 运行命令（自动使用项目环境，免手动 activate）
+uv run python script.py
+uv run pytest
+```
+
+**与 venv + pip + pyenv 组合的对照：**
+
+| 传统组合 | uv 对应命令 | 说明 |
+|---------|-------------|------|
+| pyenv install / pyenv local | `uv python install` / `uv python pin` | 安装、切换 Python 版本 |
+| python -m venv + activate | `uv venv` / `uv run` | 创建环境；`uv run` 免手动激活 |
+| pip install | `uv pip install` / `uv add` | 安装依赖，`uv add` 同时写入 pyproject.toml |
+| pip freeze / pip-tools | `uv lock` / `uv pip compile` | 统一的依赖锁定 |
+
+**速度优势**：uv 基于 Rust 实现，采用全局缓存与并行下载解析，安装速度通常比 pip 快一个数量级以上（官方基准可达 10-100 倍），CI 流水线中的依赖安装环节收益尤其明显。
+
+::: tip
+本教程后续章节的示例命令默认以 uv 为主线（`uv run`、`uv add`）；维护遗留项目时再回看上文的 venv + pip 写法即可。另外代码质量工具链方面，ruff 一个工具即可替代 flake8 + isort + black（详见 Day 10）。
+:::
 
 ### 代码规范工具
 
@@ -494,7 +543,7 @@ if __name__ == "__main__":
 ## 常见问题
 
 ### Q1: 如何选择虚拟环境工具？
-A: 推荐使用venv（内置）或Poetry（现代项目）。
+A: 新项目首选 uv（2026 事实标准，一个工具覆盖环境+版本+依赖管理）；需要零外部依赖时用内置 venv；重度项目管理需求可考虑 Poetry。
 
 ### Q2: 如何处理依赖冲突？
 A: 使用pip check检查冲突，或使用Poetry自动解决。

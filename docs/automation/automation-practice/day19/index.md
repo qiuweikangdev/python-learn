@@ -1,5 +1,7 @@
 # Day 19: 脚本自动化实战
 
+> **版本基线**：本文基于 Python 3.12+，更新于 2026-09。PDF 处理统一使用 pypdf（PyPDF2 已废弃并更名回归 pypdf）。
+
 ## 学习目标
 
 完成今天的学习后，你将能够：
@@ -22,7 +24,7 @@
 |---|------|
 | openpyxl | Excel处理 |
 | python-docx | Word处理 |
-| PyPDF2/reportlab | PDF处理 |
+| pypdf / reportlab | PDF处理 |
 | schedule | 定时任务 |
 | smtplib | 邮件发送 |
 
@@ -434,15 +436,17 @@ if __name__ == "__main__":
 
 ### 案例3：PDF 处理
 
+> **版本提示**：PyPDF2 项目已废弃，统一更名为 **pypdf**（`pip install pypdf`），API 与 PyPDF2 2.x 完全一致。合并 PDF 在 pypdf 新版中推荐使用 `PdfWriter().append(file)`；下文的 `PdfMerger` 写法仍被兼容保留。
+
 ```python
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 PDF处理
-功能：使用PyPDF2和reportlab处理PDF文件
+功能：使用 pypdf 和 reportlab 处理 PDF 文件
 """
 
-from PyPDF2 import PdfReader, PdfWriter, PdfMerger
+from pypdf import PdfReader, PdfWriter, PdfMerger
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
@@ -486,7 +490,7 @@ class PDFProcessor:
         return texts
     
     def merge_pdfs(self, pdf_files: List[str], output_file: str):
-        """合并PDF"""
+        """合并PDF（pypdf 新版亦可用 PdfWriter().append() 逐步合并，见上方版本提示）"""
         merger = PdfMerger()
         
         for pdf_file in pdf_files:

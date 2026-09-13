@@ -1,5 +1,7 @@
 # Day 3: 系统任务自动化
 
+> **版本基线**：本文基于 Python 3.12+，更新于 2026-09。定时任务在 schedule 之外补充了生产级的 APScheduler 方案。
+
 ## 学习目标
 
 完成今天的学习后，你将能够：
@@ -57,6 +59,62 @@ crontab -e
 # 添加定时任务
 0 * * * * /usr/bin/python3 /path/to/script.py
 ```
+
+### APScheduler：生产级调度
+
+schedule 库胜在简单，但任务不持久化（进程重启即丢失）、不支持错过执行补偿、只能单线程顺序执行。**APScheduler**（Advanced Python Scheduler）解决了这些问题，是企业场景（定时报表、数据清理、巡检任务）的首选。
+
+```bash
+pip install apscheduler   # 或 uv add apscheduler
+```
+
+**示例1：interval 触发器——固定间隔执行（每 30 分钟清理一次临时文件）：**
+
+```python
+from apscheduler.schedulers.blocking import BlockingScheduler
+
+def cleanup_temp():
+    """每 30 分钟执行一次的清理任务"""
+    print("清理临时文件...")
+
+sched = BlockingScheduler()
+# 每 30 分钟执行一次；id 便于后续修改/移除任务
+sched.add_job(cleanup_temp, 'interval', minutes=30, id='cleanup')
+sched.start()  # 阻塞式运行，Ctrl+C 退出
+```
+
+**示例2：cron 触发器——类 crontab 的定点执行（工作日每天早上 9 点生成报表）：**
+
+```python
+from apscheduler.schedulers.blocking import BlockingScheduler
+
+def daily_report():
+    """工作日 09:00 生成定时报表"""
+    print("生成定时报表...")
+
+sched = BlockingScheduler()
+# 周一到周五，上午 9 点整执行
+sched.add_job(daily_report, 'cron', day_of_week='mon-fri', hour=9, minute=0, id='report')
+sched.start()
+```
+
+::: tip
+把脚本嵌入常驻 Web 服务时，用 `BackgroundScheduler` 替代 `BlockingScheduler`——它在线程池中后台运行，不阻塞主线程。
+:::
+
+**APScheduler 与 schedule 如何取舍？**
+
+| 能力 | schedule | APScheduler |
+|------|----------|-------------|
+| 定位 | 轻量库，适合原型与简单循环 | 生产级调度框架 |
+| 持久化 jobstore | 不支持，重启丢任务 | 支持（内存 / SQLAlchemy / Redis），任务可恢复 |
+| 错过执行策略 | 无 | 支持（misfire_grace_time、coalesce 合并错过的执行） |
+| 并发执行 | 单线程顺序执行 | 内置线程池，任务可并行 |
+| cron 式定点调度 | 仅基础支持 | 完整支持（day_of_week / hour / minute 等） |
+
+::: warning
+单机小脚本、演示原型用 schedule 完全够用；只要涉及"任务不能丢、错过要补跑、多任务并行"（例如每天 9 点的定时报表、凌晨的日志清理），请直接上 APScheduler。
+:::
 
 ## 案例：系统监控脚本
 

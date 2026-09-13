@@ -1,5 +1,7 @@
 # Day 1: Python脚本基础与自动化概述
 
+> **版本基线**：本文基于 Python 3.12+，更新于 2026-09。
+
 ## 学习目标
 
 完成今天的学习后，你将能够：
@@ -300,8 +302,8 @@ if __name__ == "__main__":
 ## 课后练习
 
 ### 练习1：环境准备
-1. 确保Python 3.7+已安装
-2. 安装psutil库：`pip install psutil`
+1. 确保Python 3.12+已安装（3.7 已于 2023-06 EOL；推荐用 uv 安装管理：`uv python install 3.12`）
+2. 安装psutil库：`pip install psutil`（或 `uv add psutil`）
 3. 运行系统信息检查脚本
 4. 查看输出结果
 

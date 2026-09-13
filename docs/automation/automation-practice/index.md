@@ -1,5 +1,7 @@
 # 自动化实战篇
 
+> **版本基线**：本文基于 Python 3.12+，更新于 2026-09。
+
 欢迎来到自动化实战篇！本篇将带你完成真实的自动化项目。
 
 ## 学习目标
@@ -31,11 +33,11 @@
 - 异常检测
 - 可视化展示
 
-#### Day 13: AI自动化基础
-- 机器学习基础
-- 自然语言处理
-- 图像识别
-- 智能决策
+#### Day 13: AI自动化：LLM API与传统机器学习
+- 用 LLM API 实现批量文本分类、摘要与信息抽取
+- 本地模型方案（ollama）与隐私场景
+- 传统机器学习方案（TF-IDF + 朴素贝叶斯）
+- LLM 与传统工具组合的企业自动化思路
 
 #### Day 14: 网页自动化（Selenium）
 - Selenium基础
@@ -96,7 +98,7 @@
 | API测试 | requests, httpx, pytest |
 | 性能测试 | locust, httpx |
 | UI测试 | Playwright, Selenium |
-| 办公自动化 | openpyxl, python-docx, PyPDF2 |
+| 办公自动化 | openpyxl, python-docx, pypdf |
 | 定时任务 | schedule, APScheduler |
 
 ## 学习建议
